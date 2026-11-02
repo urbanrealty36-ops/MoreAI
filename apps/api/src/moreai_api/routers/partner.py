@@ -146,23 +146,28 @@ async def select_network_verification_method(
             status_code=409,
             detail={"code": "VERIFICATION_METHOD_NOT_AVAILABLE", "message": "This method is not enabled by platform operations."},
         )
-    forbidden = {"password", "secret", "token", "api_key", "shared_secret", "credential"}
-
-    def contains_secret_key(value: Any) -> bool:
-        if isinstance(value, dict):
-            return any(
-                any(term in str(key).lower() for term in forbidden)
-                or contains_secret_key(nested)
-                for key, nested in value.items()
-            )
-        if isinstance(value, list):
-            return any(contains_secret_key(item) for item in value)
-        return False
-
-    if contains_secret_key(payload.config_public):
+    allowed_config_keys = {
+        "gps": {"radius_meters", "max_accuracy_meters"},
+        "mikrotik_hotspot": {"router_label", "hotspot_profile"},
+        "radius": {"nas_identifier", "accounting_interval_seconds"},
+        "gateway": {"controller_label"},
+        "isp_api": {"provider_code"},
+    }
+    if set(payload.config_public) - allowed_config_keys[payload.method_key]:
         raise HTTPException(
             status_code=422,
-            detail={"code": "SECRET_MUST_NOT_BE_SUBMITTED", "message": "Do not submit credentials in public configuration."},
+            detail={
+                "code": "UNSUPPORTED_PUBLIC_CONFIG_FIELD",
+                "message": "Only documented non-secret configuration fields are accepted.",
+            },
+        )
+    if any(
+        not isinstance(value, (str, int, float, bool)) or len(str(value)) > 160
+        for value in payload.config_public.values()
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail={"code": "INVALID_PUBLIC_CONFIG", "message": "Configuration values must be short scalar values."},
         )
     result = await rpc(
         "set_network_verification_method",
