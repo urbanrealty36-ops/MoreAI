@@ -19,6 +19,8 @@ export type CreateAgentRunInput = {
 };
 export type PartnerSummary = { partner: { id: string; legal_name?: string; display_name?: string; status: string }; membership: unknown };
 export type Collection<T> = { items: T[] };
+export type VerificationMethodKey = "gps" | "mikrotik_hotspot" | "radius" | "gateway" | "isp_api";
+export type VerificationMethod = { method_key: VerificationMethodKey; display_name: string; adapter_key: string; enabled: boolean; adapter_ready: boolean; requires_secret: boolean; setup_requirements: Record<string,unknown> };
 
 export class ApiRequestError extends Error {
   constructor(public readonly status: number, public readonly payload: ApiError | unknown) {
@@ -41,6 +43,8 @@ export function createApiClient(options: ApiClientOptions) {
   const get = <T>(path: `/api/v1/${string}`) => request<T>(path);
   const post = <T>(path: `/api/v1/${string}`, body?: unknown, key?: string) =>
     request<T>(path, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) }, key);
+  const patch = <T>(path: `/api/v1/${string}`, body: unknown) =>
+    request<T>(path, { method: "PATCH", body: JSON.stringify(body) });
   return {
     request, get, post,
     llm: { generate: (input: LlmGenerateInput, key: string) => post<LlmGenerateOutput>("/api/v1/llm/generate", input, key) },
@@ -58,12 +62,16 @@ export function createApiClient(options: ApiClientOptions) {
       campaigns: () => get<Collection<unknown>>("/api/v1/partner/campaigns"),
       rewards: () => get<Collection<unknown>>("/api/v1/partner/rewards"),
       analytics: () => get<Record<string, number | string>>("/api/v1/partner/analytics"),
+      verificationMethods: (networkId?: string) => get<{items: unknown[]; methods: VerificationMethod[]; selected_by_network: Record<string,string|null>}>(`/api/v1/partner/verification-methods${networkId ? `?network_id=${networkId}` : ""}`),
+      selectVerificationMethod: (networkId: string, methodKey: VerificationMethodKey, configPublic: Record<string,unknown> = {}) => post<Record<string,unknown>>(`/api/v1/partner/networks/${networkId}/verification-method`, {method_key:methodKey,config_public:configPublic}),
     },
     admin: {
       overview: () => get<Record<string, number>>("/api/v1/admin/overview"),
       users: () => get<Collection<unknown>>("/api/v1/admin/users"),
       models: () => get<Collection<unknown>>("/api/v1/admin/models"),
       audit: () => get<Collection<unknown>>("/api/v1/admin/audit"),
+      verificationMethods: () => get<Collection<VerificationMethod>>("/api/v1/admin/network-verification-methods"),
+      setVerificationMethodAvailability: (methodKey: VerificationMethodKey, enabled: boolean) => patch<Record<string,unknown>>(`/api/v1/admin/network-verification-methods/${methodKey}`, {enabled}),
     },
     network: {
       context: () => get<Record<string, unknown>>("/api/v1/network/portal-context"),
