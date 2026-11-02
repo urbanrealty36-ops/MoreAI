@@ -1,0 +1,7 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Documented upstream video embed uses a jwt query parameter placeholder, not a credential."
+paths = ['''vendor/openmanusweb/README\.md''', '''vendor/openmanusweb/README_zh\.md''']
+regexes = ['''jwt=\.\.\.''']

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { ClientHeader } from '@/components/client/ClientHeader';
-import { ClientBottomNav, ClientTab } from '@/components/client/ClientBottomNav';
+import { ClientBottomNav, type ClientTab } from '@/components/client/ClientBottomNav';
 import { ClientHome } from '@/components/client/ClientHome';
 import { ClientChat } from '@/components/client/ClientChat';
 import { ClientAgents } from '@/components/client/ClientAgents';
