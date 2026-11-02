@@ -57,6 +57,7 @@ def main() -> None:
 
         # Replace gitlinks with normal tracked files; source contents remain byte-identical.
         subprocess.run(["git", "rm", "-r", "--cached", "--ignore-unmatch", *SOURCES.values(), ".gitmodules"], cwd=ROOT, check=True)
+        (ROOT / ".gitmodules").unlink(missing_ok=True)
         for name, rel in SOURCES.items():
             destination = ROOT / rel
             if destination.exists():
