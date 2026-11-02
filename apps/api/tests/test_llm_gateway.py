@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from fastapi.testclient import TestClient
 
 from moreai_api.auth import require_authenticated_user
@@ -64,4 +66,4 @@ def test_internal_agent_checkpoint_requires_worker_token():
 
 def test_model_cost_calculation_uses_per_million_rates():
     model = {"input_cost_per_million": "1.00", "output_cost_per_million": "2.00"}
-    assert str(_cost(1_000_000, 1_000_000, model)) == "3"
+    assert _cost(1_000_000, 1_000_000, model) == Decimal("3.00")
