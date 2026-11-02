@@ -101,6 +101,17 @@ Per owner instruction, no dedicated staging environment will be created. ADR-000
 - MikroTik Hotspot is the first gateway adapter target, not a mandatory integration for every partner. GPS, RADIUS and ISP are independent adapters with separate requirements.
 - Acceptance tests must prove single-method enforcement, adapter dispatch, safe method switching, tenant isolation, replay protection for gateway context, and no silent fallback.
 
+## Single-method network verification — implementation in progress
+
+- Added migration `20261102113000_single_active_network_verification_method.sql`: platform adapter catalog, `partner_networks.active_verification_method`, a partial unique index preventing multiple enabled configs per network, atomic `set_network_verification_method` RPC, and a trigger that prevents activation unless the selected adapter is marked ready.
+- The catalog exposes GPS, MikroTik Hotspot, RADIUS, other gateway/controller, and ISP API as selectable options. All are `adapter_ready=false`; no integration is activated by this migration.
+- Partner FastAPI contract lists available methods and allows an authorized partner member to select exactly one method for a network. It rejects credentials in public config, including nested credential-like keys. Selection is persisted atomically and returns `activated=false`.
+- Super Admin FastAPI contract controls catalog availability using `network.verification.manage`; every mutation writes `admin_audit_logs`. It cannot set adapter readiness or activate a network.
+- Typed API client methods, Partner Portal selector, Super Admin catalog controls, and Captive Portal fail-closed messaging were updated. Client-supplied verification method was removed from the network verification request; server-side network configuration is authoritative.
+- Added API contract tests for supported single-method values, hybrid/unknown rejection and secret-field rejection.
+- **Not deployed/applied to production yet:** migration remains in the implementation branch pending CI and review. No production schema, credentials, network sessions, entitlements, or gateway settings were changed.
+- **Still blocked intentionally:** MikroTik RouterOS credentials/protocol smoke test, signed gateway context and nonce/replay verification, GPS runtime proof, RADIUS server/shared-secret integration, gateway alternatives and ISP API contracts. No adapter is marked ready, so no network can activate partner access through this work.
+
 ## 9. Gate decision
 
 **PHASE 02 IS NOT PASSED.** Source provenance, database/RLS posture, API foundations, Auth entry flows, and some runtime/security gates are evidenced, but the expanded product/runtime integrations, isolated execution, transactional partner/admin operations, Captive Portal gateway integration, Native parity, and visual regression criteria remain incomplete. Phase 03 must not start until these blockers have evidence-backed closure.
