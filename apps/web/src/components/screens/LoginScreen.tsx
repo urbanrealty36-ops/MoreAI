@@ -5,7 +5,7 @@ import { MengguCharacter } from '../shared/MengguCharacter';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck } from 'lucide-react';
 
 interface LoginScreenProps {
-  onSuccess: (email: string, password: string) => void | Promise<void>;
+  onSuccess: (email: string, password: string, rememberEmail: boolean) => void | Promise<void>;
   onOAuth: (provider: 'google' | 'apple') => void;
   onForgotPassword: (email: string) => void;
   busy?: boolean;
@@ -30,9 +30,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
+  useEffect(() => {
+    const savedEmail = window.localStorage.getItem("moreai_login_email");
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
+  }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    void onSuccess(email, password);
+    void onSuccess(email, password, rememberMe);
   };
 
   return (
@@ -128,7 +136,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
                 onChange={(e) => setRememberMe(e.target.checked)}
                 className="w-4 h-4 rounded border-2 border-[#171717] accent-emerald-500"
               />
-              <span className="text-xs font-bold text-gray-700 dark:text-gray-300">Ingat saya</span>
+              <span className="text-xs font-bold text-gray-700 dark:text-gray-300">Ingat email</span>
             </label>
           </div>
 
