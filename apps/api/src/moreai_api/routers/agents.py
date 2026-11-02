@@ -64,9 +64,8 @@ async def create_run(
     idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
 ):
     user_id = str(UUID(str(claims.get("sub", ""))))
-    if (
-        not idempotency_key
-        or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{7,199}", idempotency_key)
+    if not idempotency_key or not re.fullmatch(
+        r"[A-Za-z0-9][A-Za-z0-9._:-]{7,199}", idempotency_key
     ):
         raise HTTPException(
             status_code=400,
@@ -127,7 +126,9 @@ async def create_run(
             {
                 "user_id": user_id,
                 "workspace_id": str(payload.workspace_id) if payload.workspace_id else None,
-                "conversation_id": str(payload.conversation_id) if payload.conversation_id else None,
+                "conversation_id": str(payload.conversation_id)
+                if payload.conversation_id
+                else None,
                 "agent_definition_id": definitions[0]["id"],
                 "status": "queued",
                 "idempotency_key": idempotency_key,
