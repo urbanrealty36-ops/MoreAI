@@ -91,6 +91,16 @@ The latest CI run on the Phase 02 branch head `a38a613fe6ee2d668f7593086bb4bf7a6
 
 Per owner instruction, no dedicated staging environment will be created. ADR-0003 records direct production release from merged `main`, while retaining the repository-required isolated branch and PR review. CI ephemeral verification is mandatory and must not touch production data. Production database resets, destructive migration replay, fixture seeding and tenant-negative mutation tests are prohibited. Production schema changes must be reviewed, backward-compatible where possible, and have a safe rollback/compensation plan. The worker deployment remains blocked until a supported production runtime target and runtime credentials are verified.
 
+## Network verification architecture decision
+
+- Owner decision recorded in [ADR-0004](../adr/ADR-0004-single-active-network-verification-integration.md): each partner network has exactly one active verification method.
+- Super Admin controls the available integration catalog and operational enablement; the partner chooses one method for its network.
+- Supported options are GPS/geolocation, Captive Portal gateway (initial adapter: MikroTik Hotspot), RADIUS, other gateway/controller adapters, and supported ISP APIs.
+- Only the selected adapter is invoked. No implicit hybrid execution or fallback is allowed. Invalid/unavailable configuration fails closed and is auditable.
+- Switching methods requires explicit validation and an atomic audited configuration transition.
+- MikroTik Hotspot is the first gateway adapter target, not a mandatory integration for every partner. GPS, RADIUS and ISP are independent adapters with separate requirements.
+- Acceptance tests must prove single-method enforcement, adapter dispatch, safe method switching, tenant isolation, replay protection for gateway context, and no silent fallback.
+
 ## 9. Gate decision
 
 **PHASE 02 IS NOT PASSED.** Source provenance, database/RLS posture, API foundations, Auth entry flows, and some runtime/security gates are evidenced, but the expanded product/runtime integrations, isolated execution, transactional partner/admin operations, Captive Portal gateway integration, Native parity, and visual regression criteria remain incomplete. Phase 03 must not start until these blockers have evidence-backed closure.
