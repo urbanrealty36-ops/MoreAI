@@ -19,7 +19,7 @@ Jika ada konflik, jangan menebak. Hentikan bagian yang konflik, buat ADR/permint
 - Jangan menganggap endpoint, tabel, secrets, deployment atau integrasi tersedia sebelum diverifikasi.
 
 ## 3. Struktur folder wajib
-Ikuti Bab 4.2 Master PRD: `apps/{web,mobile,admin,partner-portal,captive-portal,api,worker,browser-worker,python-sandbox}/`; `engine/{agents,orchestration,tools,memory,llm,credits,entitlements,subscriptions,network_partnership}/`; `packages/{ui-web,ui-native,design-tokens,icons,api-client,types,validation,localization}/`; `supabase/{migrations,functions,tests}/`; `vendor/{openmanusweb,reference-ui}/`; `docs/{architecture,adr,api,runbooks,source-migration}/`. Jangan membuat struktur alternatif atau database baru tanpa ADR disetujui.
+Ikuti Bab 4.2 Master PRD: `apps/{web,mobile,admin,partner-portal,captive-portal,api,worker,sandbox}/`; `engine/{agents,orchestration,tools,memory,llm,credits,entitlements,subscriptions,network_partnership}/`; `packages/{ui-web,ui-native,design-tokens,icons,api-client,types,validation,localization}/`; `supabase/{migrations,functions,tests}/`; `vendor/{openmanusweb,reference-ui}/`; `docs/{architecture,adr,api,runbooks,source-migration}/`. Jangan membuat struktur alternatif atau database baru tanpa ADR disetujui.
 
 ## 4. Source migration — copy first, adapt around it
 
@@ -57,7 +57,7 @@ Jangan menyalin secret, API key, .env privat, credentials, browser profile, pers
 - FastAPI adalah trust boundary: verifikasi JWT, role/permission, tenant membership, ownership, schema, rate limit, idempotency, policy dan audit sebelum akses data.
 - API versioned, OpenAPI typed, consistent error envelope, correlation ID dan structured logging.
 - Agent execution durable: persisted state, checkpoints, retry/cancel/resume, timeout, concurrency limits, event trace dan recovery.
-- Worker, browser automation dan Python sandbox berjalan terpisah dari API. Dilarang menjalankan arbitrary shell/Python pada API server.
+- Worker berada di `apps/worker`; runtime browser dan Python terisolasi berada di bawah `apps/sandbox` sesuai struktur Master PRD §4.2. Dilarang menjalankan arbitrary shell/Python pada API server.
 - Semua model invocation melalui server-side LLM Gateway + Model Router. Tidak ada direct provider call dari browser/mobile. Token/cost usage dicatat dan dikaitkan ke run/tenant/user.
 - Tool permissions least privilege; browser egress/SSRF controls; sandbox resource/network/filesystem limits.
 - Jangan menyatakan task sukses sebelum tool/output benar-benar diverifikasi.
