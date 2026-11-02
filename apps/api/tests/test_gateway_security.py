@@ -1,6 +1,6 @@
+import asyncio
 import hashlib
 import hmac
-import json
 import time
 
 from moreai_api.gateway import (
@@ -21,7 +21,11 @@ def test_gateway_signature_is_canonical_and_bound_to_payload():
         "nonce": "abcdefghijklmnopqrstuvwx",
     }
     secret = "x" * 48
-    signature = hmac.new(secret.encode(), canonical_gateway_payload(payload), hashlib.sha256).hexdigest()
+    signature = hmac.new(
+        secret.encode(),
+        canonical_gateway_payload(payload),
+        hashlib.sha256,
+    ).hexdigest()
     assert verify_gateway_signature(payload, signature, secret)
     assert verify_gateway_signature(payload, "sha256=" + signature, secret)
     assert not verify_gateway_signature({**payload, "network_id": "other"}, signature, secret)
@@ -54,10 +58,8 @@ def test_gateway_mac_address_validation():
 
 
 
-def test_routeros_credentials_require_https_and_secret(monkeypatch):
+def test_routeros_credentials_require_https_and_secret():
     from moreai_api.gateway import validate_mikrotik_credentials
-
-    import asyncio
 
     invalid_http = {
         "router_url": "http://router.example",
