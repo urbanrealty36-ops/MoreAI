@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, ConfigDict
 
 from moreai_api.auth import require_authenticated_user
-from moreai_api.db import select_rows
+from moreai_api.db import insert_rows, select_rows, update_rows
 
 router = APIRouter(prefix="/admin", tags=["super-admin"])
 UserClaims = Annotated[dict, Depends(require_authenticated_user)]
@@ -123,4 +124,62 @@ async def admin_network_policies(claims: UserClaims):
             "network_verification_configs",
             "select=id,network_id,method_key,config_public,enabled,policy&order=created_at.desc&limit=100",
         )
+    }
+
+
+
+class VerificationMethodAvailability(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    enabled: bool
+
+
+@router.get("/network-verification-methods")
+async def admin_network_verification_methods(claims: UserClaims):
+    await _require_permission(claims, "network.verification.read")
+    return {
+        "items": await select_rows(
+            "network_verification_method_catalog",
+            "select=method_key,display_name,adapter_key,enabled,adapter_ready,requires_secret,setup_requirements&order=display_name",
+        )
+    }
+
+
+@router.patch("/network-verification-methods/{method_key}")
+async def set_network_verification_method_availability(
+    claims: UserClaims,
+    method_key: Literal["gps", "mikrotik_hotspot", "radius", "gateway", "isp_api"],
+    payload: VerificationMethodAvailability,
+):
+    await _require_permission(claims, "network.verification.manage")
+    current = await select_rows(
+        "network_verification_method_catalog",
+        "select=method_key,enabled,adapter_ready&method_key=eq." + method_key,
+    )
+    if not current:
+        raise HTTPException(status_code=404, detail="Verification method not found")
+    changed = await update_rows(
+        "network_verification_method_catalog",
+        "method_key=eq." + method_key,
+        {"enabled": payload.enabled, "updated_at": datetime.now(timezone.utc).isoformat()},
+    )
+    actor = str(UUID(str(claims.get("sub", ""))))
+    await insert_rows(
+        "admin_audit_logs",
+        {
+            "actor_user_id": actor,
+            "action": "network.verification_method.availability_changed",
+            "resource_type": "network_verification_method",
+            "resource_id": method_key,
+            "scope_type": "platform",
+            "outcome": "success",
+            "metadata": {
+                "enabled": payload.enabled,
+                "adapter_ready": bool(current[0].get("adapter_ready")),
+            },
+        },
+    )
+    return {
+        "item": changed[0] if changed else {**current[0], "enabled": payload.enabled},
+        "activated": False,
+        "message": "Catalog availability changed. This does not mark an adapter ready or activate any partner network.",
     }
