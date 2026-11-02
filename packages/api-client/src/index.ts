@@ -72,6 +72,9 @@ export function createApiClient(options: ApiClientOptions) {
       audit: () => get<Collection<unknown>>("/api/v1/admin/audit"),
       verificationMethods: () => get<Collection<VerificationMethod>>("/api/v1/admin/network-verification-methods"),
       setVerificationMethodAvailability: (methodKey: VerificationMethodKey, enabled: boolean) => patch<Record<string,unknown>>(`/api/v1/admin/network-verification-methods/${methodKey}`, {enabled}),
+      networkPolicies: () => get<Collection<any>>("/api/v1/admin/network-policies"),
+      setMikrotikSecretReference: (networkId: string, secretReference: string) => request<Record<string,unknown>>(`/api/v1/admin/networks/${networkId}/mikrotik-secret-reference`, {method:"PUT",body:JSON.stringify({secret_reference:secretReference})}),
+      validateMikrotikCredentials: (networkId: string) => post<Record<string,unknown>>(`/api/v1/admin/networks/${networkId}/mikrotik-credentials/validate`),
     },
     network: {
       context: () => get<Record<string, unknown>>("/api/v1/network/portal-context"),
