@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import ipaddress
 import hmac
 import json
 import re
@@ -49,6 +50,14 @@ def valid_nonce(nonce: str) -> bool:
     return bool(re.fullmatch(r"[A-Za-z0-9_-]{22,128}", nonce))
 
 
+def valid_ip_address(value: str) -> bool:
+    try:
+        address = ipaddress.ip_address(value)
+    except ValueError:
+        return False
+    return not address.is_unspecified and not address.is_multicast
+
+
 def valid_mac_address(value: str) -> bool:
     return bool(re.fullmatch(r"(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}", value))
 
@@ -92,3 +101,30 @@ async def verify_mikrotik_active_session(bundle: dict[str, Any], payload: dict[s
         and item.get("server") == expected_server
         for item in sessions
     )
+
+
+
+async def validate_mikrotik_credentials(bundle: dict[str, Any]) -> bool:
+    router_url = str(bundle.get("router_url", "")).rstrip("/")
+    parsed = urlsplit(router_url)
+    username = bundle.get("username")
+    password = bundle.get("password")
+    if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+        return False
+    if not isinstance(username, str) or not username or not isinstance(password, str) or not password:
+        return False
+    if not isinstance(bundle.get("hmac_secret"), str) or len(bundle["hmac_secret"].encode()) < 32:
+        return False
+    try:
+        async with httpx.AsyncClient(
+            timeout=httpx.Timeout(settings.network_gateway_request_timeout_seconds, connect=3.0),
+            verify=True,
+            follow_redirects=False,
+            auth=(username, password),
+        ) as client:
+            response = await client.get(f"{router_url}/rest/system/resource")
+            response.raise_for_status()
+            data = response.json()
+        return isinstance(data, dict) and bool(data.get("version")) and bool(data.get("board-name"))
+    except (httpx.HTTPError, ValueError):
+        return False
