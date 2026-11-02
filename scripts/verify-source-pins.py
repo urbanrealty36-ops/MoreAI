@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Verify file-level source mirrors against the audited upstream manifest."""
+"""Verify the committed vendor Git objects against the audited file-level inventory."""
 from __future__ import annotations
 
 import csv
-import hashlib
 import json
 import subprocess
 from pathlib import Path
@@ -17,27 +16,30 @@ SOURCE_PATHS = {
 }
 
 
-def sha(path: Path) -> str:
-    return subprocess.check_output(["git", "hash-object", "--path=" + str(path.relative_to(ROOT)), str(path)], cwd=ROOT, text=True).strip()
+def git(*args: str) -> str:
+    return subprocess.check_output(["git", *args], cwd=ROOT, text=True).strip()
 
 
 def main() -> None:
     if not ROWS:
         raise SystemExit("Source inventory is empty")
-    report_path = ROOT / "docs/source-migration/source-mirror-verification.json"
-    report = json.loads(report_path.read_text())
+    report = json.loads((ROOT / "docs/source-migration/source-mirror-verification.json").read_text())
     if report.get("verification") != "passed" or report.get("files_verified") != len(ROWS):
         raise SystemExit("Source mirror verification report is missing or incomplete")
     for row in ROWS:
-        path = ROOT / SOURCE_PATHS[row["source_repo"]] / row["source_path"]
-        if not path.is_file():
-            raise SystemExit(f"Missing source file: {path}")
-        if path.stat().st_size != int(row["bytes"]) or sha(path) != row["blob_sha"]:
-            raise SystemExit(f"Source hash/size mismatch: {path}")
+        prefix = SOURCE_PATHS[row["source_repo"]]
+        path = f"{prefix}/{row['source_path']}"
+        actual_sha = git("rev-parse", f"HEAD:{path}")
+        actual_size = int(git("cat-file", "-s", f"HEAD:{path}"))
+        if actual_sha != row["blob_sha"] or actual_size != int(row["bytes"]):
+            raise SystemExit(
+                f"Committed source mismatch: {path}: "
+                f"sha={actual_sha}/{row['blob_sha']}, size={actual_size}/{row['bytes']}"
+            )
     for name, rel in SOURCE_PATHS.items():
         pin = next(x for x in PINS["sources"] if x["vendor_path"] == rel)
         print(f"OK {name}: {pin['commit']} ({sum(1 for r in ROWS if r['source_repo'] == name)} files)")
-    print(f"Verified {len(ROWS)} source files against Git blob SHA and byte size.")
+    print(f"Verified {len(ROWS)} committed vendor blobs against upstream SHA and byte size.")
 
 
 if __name__ == "__main__":
