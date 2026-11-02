@@ -1,1 +1,31 @@
-{"name":"moreai","private":true,"packageManager":"pnpm@10.20.0","engines":{"node":">=22","pnpm":">=10"},"scripts":{"build":"turbo run build","dev":"turbo run dev --parallel","lint":"turbo run lint","typecheck":"turbo run typecheck","test":"turbo run test","format":"prettier --write .","format:check":"prettier --check ."},"devDependencies":{"prettier":"3.6.2","turbo":"2.5.8","typescript":"5.9.3"}}
+{
+  "name": "moreai",
+  "private": true,
+  "packageManager": "pnpm@10.20.0",
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "pnpm": {
+    "overrides": {
+      "postcss": ">=8.5.18",
+      "sharp": ">=0.35.5",
+      "image-size": ">=2.0.3",
+      "decode-uri-component": ">=0.5.1"
+    }
+  },
+  "devDependencies": {
+    "prettier": "3.6.2",
+    "turbo": "2.5.8",
+    "typescript": "5.9.3"
+  }
+}

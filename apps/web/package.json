@@ -13,7 +13,7 @@
   "dependencies": {
     "@moreai/api-client": "workspace:*",
     "@moreai/types": "workspace:*",
-    "next": "15.4.9",
+    "next": "15.5.28",
     "react": "19.2.1",
     "react-dom": "19.2.1"
   },
