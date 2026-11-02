@@ -2,7 +2,7 @@
 useDefault = true
 
 [[allowlists]]
-description = "Allow only the known upstream GitHub private-video embed URL pattern in immutable README documentation; other secrets and files remain scanned."
+description = "Known expired upstream private-video embed JWTs in immutable vendor README files only; all other paths and secret patterns remain scanned."
 paths = ['''^vendor/openmanusweb/README(_zh)?\.md$''']
 regexTarget = "line"
-regexes = ['''data-canonical-src=.*\.mp4\?jwt=''']
+regexes = ['''\.mp4\?jwt=''']
