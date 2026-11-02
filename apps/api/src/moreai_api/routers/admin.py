@@ -236,7 +236,7 @@ async def validate_network_mikrotik_credentials(claims: UserClaims, network_id: 
     await _require_permission(claims, "network.verification.manage")
     networks = await select_rows(
         "partner_networks",
-        "select=id,active_verification_method& id=eq." + str(network_id),
+        "select=id,active_verification_method&id=eq." + str(network_id),
     )
     if not networks or networks[0].get("active_verification_method") != "mikrotik_hotspot":
         raise HTTPException(status_code=409, detail="MikroTik must be the selected method for this network")
