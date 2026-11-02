@@ -5,24 +5,36 @@ import { MengguCharacter } from '../shared/MengguCharacter';
 import { User, Mail, Lock, Eye, EyeOff, Check, ArrowRight } from 'lucide-react';
 
 interface RegisterScreenProps {
-  onSuccess: (name: string, email: string) => void;
+  onSuccess: (name: string, email: string, password: string) => void | Promise<void>;
+  busy?: boolean;
+  error?: string;
+  notice?: string;
   onGoToLogin: () => void;
 }
 
 export const RegisterScreen: React.FC<RegisterScreenProps> = ({
   onSuccess,
   onGoToLogin,
+  busy = false,
+  error,
+  notice,
 }) => {
-  const [name, setName] = useState('Budi Santoso');
-  const [email, setEmail] = useState('budi@moreai.id');
-  const [password, setPassword] = useState('••••••••');
-  const [confirmPassword, setConfirmPassword] = useState('••••••••');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [validationError, setValidationError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [agreeTerms, setAgreeTerms] = useState(true);
+  const [agreeTerms, setAgreeTerms] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSuccess(name, email);
+    if (password !== confirmPassword) {
+      setValidationError('Konfirmasi kata sandi tidak sama.');
+      return;
+    }
+    setValidationError('');
+    void onSuccess(name, email, password);
   };
 
   return (
@@ -51,10 +63,13 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
             Buat Akun MoreAI
           </h1>
           <p className="text-xs text-gray-600 dark:text-gray-400 font-medium mt-0.5">
-            Mulai perjalanan AI kamu dan dapatkan 100 AI Credit pertama.
+            Mulai perjalanan AI kamu dengan Workspace dan Agent MoreAI.
           </p>
         </div>
 
+        {error && <p role="alert" className="mb-3 rounded-xl border-2 border-[#171717] bg-[#F9D8E5] p-3 text-xs font-bold text-[#7D1F35]">{error}</p>}
+        {validationError && <p role="alert" className="mb-3 rounded-xl border-2 border-[#171717] bg-[#F9D8E5] p-3 text-xs font-bold text-[#7D1F35]">{validationError}</p>}
+        {notice && <p role="status" className="mb-3 rounded-xl border-2 border-[#171717] bg-[#C9F2D5] p-3 text-xs font-bold text-[#174E2C]">{notice}</p>}
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <label className="text-xs font-black text-[#171717] dark:text-[#F7F4EC] block mb-1">
@@ -140,9 +155,10 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({
 
           <button
             type="submit"
-            className="w-full neo-btn bg-[#C9F2D5] hover:bg-[#b0f0bf] text-[#171717] py-3 text-xs font-black mt-2 neo-shadow text-sm"
+            disabled={busy}
+            className="w-full neo-btn bg-[#C9F2D5] hover:bg-[#b0f0bf] text-[#171717] py-3 text-xs font-black mt-2 neo-shadow text-sm disabled:opacity-50"
           >
-            Daftar Sekarang
+            {busy ? 'Memproses…' : 'Daftar Sekarang'}
           </button>
         </form>
       </div>
