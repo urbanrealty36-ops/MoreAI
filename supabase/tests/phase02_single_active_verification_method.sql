@@ -37,3 +37,25 @@ begin
   end if;
 end;
 $$;
+
+
+  if not exists (
+    select 1 from pg_class c join pg_namespace n on n.oid=c.relnamespace
+    where n.nspname='public' and c.relname='network_gateway_nonces' and c.relrowsecurity
+  ) then
+    raise exception 'gateway nonce table must have RLS enabled';
+  end if;
+
+  if has_table_privilege('anon','public.network_gateway_nonces','SELECT')
+     or has_table_privilege('authenticated','public.network_gateway_nonces','INSERT') then
+    raise exception 'client roles must not access gateway nonce storage';
+  end if;
+
+  if has_function_privilege('anon','public.consume_network_gateway_nonce(uuid,text,timestamp with time zone)','EXECUTE')
+     or has_function_privilege('authenticated','public.consume_network_gateway_nonce(uuid,text,timestamp with time zone)','EXECUTE') then
+    raise exception 'client roles must not consume gateway nonces';
+  end if;
+
+  if not has_function_privilege('service_role','public.consume_network_gateway_nonce(uuid,text,timestamp with time zone)','EXECUTE') then
+    raise exception 'service_role must consume gateway nonces';
+  end if;
