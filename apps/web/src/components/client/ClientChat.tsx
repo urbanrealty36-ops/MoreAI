@@ -44,7 +44,7 @@ export const ClientChat: React.FC<ClientChatProps> = ({
 }) => {
   const [subTab, setSubTab] = useState<'chat' | 'workflow' | 'proyek'>('chat');
   const [selectedAgent, setSelectedAgent] = useState<'content' | 'research' | 'data' | 'general'>('content');
-  const [selectedModel, setSelectedModel] = useState<string>('gemini-2.5-flash');
+  const [selectedModel, setSelectedModel] = useState<string>('');
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -54,31 +54,7 @@ export const ClientChat: React.FC<ClientChatProps> = ({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'msg-1',
-      sender: 'user',
-      text: 'Buatkan rencana konten promosi kafe selama 1 bulan.',
-      timestamp: '10:24',
-    },
-    {
-      id: 'msg-2',
-      sender: 'assistant',
-      text: 'Berikut rencana konten promosi kafe selama 1 bulan dengan 4 tema utama, lengkap dengan ide konten harian, format, dan caption singkat. 🌟\n\n• Minggu 1: Signature Coffee & Bean Origin\n• Minggu 2: Suasana Co-Working & Komunitas\n• Minggu 3: Menu Pastry & Promo Bundle Sore\n• Minggu 4: Testimoni Pengunjung & Event Musik Akustik',
-      timestamp: '10:25',
-      hasAgentWorkflow: true,
-      steps: [
-        { name: 'Menganalisis profil target pengunjung kafe', status: 'completed' },
-        { name: 'Menyusun kalender editorial 4 minggu', status: 'completed' },
-        { name: 'Menyiapkan rekomendasi hook & visual asset', status: 'completed' },
-      ],
-      artifact: {
-        title: 'Rencana Konten Kafe (30 Hari)',
-        type: 'Kalender Editorial & Caption',
-        summary: '30 ide konten, format Reels/Carousels, dan copywriting siap posting.',
-      },
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -135,7 +111,7 @@ export const ClientChat: React.FC<ClientChatProps> = ({
         });
         const data = await api.llm.generate(
           { prompt: textToSend, model: selectedModel, max_output_tokens: 2048 },
-          crypto.randomUUID(),
+          `chat:${userMsg.id}`,
         );
         const botResponse = data.text;
 
@@ -160,7 +136,7 @@ export const ClientChat: React.FC<ClientChatProps> = ({
         setIsLoading(false);
       }
     },
-    [isLoading, onDeductCredit, selectedModel, selectedAgent]
+    [isLoading, selectedModel, selectedAgent]
   );
 
   // If initialPrompt was passed from home quick actions, send it
@@ -239,10 +215,7 @@ export const ClientChat: React.FC<ClientChatProps> = ({
               onChange={(e) => setSelectedModel(e.target.value)}
               className="w-full text-[11px] font-black bg-[#C9F2D5] text-[#171717] border-2 border-[#171717] rounded-xl px-2.5 py-1.5 appearance-none pr-6 cursor-pointer neo-shadow-sm outline-none"
             >
-              <option value="gemini-2.5-flash">MoreAI F.01 (Cepat & Cerdas)</option>
-              <option value="gemini-2.5-pro">MoreAI F.01 Pro (Reasoning & Riset)</option>
-              <option value="gemini-2.5-flash-lite">MoreAI F.01 Speed (Ultra Cepat)</option>
-              <option value="gemini-2.5-flash">MoreAI F.01 Vision (Multimodal)</option>
+              <option value="">MoreAI F.01 · Auto Router</option>
             </select>
             <ChevronDown className="w-3.5 h-3.5 text-[#171717] absolute right-2 top-2.5 pointer-events-none" />
           </div>

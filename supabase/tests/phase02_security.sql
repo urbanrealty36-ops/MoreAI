@@ -1,0 +1,12 @@
+begin;
+select plan(8);
+select has_table('public','llm_request_records','durable LLM request ledger exists');
+select ok((select relrowsecurity from pg_class where oid='public.llm_request_records'::regclass),'LLM request records have RLS enabled');
+select ok(not has_table_privilege('authenticated','public.llm_request_records','SELECT'),'authenticated clients cannot read internal LLM request records');
+select ok(has_table_privilege('service_role','public.llm_request_records','SELECT'),'service role can reconcile LLM requests');
+select ok(not has_function_privilege('authenticated','public.moreai_llm_claim_request(uuid,uuid,text,text)','EXECUTE'),'authenticated cannot claim internal LLM requests');
+select ok(has_function_privilege('service_role','public.moreai_llm_finalize_request(uuid,numeric,text,text)','EXECUTE'),'worker can finalize LLM settlement');
+select ok(exists(select 1 from pg_indexes where schemaname='public' and tablename='agent_runs' and indexname='agent_runs_user_id_idempotency_key_key'),'agent run idempotency is uniquely indexed per user');
+select ok(exists(select 1 from pg_trigger where tgrelid='public.credit_ledger'::regclass and not tgisinternal),'credit ledger has an immutability trigger');
+select * from finish();
+rollback;

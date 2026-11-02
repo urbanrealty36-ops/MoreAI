@@ -170,23 +170,23 @@ export const ManusAgentWorkflowView: React.FC<AgentWorkflowProps> = ({
 
           {/* Action state controls */}
           <div className="flex items-center gap-2">
-            {taskStatus === 'WAITING_APPROVAL' && (
+            {['CREATED', 'FAILED', 'CANCELLED', 'EXPIRED', 'WAITING_APPROVAL'].includes(taskStatus) && (
               <button
                 onClick={handleApprovePlan}
                 className="neo-btn bg-[#C9F2D5] hover:bg-[#b0f0bf] text-[#171717] px-3.5 py-1.5 text-xs font-black flex items-center gap-1.5"
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
-                <span>Setujui & Jalankan</span>
+                <span>Jalankan Agent</span>
               </button>
             )}
 
-            {taskStatus === 'RUNNING' && (
+            {(taskStatus === 'RUNNING' || taskStatus === 'QUEUED') && (
               <button
                 onClick={handleCancel}
                 className="neo-btn bg-[#FBE7B2] hover:bg-[#f6deb1] text-[#171717] px-3 py-1.5 text-xs font-black flex items-center gap-1.5"
               >
                 <Pause className="w-3.5 h-3.5 fill-current" />
-                <span>Jeda Tugas</span>
+                <span>Batalkan Tugas</span>
               </button>
             )}
 
