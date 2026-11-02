@@ -1,0 +1,1 @@
+node_modules/\n.pnpm-store/\n.turbo/\n.next/\ndist/\nbuild/\ncoverage/\n.venv/\n__pycache__/\n*.py[cod]\n.pytest_cache/\n.mypy_cache/\n.ruff_cache/\n.env\n.env.*\n!.env.example\n!.env.*.example\n.DS_Store\n*.log\n
