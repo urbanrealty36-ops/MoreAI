@@ -134,7 +134,10 @@ async def select_network_verification_method(
     claims: UserClaims, network_id: UUID, payload: VerificationMethodSelection
 ):
     networks = await list_networks(claims)
-    network = next((item for item in networks["items"] if item["id"] == str(network_id)), None)
+    network = next(
+        (item for item in networks["items"] if item["id"] == str(network_id)),
+        None,
+    )
     if not network:
         raise HTTPException(status_code=404, detail="Network not found")
     catalog = await select_rows(
@@ -144,7 +147,10 @@ async def select_network_verification_method(
     if not catalog or not catalog[0]["enabled"]:
         raise HTTPException(
             status_code=409,
-            detail={"code": "VERIFICATION_METHOD_NOT_AVAILABLE", "message": "This method is not enabled by platform operations."},
+            detail={
+                "code": "VERIFICATION_METHOD_NOT_AVAILABLE",
+                "message": "This method is not enabled by platform operations.",
+            },
         )
     allowed_config_keys = {
         "gps": {"radius_meters", "max_accuracy_meters"},
@@ -167,7 +173,10 @@ async def select_network_verification_method(
     ):
         raise HTTPException(
             status_code=422,
-            detail={"code": "INVALID_PUBLIC_CONFIG", "message": "Configuration values must be short scalar values."},
+            detail={
+                "code": "INVALID_PUBLIC_CONFIG",
+                "message": "Configuration values must be short scalar values.",
+            },
         )
     result = await rpc(
         "set_network_verification_method",
@@ -180,7 +189,10 @@ async def select_network_verification_method(
     return {
         **(result if isinstance(result, dict) else {}),
         "activated": False,
-        "message": "Method selected. Integration remains inactive until adapter readiness and production credentials are verified.",
+        "message": (
+            "Method selected. Integration remains inactive until adapter readiness "
+            "and production credentials are verified."
+        ),
     }
 
 
