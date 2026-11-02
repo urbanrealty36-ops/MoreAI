@@ -167,6 +167,17 @@ async def select_network_verification_method(
                 "message": "Only documented non-secret configuration fields are accepted.",
             },
         )
+    if (
+        payload.method_key == "mikrotik_hotspot"
+        and not str(payload.config_public.get("gateway_id", "")).strip()
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "MIKROTIK_GATEWAY_ID_REQUIRED",
+                "message": "Gateway ID is required for MikroTik Hotspot.",
+            },
+        )
     if any(
         not isinstance(value, (str, int, float, bool)) or len(str(value)) > 160
         for value in payload.config_public.values()
