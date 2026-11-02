@@ -5,7 +5,12 @@ import { MengguCharacter } from '../shared/MengguCharacter';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck } from 'lucide-react';
 
 interface LoginScreenProps {
-  onSuccess: (name: string, email: string) => void;
+  onSuccess: (email: string, password: string) => void | Promise<void>;
+  onOAuth: (provider: 'google' | 'apple') => void;
+  onForgotPassword: (email: string) => void;
+  busy?: boolean;
+  error?: string;
+  notice?: string;
   onGoToRegister: () => void;
   onBackToOnboarding: () => void;
 }
@@ -14,15 +19,20 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   onSuccess,
   onGoToRegister,
   onBackToOnboarding,
+  onOAuth,
+  onForgotPassword,
+  busy = false,
+  error,
+  notice,
 }) => {
-  const [email, setEmail] = useState('budi@moreai.id');
-  const [password, setPassword] = useState('••••••••');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSuccess('Budi Santoso', email);
+    void onSuccess(email, password);
   };
 
   return (
@@ -56,7 +66,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           </p>
         </div>
 
-        {/* Input Form */}
+        {error && <p role="alert" className="mb-3 rounded-xl border-2 border-[#171717] bg-[#F9D8E5] p-3 text-xs font-bold text-[#7D1F35]">{error}</p>}
+      {notice && <p role="status" className="mb-3 rounded-xl border-2 border-[#171717] bg-[#C9F2D5] p-3 text-xs font-bold text-[#174E2C]">{notice}</p>}
+
+      {/* Input Form */}
         <form onSubmit={handleSubmit} className="space-y-3.5">
           <div>
             <label className="text-xs font-black text-[#171717] dark:text-[#F7F4EC] block mb-1">
@@ -82,7 +95,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               </label>
               <button
                 type="button"
-                onClick={() => alert('Tautan reset sandi telah dikirim ke email terdaftar.')}
+                onClick={() => onForgotPassword(email)}
                 className="text-[10px] font-bold text-gray-500 hover:text-black hover:underline"
               >
                 Lupa kata sandi?
@@ -121,9 +134,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
           <button
             type="submit"
-            className="w-full neo-btn bg-[#C9F2D5] hover:bg-[#b0f0bf] text-[#171717] py-3 text-xs font-black mt-2 neo-shadow text-sm"
+            disabled={busy}
+            className="w-full neo-btn bg-[#C9F2D5] hover:bg-[#b0f0bf] text-[#171717] py-3 text-xs font-black mt-2 neo-shadow text-sm disabled:opacity-50"
           >
-            Masuk
+            {busy ? 'Memproses…' : 'Masuk'}
           </button>
         </form>
 
@@ -134,14 +148,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           </p>
           <div className="grid grid-cols-2 gap-2">
             <button
-              onClick={() => onSuccess('Google User', 'budi@gmail.com')}
-              className="neo-btn bg-white dark:bg-[#232522] text-xs py-2 flex items-center justify-center gap-2"
+              onClick={() => onOAuth('google')}
+              disabled={busy}
+              className="neo-btn bg-white dark:bg-[#232522] text-xs py-2 flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <span className="font-black text-red-500">G</span>
               <span className="font-bold">Google</span>
             </button>
             <button
-              onClick={() => onSuccess('Apple User', 'budi@icloud.com')}
+              onClick={() => onOAuth('apple')}
               className="neo-btn bg-white dark:bg-[#232522] text-xs py-2 flex items-center justify-center gap-2"
             >
               <span className="font-black"></span>
