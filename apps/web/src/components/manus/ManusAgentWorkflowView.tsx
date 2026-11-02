@@ -26,9 +26,14 @@ import {
   Cpu,
 } from 'lucide-react';
 import { MengguCharacter } from '../shared/MengguCharacter';
+import { getMoreAIApi } from '../../lib/api';
 
 type TaskStatus =
   | 'CREATED'
+  | 'QUEUED'
+  | 'FAILED'
+  | 'CANCELLED'
+  | 'EXPIRED'
   | 'PLANNING'
   | 'WAITING_APPROVAL'
   | 'RUNNING'
@@ -52,110 +57,91 @@ export const ManusAgentWorkflowView: React.FC<AgentWorkflowProps> = ({
   initialGoal,
   isEmbedded = false,
 }) => {
-  const [taskStatus, setTaskStatus] = useState<TaskStatus>('WAITING_APPROVAL');
-  const [currentStepIndex, setCurrentStepIndex] = useState(1);
+  const [taskStatus, setTaskStatus] = useState<TaskStatus>('CREATED');
+  const [currentStepIndex] = useState(0);
+  const [runId, setRunId] = useState<string | null>(null);
   const [activePane, setActivePane] = useState<'plan' | 'browser' | 'terminal' | 'artifacts'>('plan');
   const [promptInput, setPromptInput] = useState(
     initialGoal ||
       'Riset pasar kedai kopi lokal 2026, analisis kompetitor di Kemang, dan buatkan proyeksi margin serta dokumen strategi 30 hari.'
   );
 
-  const [steps, setSteps] = useState<PlanStep[]>([
-    {
-      id: 1,
-      title: 'Dekomposisi Masalah & Rencana Riset',
-      tool: 'search',
-      status: 'completed',
-      detail: 'Menentukan 5 target kafe kompetitor utama di area Kemang & Jakarta Selatan.',
-    },
-    {
-      id: 2,
-      title: 'Scraping Data Menu & Harga Kompetitor',
-      tool: 'browser',
-      status: 'running',
-      detail: 'Browser Worker mengunjungi situs publik & mengekstrak harga kopi signature.',
-    },
-    {
-      id: 3,
-      title: 'Kalkulasi Unit Economics dengan Python',
-      tool: 'python',
-      status: 'waiting',
-      detail: 'Menjalankan skrip Python di isolated container untuk menghitung COGS dan margin laba.',
-    },
-    {
-      id: 4,
-      title: 'Kompilasi Dokumen & Artefak Strategi',
-      tool: 'file',
-      status: 'pending',
-      detail: 'Membuat dokumen strategi 30 hari dan berkas laporan analitik.',
-    },
-  ]);
+  const [steps] = useState<PlanStep[]>([]);
 
-  const [terminalLogs, setTerminalLogs] = useState<string[]>([
-    '[SYSTEM] MoreAI Agent Engine v1.0 initialized.',
-    '[PLANNER] Generating 4-step execution task graph...',
-    '[TOOL:SEARCH] Google Search Connector: query "coffee shop kemang price benchmark 2026"',
-    '[TOOL:SEARCH] 12 data points retrieved from public index.',
-    '[TOOL:BROWSER] Launching isolated Chromium sandbox (PID: 4092)...',
-    '[TOOL:BROWSER] Navigating to https://competitor-benchmark.local/kemang',
-    '[TOOL:BROWSER] Extracted: Americano Rp28k, Latte Rp38k, V60 Single Origin Rp45k',
-  ]);
+  const [terminalLogs, setTerminalLogs] = useState<string[]>([]);
 
-  const [artifacts, setArtifacts] = useState([
-    {
-      name: 'strategi_pemasaran_kafe_30hari.md',
-      type: 'Markdown Document',
-      size: '14.2 KB',
-      summary: 'Kalender editorial 4 minggu, rekomendasi bundling menu, dan proyeksi omset.',
-    },
-    {
-      name: 'proyeksi_unit_economics.py',
-      type: 'Python Script',
-      size: '3.8 KB',
-      summary: 'Model kalkulasi margin laba kotor dan titik impas (break-even point).',
-    },
-  ]);
+  const artifacts: { name: string; type: string; size: string; summary: string }[] = [];
 
-  // Simulate execution progress
-  const handleApprovePlan = () => {
-    setTaskStatus('RUNNING');
-    setActivePane('browser');
+  const refreshRun = async (id: string) => {
+    const response = await getMoreAIApi().agents.get(id);
+    const status = response.run.status;
+    const mapped: TaskStatus = status === "succeeded" ? "COMPLETED"
+      : status === "failed" ? "FAILED"
+      : status === "cancelled" ? "CANCELLED"
+      : status === "expired" ? "EXPIRED"
+      : status === "running" ? "RUNNING" : "QUEUED";
+    setTaskStatus(mapped);
+    setTerminalLogs([
+      `[API] Run ${response.run.id}`,
+      `[STATE] ${response.run.status} · attempt ${response.run.attempt}/${response.run.max_attempts}`,
+      ...(response.run.error ? [`[ERROR] ${JSON.stringify(response.run.error)}`] : []),
+    ]);
+  };
 
-    setTimeout(() => {
-      setTerminalLogs((prev) => [
-        ...prev,
-        '[APPROVAL] User approved step execution.',
-        '[TOOL:PYTHON] Starting Python 3.11 sandbox container...',
-        '[TOOL:PYTHON] Executing margin calculation script...',
-        '[TOOL:PYTHON] Output: Average Gross Margin = 68.4%, BEP = 42 cups/day.',
-      ]);
-      setSteps((prev) =>
-        prev.map((s) => (s.id === 2 ? { ...s, status: 'completed' } : s.id === 3 ? { ...s, status: 'running' } : s))
+  useEffect(() => {
+    let active = true;
+    getMoreAIApi().agents.list()
+      .then(({ items }) => {
+        if (!active || items.length === 0) return;
+        setRunId(items[0].id);
+        void refreshRun(items[0].id);
+      })
+      .catch((error) => {
+        if (active) setTerminalLogs([`[API ERROR] ${error instanceof Error ? error.message : "Unable to load agent runs"}`]);
+      });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!runId || !["QUEUED", "RUNNING"].includes(taskStatus)) return;
+    const timer = window.setInterval(() => {
+      void refreshRun(runId).catch((error) => {
+        setTerminalLogs((items) => [...items, `[API ERROR] ${error instanceof Error ? error.message : "Polling failed"}`]);
+      });
+    }, 2500);
+    return () => window.clearInterval(timer);
+  }, [runId, taskStatus]);
+
+  const handleApprovePlan = async () => {
+    setTerminalLogs(["[API] Submitting agent run to FastAPI…"]);
+    try {
+      const result = await getMoreAIApi().agents.create(
+        { prompt: promptInput, agent_key: "manus" },
+        crypto.randomUUID(),
       );
-      setCurrentStepIndex(2);
-    }, 1800);
+      setRunId(result.run.id);
+      setTaskStatus(result.run.status === "running" ? "RUNNING" : "QUEUED");
+      setTerminalLogs([`[API] Run ${result.run.id} accepted.`, "[WORKER] Waiting for a durable worker lease."]);
+      setActivePane("terminal");
+    } catch (error) {
+      setTaskStatus("FAILED");
+      setTerminalLogs([`[API ERROR] ${error instanceof Error ? error.message : "Agent run could not be queued"}`]);
+    }
+  };
 
-    setTimeout(() => {
-      setSteps((prev) =>
-        prev.map((s) => (s.id === 3 ? { ...s, status: 'completed' } : s.id === 4 ? { ...s, status: 'completed' } : s))
-      );
-      setTaskStatus('COMPLETED');
-      setActivePane('artifacts');
-      setTerminalLogs((prev) => [
-        ...prev,
-        '[FILE_SAVER] Saved artifact: strategi_pemasaran_kafe_30hari.md',
-        '[STATE] Checkpoint written to Supabase task repository.',
-        '[COMPLETED] All 4 steps executed successfully. Budget used: 45 credits.',
-      ]);
-    }, 3800);
+  const handleCancel = async () => {
+    if (!runId) return;
+    try {
+      await getMoreAIApi().agents.cancel(runId);
+      setTaskStatus("CANCELLED");
+      setTerminalLogs((items) => [...items, "[API] Cancellation requested."]);
+    } catch (error) {
+      setTerminalLogs((items) => [...items, `[API ERROR] ${error instanceof Error ? error.message : "Cancellation failed"}`]);
+    }
   };
 
   const handleReset = () => {
-    setTaskStatus('WAITING_APPROVAL');
-    setActivePane('plan');
-    setSteps((prev) =>
-      prev.map((s) => (s.id === 1 ? { ...s, status: 'completed' } : s.id === 2 ? { ...s, status: 'running' } : { ...s, status: 'pending' }))
-    );
+    void handleApprovePlan();
   };
 
   return (
@@ -196,7 +182,7 @@ export const ManusAgentWorkflowView: React.FC<AgentWorkflowProps> = ({
 
             {taskStatus === 'RUNNING' && (
               <button
-                onClick={() => setTaskStatus('WAITING_APPROVAL')}
+                onClick={handleCancel}
                 className="neo-btn bg-[#FBE7B2] hover:bg-[#f6deb1] text-[#171717] px-3 py-1.5 text-xs font-black flex items-center gap-1.5"
               >
                 <Pause className="w-3.5 h-3.5 fill-current" />
