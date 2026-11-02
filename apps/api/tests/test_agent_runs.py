@@ -7,7 +7,9 @@ client = TestClient(app)
 
 
 def test_agent_run_requires_idempotency_key():
-    app.dependency_overrides[require_authenticated_user] = lambda: {"sub": "00000000-0000-0000-0000-000000000001"}
+    app.dependency_overrides[require_authenticated_user] = lambda: {
+        "sub": "00000000-0000-0000-0000-000000000001"
+    }
     try:
         response = client.post("/api/v1/agents/runs", json={"prompt": "test"})
         assert response.status_code == 400

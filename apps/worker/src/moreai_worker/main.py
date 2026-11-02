@@ -47,15 +47,9 @@ class WorkerConfig:
             api_base_url=api_base_url,
             worker_token=worker_token,
             poll_seconds=max(0.5, float(os.getenv("WORKER_POLL_SECONDS", "2"))),
-            lease_seconds=max(
-                15, min(900, int(os.getenv("WORKER_LEASE_SECONDS", "90")))
-            ),
-            heartbeat_seconds=max(
-                5, int(os.getenv("WORKER_HEARTBEAT_SECONDS", "20"))
-            ),
-            max_concurrency=max(
-                1, min(32, int(os.getenv("WORKER_MAX_CONCURRENCY", "4")))
-            ),
+            lease_seconds=max(15, min(900, int(os.getenv("WORKER_LEASE_SECONDS", "90")))),
+            heartbeat_seconds=max(5, int(os.getenv("WORKER_HEARTBEAT_SECONDS", "20"))),
+            max_concurrency=max(1, min(32, int(os.getenv("WORKER_MAX_CONCURRENCY", "4")))),
         )
 
 
@@ -96,9 +90,7 @@ class Store:
             },
         )
 
-    async def checkpoint(
-        self, run_id: str, worker_id: str, key: str, state: dict[str, Any]
-    ) -> Any:
+    async def checkpoint(self, run_id: str, worker_id: str, key: str, state: dict[str, Any]) -> Any:
         return await self.rpc(
             "moreai_worker_checkpoint",
             {
@@ -201,18 +193,14 @@ class GatewayLLM:
 
         async with httpx.AsyncClient(timeout=15) as client:
             saved = await client.post(
-                f"{self.config.api_base_url}/api/v1/internal/agents/"
-                f"runs/{self.run_id}/checkpoint",
+                f"{self.config.api_base_url}/api/v1/internal/agents/runs/{self.run_id}/checkpoint",
                 headers={
                     "X-Worker-Token": self.config.worker_token,
                     "X-Worker-ID": self.worker_id,
                 },
                 json={
                     "checkpoint_key": f"llm:{digest}",
-                    "state": {
-                        "messages": formatted
-                        + [{"role": "assistant", "content": content}]
-                    },
+                    "state": {"messages": formatted + [{"role": "assistant", "content": content}]},
                 },
             )
             saved.raise_for_status()
@@ -262,8 +250,7 @@ class OpenManusExecutor:
             and isinstance(checkpoint["state"].get("messages"), list)
         ):
             agent.memory.messages = [
-                Message.model_validate(message)
-                for message in checkpoint["state"]["messages"]
+                Message.model_validate(message) for message in checkpoint["state"]["messages"]
             ]
 
         return {
@@ -289,9 +276,7 @@ class Worker:
     ) -> None:
         while not stop.is_set():
             try:
-                await asyncio.wait_for(
-                    stop.wait(), timeout=self.config.heartbeat_seconds
-                )
+                await asyncio.wait_for(stop.wait(), timeout=self.config.heartbeat_seconds)
                 return
             except TimeoutError:
                 pass
@@ -309,9 +294,7 @@ class Worker:
         lost = asyncio.Event()
         cancel = asyncio.Event()
         stop = asyncio.Event()
-        heartbeat = asyncio.create_task(
-            self.heartbeat_loop(run_id, lost, cancel, stop)
-        )
+        heartbeat = asyncio.create_task(self.heartbeat_loop(run_id, lost, cancel, stop))
         execution: asyncio.Task[dict[str, Any]] | None = None
 
         try:

@@ -12,7 +12,9 @@ def test_llm_requires_bearer_token():
 
 
 def test_llm_requires_idempotency_key_before_provider_call():
-    app.dependency_overrides[require_authenticated_user] = lambda: {"sub": "00000000-0000-0000-0000-000000000001"}
+    app.dependency_overrides[require_authenticated_user] = lambda: {
+        "sub": "00000000-0000-0000-0000-000000000001"
+    }
     try:
         response = client.post("/api/v1/llm/generate", json={"prompt": "hello"})
         assert response.status_code == 400
@@ -22,10 +24,16 @@ def test_llm_requires_idempotency_key_before_provider_call():
 
 
 def test_llm_fails_closed_without_credit_conversion(monkeypatch):
-    app.dependency_overrides[require_authenticated_user] = lambda: {"sub": "00000000-0000-0000-0000-000000000001"}
+    app.dependency_overrides[require_authenticated_user] = lambda: {
+        "sub": "00000000-0000-0000-0000-000000000001"
+    }
     monkeypatch.setattr("moreai_api.settings.settings.credits_per_usd", None)
     try:
-        response = client.post("/api/v1/llm/generate", headers={"Idempotency-Key": "test-key-1"}, json={"prompt": "hello"})
+        response = client.post(
+            "/api/v1/llm/generate",
+            headers={"Idempotency-Key": "test-key-1"},
+            json={"prompt": "hello"},
+        )
         assert response.status_code == 503
         assert response.json()["detail"]["code"] == "CREDIT_CONVERSION_NOT_CONFIGURED"
     finally:
@@ -35,7 +43,11 @@ def test_llm_fails_closed_without_credit_conversion(monkeypatch):
 def test_internal_llm_requires_worker_token():
     response = client.post(
         "/api/v1/internal/llm/generate",
-        json={"prompt": "hello", "user_id": "00000000-0000-0000-0000-000000000001", "run_id": "00000000-0000-0000-0000-000000000002"},
+        json={
+            "prompt": "hello",
+            "user_id": "00000000-0000-0000-0000-000000000001",
+            "run_id": "00000000-0000-0000-0000-000000000002",
+        },
         headers={"Idempotency-Key": "agent-test-001"},
     )
     assert response.status_code == 401

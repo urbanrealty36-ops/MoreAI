@@ -32,8 +32,12 @@ class SandboxPolicy:
         if tool_name == "shell":
             raise PermissionError("Shell execution is disabled")
         if tool_name == "python" and not self.allow_python:
-            raise PermissionError("Python execution is disabled until an isolated runtime is configured")
+            raise PermissionError(
+                "Python execution is disabled until an isolated runtime is configured"
+            )
         if tool_name == "browser" and not self.allow_browser:
-            raise PermissionError("Browser execution is disabled until isolated egress is configured")
+            raise PermissionError(
+                "Browser execution is disabled until isolated egress is configured"
+            )
         if tool_name not in {"python", "browser", "shell", "file"}:
             raise PermissionError("Unknown tool is denied by default")

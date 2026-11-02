@@ -19,9 +19,14 @@ async def require_authenticated_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
 ) -> dict[str, Any]:
     if credentials is None or credentials.scheme.lower() != "bearer":
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required"
+        )
     if not settings.supabase_url:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Identity provider is not configured")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Identity provider is not configured",
+        )
 
     issuer = f"{settings.supabase_url.rstrip('/')}/auth/v1"
     jwks_url = f"{issuer}/.well-known/jwks.json"
@@ -46,4 +51,6 @@ async def require_authenticated_user(
             raise InvalidTokenError("Missing subject")
         return claims
     except (InvalidTokenError, PyJWKClientError, ValueError, OSError) as exc:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid access token") from exc
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid access token"
+        ) from exc

@@ -19,6 +19,7 @@ def teardown_function() -> None:
 
 def test_partner_endpoint_fails_closed_without_server_database(monkeypatch):
     from moreai_api import db
+
     monkeypatch.setattr(db.settings, "supabase_secret_key", None)
     response = client.get("/api/v1/partner/branches")
     assert response.status_code == 503
@@ -30,7 +31,15 @@ def test_partner_location_membership_cannot_read_another_location(monkeypatch):
 
     async def scoped_rows(table, query):
         if table == "partner_members":
-            return [{"id": "m1", "partner_id": "p1", "location_id": "l1", "role_key": "viewer", "status": "active"}]
+            return [
+                {
+                    "id": "m1",
+                    "partner_id": "p1",
+                    "location_id": "l1",
+                    "role_key": "viewer",
+                    "status": "active",
+                }
+            ]
         if table == "partner_locations":
             return [
                 {"id": "l1", "partner_id": "p1", "name": "Branch One"},
@@ -57,7 +66,10 @@ def test_partner_requires_active_membership(monkeypatch):
 
 
 def test_network_access_does_not_claim_gateway_success():
-    response = client.post("/api/v1/network/access/verify", json={"network_id": "test-network", "verification_method": "gateway"})
+    response = client.post(
+        "/api/v1/network/access/verify",
+        json={"network_id": "test-network", "verification_method": "gateway"},
+    )
     assert response.status_code == 503
     assert response.json()["detail"]["code"] == "NETWORK_GATEWAY_NOT_CONFIGURED"
 

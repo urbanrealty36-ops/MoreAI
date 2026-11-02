@@ -10,7 +10,10 @@ from moreai_api.routers.llm import router as llm_router, internal_router as llm_
 from moreai_api.routers.partner import router as partner_router
 from moreai_api.routers.network import router as network_router
 from moreai_api.routers.admin import router as admin_router
-from moreai_api.routers.agents import router as agents_router, internal_router as agents_internal_router
+from moreai_api.routers.agents import (
+    router as agents_router,
+    internal_router as agents_internal_router,
+)
 
 
 class HealthResponse(BaseModel):
@@ -22,7 +25,12 @@ class HealthResponse(BaseModel):
 app = FastAPI(title="MoreAI API", version="0.1.0", description="Versioned business API boundary.")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
+        "http://localhost:3003",
+    ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Correlation-ID", "Idempotency-Key"],
@@ -47,7 +55,10 @@ async def correlation_id(request: Request, call_next):
 
 @app.exception_handler(Exception)
 async def unhandled_exception(_: Request, exc: Exception):
-    return JSONResponse(status_code=500, content={"code": "INTERNAL_ERROR", "message": "An unexpected error occurred."})
+    return JSONResponse(
+        status_code=500,
+        content={"code": "INTERNAL_ERROR", "message": "An unexpected error occurred."},
+    )
 
 
 @app.get("/health", response_model=HealthResponse, tags=["operations"])
