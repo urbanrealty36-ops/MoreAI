@@ -1,1 +1,9 @@
-# Phase 01 — Monorepo Foundation\n\n## Boundaries\n- pnpm/Turborepo owns TypeScript apps and shared packages.\n- uv owns Python API, worker and isolated sandbox projects.\n- FastAPI is the sole business API boundary. Client Supabase usage is restricted to approved Auth SDK flows.\n- Supabase project uunfgimtokhucegqbpce remains canonical; this phase adds local CLI configuration only and does not alter remote schema.\n- API, worker and sandbox are separate processes. Sandbox must not execute inside API.\n\n## Environment\nClient-safe: origins, API base URL, Supabase URL and publishable key (Auth only). Server-only: Supabase secret/database credentials, JWT verification secrets and LLM provider credentials. Never prefix secrets with NEXT_PUBLIC_ or EXPO_PUBLIC_.\n\n## OpenAPI\nFastAPI publishes /openapi.json, /docs and /redoc. Shared API client provides a typed fetch boundary; no business endpoints are invented here.\n\n## Non-goals\nNo business tables, migrations, RLS policies, production credentials, fake business data, UI source migration, visual redesign or deployment.\n
+# Phase 01 — Monorepo Foundation
+
+- pnpm/Turborepo owns TypeScript apps and packages; uv owns API, worker and sandbox.
+- FastAPI is the only business API boundary. Supabase client SDK is reserved for approved Auth flows.
+- Canonical Supabase project: uunfgimtokhucegqbpce. This phase only configures local CLI; no remote schema changes.
+- API, worker and sandbox are isolated processes; sandbox must not execute inside API.
+- Client-safe env: app origins, API URL, Supabase URL and publishable key (Auth only). Server-only: secret/database credentials, JWT and LLM provider keys.
+- FastAPI OpenAPI: /openapi.json, docs: /docs. No business endpoints invented.
+- No production mock data, UI migration, redesign, business migrations or deployment in this phase.

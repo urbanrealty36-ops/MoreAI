@@ -1,1 +1,45 @@
-{"$schema":"https://turbo.build/schema.json","globalDependencies":[".env",".env.*"],"tasks":{"build":{"dependsOn":["^build"],"outputs":[".next/**","dist/**","build/**","!.next/cache/**"]},"dev":{"cache":false,"persistent":true},"lint":{"dependsOn":["^lint"]},"typecheck":{"dependsOn":["^typecheck"]},"test":{"dependsOn":["^test"],"outputs":["coverage/**"]},"clean":{"cache":false}}}
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": [
+    ".env",
+    ".env.*"
+  ],
+  "tasks": {
+    "build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        ".next/**",
+        "dist/**",
+        "build/**",
+        "!.next/cache/**"
+      ]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {
+      "dependsOn": [
+        "^lint"
+      ]
+    },
+    "typecheck": {
+      "dependsOn": [
+        "^typecheck"
+      ]
+    },
+    "test": {
+      "dependsOn": [
+        "^test"
+      ],
+      "outputs": [
+        "coverage/**"
+      ]
+    },
+    "clean": {
+      "cache": false
+    }
+  }
+}
