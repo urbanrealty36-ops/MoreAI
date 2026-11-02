@@ -33,6 +33,8 @@ jobs:
           git add pnpm-lock.yaml uv.lock
           if ! git diff --cached --quiet; then
             git commit -m "chore(deps): generate workspace lockfiles"
+            git fetch origin "${TARGET_BRANCH}"
+            git rebase FETCH_HEAD
             git push origin "HEAD:${TARGET_BRANCH}"
           fi
   web-quality:
