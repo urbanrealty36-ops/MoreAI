@@ -2,9 +2,7 @@
 useDefault = true
 
 [[allowlists]]
-description = "Expired GitHub private-video embed JWTs in immutable upstream documentation; restricted to exact source fingerprints."
-fingerprints = [
-  "d0eb7a1559d7923d47fa8b3c82c79bb7c112f8c8:vendor/openmanusweb/README.md:jwt:32",
-  "1cc296daaba1990a7f1a4718dd915e01460e7069:vendor/openmanusweb/README.md:jwt:32",
-  "1cc296daaba1990a7f1a4718dd915e01460e7069:vendor/openmanusweb/README_zh.md:jwt:32",
-]
+description = "Allow only the known upstream GitHub private-video embed URL pattern in immutable README documentation; other secrets and files remain scanned."
+paths = ['''^vendor/openmanusweb/README(_zh)?\.md$''']
+regexTarget = "line"
+regexes = ['''data-canonical-src=.*\.mp4\?jwt=''']
