@@ -75,3 +75,58 @@ def test_routeros_credentials_require_https_and_secret():
     }
     assert asyncio.run(validate_mikrotik_credentials(invalid_http)) is False
     assert asyncio.run(validate_mikrotik_credentials(missing_hmac)) is False
+
+
+def test_routeros_proof_matches_exact_session(monkeypatch):
+    from moreai_api import gateway
+
+    session = {
+        ".id": "*A1",
+        "mac-address": "AA:BB:CC:DD:EE:FF",
+        "address": "192.0.2.10",
+        "user": "client-1",
+        "server": "hotspot-main",
+    }
+
+    class Response:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return [session]
+
+    class Client:
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return None
+
+        async def get(self, url):
+            assert url == "https://router.example/rest/ip/hotspot/active"
+            return Response()
+
+    monkeypatch.setattr(gateway.httpx, "AsyncClient", Client)
+    bundle = {
+        "router_url": "https://router.example",
+        "username": "api-user",
+        "password": "placeholder",
+        "hmac_secret": "x" * 48,
+    }
+    payload = {
+        "session_id": "*A1",
+        "client_mac": "aa:bb:cc:dd:ee:ff",
+        "client_ip": "192.0.2.10",
+        "username": "client-1",
+        "hotspot_server": "hotspot-main",
+    }
+    assert asyncio.run(gateway.verify_mikrotik_active_session(bundle, payload))
+    assert not asyncio.run(
+        gateway.verify_mikrotik_active_session(
+            bundle,
+            {**payload, "session_id": "*OTHER"},
+        )
+    )
