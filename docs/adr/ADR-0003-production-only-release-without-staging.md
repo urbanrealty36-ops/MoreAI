@@ -12,7 +12,7 @@ The repository engineering constitution still requires isolated work branches, r
 ## Decision
 
 1. No dedicated staging environment will be created or used for this workstream.
-2. Code changes remain on an isolated implementation branch and are integrated into `main) through a PR after required quality gates pass. This preserves the mandatory repository change-control rules while keeping `main` as the production source of truth.
+2. Code changes remain on an isolated implementation branch and are integrated into `main` through a PR after required quality gates pass. This preserves the mandatory repository change-control rules while keeping `main` as the production source of truth.
 3. Production deployment occurs from the merged `main` commit only.
 4. Before production deployment, CI must provide isolated ephemeral verification for build, contract, integration, migration replay, RLS/tenant-negative, security, runtime and visual-regression tests. Ephemeral test resources must not be connected to or mutate the live production database.
 5. Production schema changes must be forward-only, additive/backward-compatible where possible, explicitly reviewed, and accompanied by a tested rollback or compensating procedure. No destructive reset, fixture seeding, tenant-negative mutation test or migration replay may run against live production data.
