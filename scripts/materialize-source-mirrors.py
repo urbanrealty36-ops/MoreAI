@@ -40,7 +40,7 @@ def main() -> None:
 
     temp = Path(tempfile.mkdtemp(prefix="moreai-source-mirror-"))
     try:
-        # Preserve initialized submodule working trees before removing gitlinks.
+        # Read Git objects directly so checkout EOL/smudge filters cannot alter hashes.
         for name, rel in SOURCES.items():
             source = ROOT / rel
             if not (source / ".git").exists() and not (source / ".git").is_file():
@@ -53,9 +53,23 @@ def main() -> None:
             if tracked != expected[name]:
                 missing, extra = sorted(expected[name] - tracked), sorted(tracked - expected[name])
                 raise SystemExit(f"{name}: inventory mismatch; missing={missing[:8]}, extra={extra[:8]}")
-            shutil.copytree(source, temp / name, ignore=shutil.ignore_patterns(".git"))
+            (temp / name).mkdir(parents=True)
+            for source_path in sorted(expected[name]):
+                blob = run("git", "-C", str(source), "rev-parse", f"HEAD:{source_path}")
+                row = next(r for r in rows if r["source_repo"] == name and r["source_path"] == source_path)
+                if blob != row["blob_sha"]:
+                    raise SystemExit(f"Upstream object mismatch: {name}/{source_path}: {blob}")
+                data = subprocess.check_output(["git", "-C", str(source), "cat-file", "blob", blob])
+                calculated = hashlib.sha1(b"blob " + str(len(data)).encode() + b"\\0" + data).hexdigest()
+                if calculated != blob or len(data) != int(row["bytes"]):
+                    raise SystemExit(f"Upstream blob integrity failure: {name}/{source_path}")
+                target = temp / name / source_path
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.write_bytes(data)
+                mode = run("git", "-C", str(source), "ls-tree", "HEAD", "--", source_path).split()[0]
+                if mode == "100755":
+                    target.chmod(0o755)
 
-        # Replace gitlinks with normal tracked files; source contents remain byte-identical.
         subprocess.run(["git", "rm", "-r", "--cached", "--ignore-unmatch", *SOURCES.values(), ".gitmodules"], cwd=ROOT, check=True)
         (ROOT / ".gitmodules").unlink(missing_ok=True)
         for name, rel in SOURCES.items():
@@ -67,13 +81,10 @@ def main() -> None:
         verified = 0
         for row in rows:
             source = ROOT / SOURCES[row["source_repo"]] / row["source_path"]
-            if not source.is_file():
-                raise SystemExit(f"Missing mirrored file: {row['source_repo']}/{row['source_path']}")
-            actual_sha = blob_sha(source)
-            if actual_sha != row["blob_sha"]:
-                raise SystemExit(f"Blob SHA mismatch: {source}: {actual_sha} != {row['blob_sha']}")
-            if source.stat().st_size != int(row["bytes"]):
-                raise SystemExit(f"Size mismatch: {source}")
+            data = source.read_bytes()
+            actual_sha = hashlib.sha1(b"blob " + str(len(data)).encode() + b"\\0" + data).hexdigest()
+            if actual_sha != row["blob_sha"] or len(data) != int(row["bytes"]):
+                raise SystemExit(f"Blob SHA/size mismatch: {source}: {actual_sha}")
             verified += 1
 
         report = {
