@@ -64,7 +64,7 @@ The current CI definition is read-only with respect to the repository and includ
 - runtime smoke for FastAPI, Web, Admin, Partner Portal and Captive Portal;
 - Expo configuration validation.
 
-The latest CI run on merge commit `2334c165f5458e60fb88f6ab71f1e26555d769e2` is queued/in progress. Earlier runs found and fixed Ruff formatting/import findings and a brittle decimal string assertion; only the latest run can certify the current head.
+The latest CI run on the Phase 02 branch head `a38a613fe6ee2d668f7593086bb4bf7a624cd014` (run `41422687697`, 2 November 2026) completed with **success**. All six jobs passed: lockfiles, source provenance, Web quality, Python quality including worker Docker build, security scans, and runtime smoke/Expo config validation. This certifies the CI pipeline for that commit only; it does not close the product/runtime acceptance blockers below.
 
 ## 6. Production data and fail-closed policy
 
@@ -87,6 +87,10 @@ The latest CI run on merge commit `2334c165f5458e60fb88f6ab71f1e26555d769e2` is 
 8. **Database acceptance:** applied production migrations must be reconciled with checked-in migration files and replayed in a disposable Supabase branch/local environment. Tenant-negative RLS tests and transactional mutation tests are still outstanding.
 9. **Deployment:** the worker image is defined for CI build, but no worker deployment target or production runtime credentials have been configured or verified.
 
-## 8. Gate decision
+## 8. Release strategy — no staging
+
+Per owner instruction, no dedicated staging environment will be created. ADR-0003 records direct production release from merged `main`, while retaining the repository-required isolated branch and PR review. CI ephemeral verification is mandatory and must not touch production data. Production database resets, destructive migration replay, fixture seeding and tenant-negative mutation tests are prohibited. Production schema changes must be reviewed, backward-compatible where possible, and have a safe rollback/compensation plan. The worker deployment remains blocked until a supported production runtime target and runtime credentials are verified.
+
+## 9. Gate decision
 
 **PHASE 02 IS NOT PASSED.** Source provenance, database/RLS posture, API foundations, Auth entry flows, and some runtime/security gates are evidenced, but the expanded product/runtime integrations, isolated execution, transactional partner/admin operations, Captive Portal gateway integration, Native parity, and visual regression criteria remain incomplete. Phase 03 must not start until these blockers have evidence-backed closure.
