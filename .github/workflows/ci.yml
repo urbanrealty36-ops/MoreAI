@@ -73,6 +73,8 @@ jobs:
       - run: uv sync --all-packages --all-extras --locked
       - run: uv run ruff check apps
       - run: uv run pytest
+      - name: Build non-root OpenManus worker image
+        run: docker build --file apps/worker/Dockerfile --tag moreai-worker:ci .
   dependency-review:
     if: github.event_name == 'pull_request'
     needs: lockfiles
