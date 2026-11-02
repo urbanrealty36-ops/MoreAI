@@ -23,6 +23,7 @@ Observed on 2026-11-02:
 - The audit found **zero** SECURITY DEFINER public functions executable by `anon`.
 - Supabase Security Advisor returned **zero lint findings**.
 - Seed data observed was limited to platform RBAC reference records in `roles`, `permissions`, and `role_permissions`; partner, customer, network, agent and wallet business records were empty at audit time.
+- The eight assertions in `supabase/tests/phase02_security.sql` were executed against the connected project inside an explicit `BEGIN`/`ROLLBACK` transaction and completed without exceptions. The test was rewritten as plain SQL assertions because pgTAP is not installed in the connected project.
 - No production database writes were made during this audit.
 
 These are point-in-time observations, not a substitute for migration replay, tenant-negative tests, or production acceptance.
