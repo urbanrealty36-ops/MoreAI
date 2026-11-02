@@ -113,6 +113,17 @@ Per owner instruction, no dedicated staging environment will be created. ADR-000
 - **Not deployed/applied to production:** migration remains in the implementation branch pending CI and review. No production schema, credentials, network sessions, entitlements, or gateway settings were changed.
 - **Still blocked intentionally:** MikroTik RouterOS credentials/protocol smoke test, signed gateway context and nonce/replay verification, GPS runtime proof, RADIUS server/shared-secret integration, gateway alternatives and ISP API contracts. No adapter is marked ready, so no network can activate partner access through this work.
 
+## MikroTik signed gateway adapter — implementation evidence
+
+- Added a server-side secret-reference resolver using `NETWORK_GATEWAY_SECRETS_JSON`; secret values are injected only into FastAPI runtime and are never accepted from Partner Portal or returned by Admin API. `.env.example` contains an empty placeholder only.
+- Added Super Admin endpoints to attach an opaque secret reference to a selected network and validate RouterOS credentials using HTTPS `GET /rest/system/resource`. Successful validation marks the adapter code ready and enables only that network's selected MikroTik config; failed validation leaves it disabled. All mutations/validation outcomes write admin audit records.
+- Added signed context endpoint `POST /api/v1/network/gateway/mikrotik/context/verify`. It checks timestamp skew, nonce shape, MAC/IP shape, selected method, enabled network config, adapter readiness, gateway/network binding, HMAC-SHA256 with constant-time comparison, and a matching live RouterOS hotspot session (`.id`, MAC, IP, username, server).
+- Added database-backed nonce replay protection: SHA-256(nonce) is consumed by a service-role-only RPC under a unique `(network_id, nonce_hash)` constraint. Client roles cannot read nonce storage or execute the RPC.
+- The proof response explicitly does not grant entitlement. Partner entitlement remains a separate policy decision; all existing Captive Portal benefit/session routes remain fail-closed until that lifecycle is implemented.
+- Added unit tests for canonical HMAC, payload tampering, timestamp boundaries, nonce/MAC/IP validation, HTTPS/secret requirements and exact RouterOS session matching. Added SQL permission assertions for nonce storage/RPC.
+- Operational contract and deployment checklist: `docs/runbooks/MIKROTIK-HOTSPOT-GATEWAY.md`.
+- **Real device/credential validation remains unverified:** no production RouterOS endpoint, secret reference or credential bundle has been supplied/configured in the connected runtime. No test has been represented as a live MikroTik test. Adapter catalog remains `adapter_ready=false` until Super Admin successfully validates an actual RouterOS device.
+
 ## 9. Gate decision
 
 **PHASE 02 IS NOT PASSED.** Source provenance, database/RLS posture, API foundations, Auth entry flows, and some runtime/security gates are evidenced, but the expanded product/runtime integrations, isolated execution, transactional partner/admin operations, Captive Portal gateway integration, Native parity, and visual regression criteria remain incomplete. Phase 03 must not start until these blockers have evidence-backed closure.
