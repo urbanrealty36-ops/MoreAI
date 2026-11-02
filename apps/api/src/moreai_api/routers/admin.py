@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from typing import Annotated, Any
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -13,9 +14,10 @@ UserClaims = Annotated[dict, Depends(require_authenticated_user)]
 
 
 async def _require_permission(claims: dict[str, Any], permission_key: str) -> None:
-    user_id = claims.get("sub")
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Authentication required")
+    try:
+        user_id = str(UUID(str(claims.get("sub", ""))))
+    except (ValueError, TypeError, AttributeError) as exc:
+        raise HTTPException(status_code=401, detail="Invalid authenticated subject") from exc
     assignments = await select_rows("user_role_assignments", f"select=id,role_id,scope_type,scope_id,expires_at,roles!inner(key)&user_id=eq.{user_id}&scope_type=eq.platform")
     role_ids = []
     for item in assignments:

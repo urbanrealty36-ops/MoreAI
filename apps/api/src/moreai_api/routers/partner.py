@@ -14,9 +14,10 @@ UserClaims = Annotated[dict, Depends(require_authenticated_user)]
 
 
 async def _membership(claims: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    user_id = claims.get("sub")
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Authentication required")
+    try:
+        user_id = str(UUID(str(claims.get("sub", ""))))
+    except (ValueError, TypeError, AttributeError) as exc:
+        raise HTTPException(status_code=401, detail="Invalid authenticated subject") from exc
     memberships = await select_rows("partner_members", f"select=id,partner_id,location_id,role_key,status&user_id=eq.{user_id}&status=eq.active")
     if not memberships:
         raise HTTPException(status_code=403, detail={"code": "PARTNER_MEMBERSHIP_REQUIRED", "message": "Active partner membership required."})
@@ -43,9 +44,7 @@ async def list_branches(claims: UserClaims):
     membership, memberships = await _membership(claims)
     locations = await _partner_rows("partner_locations", "id,partner_id,name,address,latitude,longitude,timezone,status,created_at", membership["partner_id"])
     allowed = {m.get("location_id") for m in memberships if m.get("location_id")}
-    if any(m.get("location_id") is None for m in memberships):
-        return {"items": locations}
-    return {"items": [x for x in locations if x["id"] in allowed]}
+    return {"items": locations if any(m.get("location_id") is None for m in memberships) else [x for x in locations if x["id"] in allowed]}
 
 
 @router.get("/networks")
@@ -60,7 +59,7 @@ async def list_networks(claims: UserClaims):
 
 @router.get("/verification-methods")
 async def list_verification_methods(claims: UserClaims, network_id: UUID | None = None):
-    _, _ = await _membership(claims)
+    await _membership(claims)
     networks = await list_networks(claims)
     allowed = {x["id"] for x in networks["items"]}
     if network_id and str(network_id) not in allowed:
@@ -85,8 +84,7 @@ async def list_rewards(claims: UserClaims):
     ids = [x["id"] for x in campaigns]
     if not ids:
         return {"items": []}
-    rewards = await select_rows("campaign_rewards", "select=id,campaign_id,reward_type,name,quantity_limit,quantity_claimed,reward_value,config,created_at&campaign_id=in.(" + ",".join(ids) + ")")
-    return {"items": rewards}
+    return {"items": await select_rows("campaign_rewards", "select=id,campaign_id,reward_type,name,quantity_limit,quantity_claimed,reward_value,config,created_at&campaign_id=in.(" + ",".join(ids) + ")")}
 
 
 @router.get("/analytics")

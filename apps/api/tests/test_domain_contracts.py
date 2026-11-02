@@ -7,7 +7,7 @@ client = TestClient(app)
 
 
 def setup_function() -> None:
-    app.dependency_overrides[require_authenticated_user] = lambda: {"sub": "test-user", "app_metadata": {}}
+    app.dependency_overrides[require_authenticated_user] = lambda: {"sub": "00000000-0000-0000-0000-000000000001", "app_metadata": {}}
 
 
 def teardown_function() -> None:
