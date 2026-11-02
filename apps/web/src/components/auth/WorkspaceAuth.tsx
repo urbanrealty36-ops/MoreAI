@@ -9,7 +9,6 @@ type Mode = "login" | "register" | "recovery";
 
 export default function WorkspaceAuth() {
   const [mode, setMode] = useState<Mode>("login");
-  const [email, setEmail] = useState("");
   const [signedInAs, setSignedInAs] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -55,7 +54,6 @@ export default function WorkspaceAuth() {
         password,
       });
       if (authError) throw authError;
-      setEmail(userEmail.trim());
       setSignedInAs(data.user.email ?? userEmail.trim());
       setNotice("Berhasil masuk. Data bisnis tetap diakses melalui FastAPI.");
     } catch (cause) {
@@ -78,7 +76,6 @@ export default function WorkspaceAuth() {
         options: { data: { display_name: name.trim() } },
       });
       if (authError) throw authError;
-      setEmail(userEmail.trim());
       if (data.session) {
         setSignedInAs(data.user?.email ?? userEmail.trim());
         setNotice("Akun berhasil dibuat dan sesi aktif.");
