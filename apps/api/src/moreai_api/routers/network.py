@@ -9,7 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from moreai_api.auth import require_authenticated_user
 from moreai_api.db import rpc, select_rows
-from moreai_api.gateway import gateway_secret_bundle, valid_gateway_timestamp, valid_mac_address, valid_nonce, verify_gateway_signature, verify_mikrotik_active_session
+from moreai_api.gateway import gateway_secret_bundle, valid_gateway_timestamp, valid_ip_address, valid_mac_address, valid_nonce, verify_gateway_signature, verify_mikrotik_active_session
 from moreai_api.settings import settings
 
 router = APIRouter(prefix="/network", tags=["network-access"])
@@ -51,7 +51,11 @@ async def verify_mikrotik_gateway_context(payload: MikroTikGatewayContext):
     now = int(time.time())
     if not valid_gateway_timestamp(payload.timestamp, now, settings.network_gateway_max_clock_skew_seconds):
         raise HTTPException(status_code=401, detail={"code": "GATEWAY_CONTEXT_EXPIRED", "message": "Gateway context is expired."})
-    if not valid_nonce(payload.nonce) or not valid_mac_address(payload.client_mac):
+    if (
+        not valid_nonce(payload.nonce)
+        or not valid_mac_address(payload.client_mac)
+        or not valid_ip_address(payload.client_ip)
+    ):
         raise HTTPException(status_code=422, detail={"code": "GATEWAY_CONTEXT_INVALID", "message": "Gateway context fields are invalid."})
 
     networks = await select_rows("partner_networks", "select=id,partner_id,location_id,active_verification_method&id=eq." + str(payload.network_id))
