@@ -4,14 +4,44 @@ on:
   push:
     branches: [main, phase-01-monorepo-foundation]
 permissions:
-  contents: read
+  contents: write
   security-events: write
   actions: read
 jobs:
-  web-quality:
+  lockfiles:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.20.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: astral-sh/setup-uv@v5
+      - run: pnpm install --lockfile-only --ignore-scripts
+      - run: uv lock
+      - name: Commit generated lockfiles
+        env:
+          TARGET_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml uv.lock
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(deps): generate workspace lockfiles"
+            git push origin "HEAD:${TARGET_BRANCH}"
+          fi
+  web-quality:
+    needs: lockfiles
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
       - uses: pnpm/action-setup@v4
         with:
           version: 10.20.0
@@ -19,29 +49,21 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: pnpm-lockfile-ci
-          path: pnpm-lock.yaml
   python-quality:
+    needs: lockfiles
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
       - uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-      - run: uv lock
-      - run: uv sync --all-packages --all-extras
+      - run: uv sync --all-packages --all-extras --locked
       - run: uv run ruff check apps
       - run: uv run pytest
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: uv-lockfile-ci
-          path: uv.lock
