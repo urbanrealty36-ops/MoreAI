@@ -1,4 +1,4 @@
-import { CaptivePortalScreen } from "@/components/screens/CaptivePortalScreen";
+import { CaptivePortalReferencePreview } from '@/components/screens/CaptivePortalReferencePreview';
 
 export default function CaptiveHome() {
   return (
@@ -11,7 +11,7 @@ export default function CaptiveHome() {
       <details className="mx-auto mt-4 max-w-md rounded-xl border-2 border-[#171717] bg-white p-3">
         <summary className="cursor-pointer text-sm font-bold">Buka UI reference preview (non-produksi)</summary>
         <p className="my-3 text-xs text-amber-900">Simulasi gateway dan venue contoh hanya untuk inspeksi visual; tidak terhubung ke jaringan atau entitlement nyata.</p>
-        <CaptivePortalScreen onSuccessConnect={() => undefined} onGoToPwa={() => undefined} />
+        <CaptivePortalReferencePreview />
       </details>
     </main>
   );

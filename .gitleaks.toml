@@ -2,7 +2,6 @@
 useDefault = true
 
 [[allowlists]]
-description = "Exact expired GitHub private-video embed JWT copied from the immutable upstream README (exp claim is 2025-03-07); only this signature is allowlisted in the two documentation files."
-paths = ['''vendor/openmanusweb/README\.md''', '''vendor/openmanusweb/README_zh\.md''']
-regexTarget = "match"
-regexes = ['''UuHQCgWYkh0OQq9qsUWqGsUbhG3i9jcZDAMeHjLt5T4''']
+description = "Exact expired GitHub private-video embed JWT copied from immutable upstream documentation; allowlisted only in the two source README commits."
+commits = ["1cc296daaba1990a7f1a4718dd915e01460e7069", "d0eb7a1559d7923d47fa8b3c82c79bb7c112f8c8"]
+paths = ['''vendor/openmanusweb/README\\.md''', '''vendor/openmanusweb/README_zh\\.md''']
