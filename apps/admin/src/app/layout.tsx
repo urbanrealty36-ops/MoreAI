@@ -1,18 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Plus_Jakarta_Sans, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
-
-const plusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
-  variable: '--font-sans',
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-mono',
-});
 
 export const viewport: Viewport = {
   themeColor: '#C9F2D5',
@@ -56,7 +43,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id" className={`${plusJakartaSans.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+    <html lang="id" suppressHydrationWarning>
       <body
         className="min-h-screen bg-[#F7F4EC] text-[#171717] antialiased selection:bg-[#C9F2D5] selection:text-[#171717]"
         suppressHydrationWarning

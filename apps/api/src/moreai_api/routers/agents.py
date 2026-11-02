@@ -92,3 +92,35 @@ async def resume_run(run_id: UUID, claims: Claims):
         if exc.status_code == 502:
             raise HTTPException(status_code=409, detail={"code": "RUN_NOT_RESUMABLE", "message": "Agent run cannot be resumed."}) from exc
         raise
+
+
+internal_router = APIRouter(prefix="/internal/agents", tags=["internal-agent-runs"])
+
+
+class CheckpointWrite(BaseModel):
+    checkpoint_key: str = Field(min_length=1, max_length=160)
+    state: dict
+
+
+@internal_router.post("/runs/{run_id}/checkpoint")
+async def write_checkpoint(
+    run_id: UUID,
+    payload: CheckpointWrite,
+    worker_id: Annotated[str, Header(alias="X-Worker-ID")],
+    worker_token: Annotated[str | None, Header(alias="X-Worker-Token")] = None,
+):
+    import secrets
+    from moreai_api.settings import settings
+
+    expected = settings.worker_internal_token or ""
+    if not expected or not worker_token or not secrets.compare_digest(worker_token, expected):
+        raise HTTPException(status_code=401, detail={"code": "WORKER_AUTH_REQUIRED"})
+    if len(worker_id) < 8 or len(worker_id) > 128:
+        raise HTTPException(status_code=400, detail={"code": "INVALID_WORKER_ID"})
+    try:
+        return await rpc("moreai_worker_checkpoint", {
+            "p_run_id": str(run_id), "p_worker_id": worker_id,
+            "p_checkpoint_key": payload.checkpoint_key, "p_state": payload.state,
+        })
+    except HTTPException as exc:
+        raise HTTPException(status_code=409, detail={"code": "WORKER_LEASE_NOT_HELD"}) from exc

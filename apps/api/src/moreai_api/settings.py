@@ -1,8 +1,5 @@
 from decimal import Decimal
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
     moreai_env: str = "development"
@@ -12,8 +9,9 @@ class Settings(BaseSettings):
     supabase_jwt_secret: str | None = None
     database_url: str | None = None
     llm_provider_api_key: str | None = None
+    llm_openai_api_key: str | None = None
+    llm_anthropic_api_key: str | None = None
+    worker_internal_token: str | None = None
     credits_per_usd: Decimal | None = None
     llm_default_max_output_tokens: int = 2048
-
-
 settings = Settings()

@@ -10,7 +10,7 @@ from moreai_api.routers.llm import router as llm_router
 from moreai_api.routers.partner import router as partner_router
 from moreai_api.routers.network import router as network_router
 from moreai_api.routers.admin import router as admin_router
-from moreai_api.routers.agents import router as agents_router
+from moreai_api.routers.agents import router as agents_router, internal_router as agents_internal_router
 
 
 class HealthResponse(BaseModel):
@@ -33,6 +33,7 @@ app.include_router(partner_router, prefix="/api/v1")
 app.include_router(network_router, prefix="/api/v1")
 app.include_router(admin_router, prefix="/api/v1")
 app.include_router(agents_router, prefix="/api/v1")
+app.include_router(agents_internal_router, prefix="/api/v1")
 
 
 @app.middleware("http")
