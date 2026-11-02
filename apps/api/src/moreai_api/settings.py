@@ -17,6 +17,9 @@ class Settings(BaseSettings):
     worker_internal_token: str | None = None
     credits_per_usd: Decimal | None = None
     llm_default_max_output_tokens: int = 2048
+    network_gateway_secrets_json: str | None = None
+    network_gateway_max_clock_skew_seconds: int = 120
+    network_gateway_request_timeout_seconds: float = 5.0
 
 
 settings = Settings()
