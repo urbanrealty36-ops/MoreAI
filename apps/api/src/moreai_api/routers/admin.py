@@ -123,7 +123,7 @@ async def admin_network_policies(claims: UserClaims):
     return {
         "items": await select_rows(
             "network_verification_configs",
-            "select=id,network_id,method_key,config_public,enabled,policy&order=created_at.desc&limit=100",
+            "select=id,network_id,method_key,config_public,secret_reference,enabled,policy&order=created_at.desc&limit=100",
         )
     }
 
