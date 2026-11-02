@@ -39,6 +39,17 @@ jobs:
             git rebase FETCH_HEAD
             git push origin "HEAD:${TARGET_BRANCH}"
           fi
+  source-provenance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python scripts/verify-source-pins.py
   web-quality:
     needs: lockfiles
     runs-on: ubuntu-latest
