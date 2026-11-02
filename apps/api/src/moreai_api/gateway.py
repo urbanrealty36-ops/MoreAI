@@ -99,6 +99,7 @@ async def verify_mikrotik_active_session(bundle: dict[str, Any], payload: dict[s
         and item.get("address") == expected_ip
         and item.get("user") == expected_user
         and item.get("server") == expected_server
+        and item.get(".id") == payload["session_id"]
         for item in sessions
     )
 
