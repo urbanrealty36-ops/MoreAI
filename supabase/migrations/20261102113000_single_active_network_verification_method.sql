@@ -1,5 +1,5 @@
 -- Single active verification adapter per partner network.
--- Additive and fail-closed: existing networks remain unconfigured; no adapter is enabled.
+-- Additive and fail-closed: methods are selectable in the catalog, but no adapter is marked ready or activated.
 create table if not exists public.network_verification_method_catalog (
   method_key text primary key check (method_key in ('gps','mikrotik_hotspot','radius','gateway','isp_api')),
   display_name text not null,
@@ -101,3 +101,39 @@ $$;
 
 revoke all on function public.set_network_verification_method(uuid, text, jsonb) from public, anon, authenticated;
 grant execute on function public.set_network_verification_method(uuid, text, jsonb) to service_role;
+
+
+create or replace function public.enforce_selected_verification_adapter()
+returns trigger
+language plpgsql
+security invoker
+set search_path = public, pg_temp
+as $$
+declare
+  v_selected_method text;
+  v_adapter_ready boolean;
+begin
+  if new.enabled then
+    select active_verification_method into v_selected_method
+    from public.partner_networks where id = new.network_id;
+    if v_selected_method is distinct from new.method_key then
+      raise exception using errcode = '23514', message = 'ONLY_SELECTED_VERIFICATION_METHOD_CAN_BE_ENABLED';
+    end if;
+
+    select adapter_ready into v_adapter_ready
+    from public.network_verification_method_catalog
+    where method_key = new.method_key and enabled = true;
+    if coalesce(v_adapter_ready, false) is not true then
+      raise exception using errcode = '23514', message = 'VERIFICATION_ADAPTER_NOT_READY';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.enforce_selected_verification_adapter() from public, anon, authenticated;
+drop trigger if exists enforce_selected_verification_adapter on public.network_verification_configs;
+create trigger enforce_selected_verification_adapter
+before insert or update of network_id, method_key, enabled
+on public.network_verification_configs
+for each row execute function public.enforce_selected_verification_adapter();
