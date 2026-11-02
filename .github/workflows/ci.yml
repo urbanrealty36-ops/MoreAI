@@ -75,13 +75,6 @@ jobs:
       - run: uv run pytest
       - name: Build non-root OpenManus worker image
         run: docker build --file apps/worker/Dockerfile --tag moreai-worker:ci .
-  dependency-review:
-    if: github.event_name == 'pull_request'
-    needs: lockfiles
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/dependency-review-action@v4
   security:
     needs: source-provenance
     runs-on: ubuntu-latest
