@@ -90,7 +90,7 @@ async def list_networks(claims: UserClaims):
     membership, memberships = await _membership(claims)
     networks = await _partner_rows(
         "partner_networks",
-        "id,partner_id,location_id,name,ssid_label,gateway_type,status,created_at",
+        "id,partner_id,location_id,name,ssid_label,gateway_type,active_verification_method,status,created_at",
         membership["partner_id"],
     )
     allowed = {m.get("location_id") for m in memberships if m.get("location_id")}
