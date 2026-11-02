@@ -1,0 +1,47 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main, phase-01-monorepo-foundation]
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+jobs:
+  web-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.20.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pnpm-lockfile-ci
+          path: pnpm-lock.yaml
+  python-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv lock
+      - run: uv sync --all-packages --all-extras
+      - run: uv run ruff check apps
+      - run: uv run pytest
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: uv-lockfile-ci
+          path: uv.lock

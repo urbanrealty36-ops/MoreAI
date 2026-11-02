@@ -1,0 +1,34 @@
+name: Security
+on:
+  pull_request:
+  push:
+    branches: [main, phase-01-monorepo-foundation]
+  schedule:
+    - cron: "23 3 * * 1"
+permissions:
+  contents: read
+  security-events: write
+jobs:
+  codeql:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript, python
+      - uses: github/codeql-action/analyze@v3
+  dependency-review:
+    if: github.event_name == "pull_request"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
