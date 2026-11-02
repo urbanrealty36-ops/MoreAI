@@ -1,16 +1,23 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, ConfigDict, Field
 
 from moreai_api.auth import require_authenticated_user
-from moreai_api.db import select_rows
+from moreai_api.db import select_rows, rpc
 
 router = APIRouter(prefix="/partner", tags=["partner-portal"])
 UserClaims = Annotated[dict, Depends(require_authenticated_user)]
+
+
+class VerificationMethodSelection(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    method_key: Literal["gps", "mikrotik_hotspot", "radius", "gateway", "isp_api"]
+    config_public: dict[str, Any] = Field(default_factory=dict)
 
 
 async def _membership(claims: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
@@ -108,7 +115,56 @@ async def list_verification_methods(claims: UserClaims, network_id: UUID | None 
         + ",".join(ids)
         + ")",
     )
-    return {"items": configs}
+    catalog = await select_rows(
+        "network_verification_method_catalog",
+        "select=method_key,display_name,enabled,adapter_ready,requires_secret,setup_requirements&order=display_name",
+    )
+    return {
+        "items": configs,
+        "methods": catalog,
+        "selected_by_network": {
+            item["id"]: item.get("active_verification_method")
+            for item in networks["items"]
+        },
+    }
+
+
+@router.post("/networks/{network_id}/verification-method")
+async def select_network_verification_method(
+    claims: UserClaims, network_id: UUID, payload: VerificationMethodSelection
+):
+    networks = await list_networks(claims)
+    network = next((item for item in networks["items"] if item["id"] == str(network_id)), None)
+    if not network:
+        raise HTTPException(status_code=404, detail="Network not found")
+    catalog = await select_rows(
+        "network_verification_method_catalog",
+        "select=method_key,enabled,adapter_ready&method_key=eq." + payload.method_key,
+    )
+    if not catalog or not catalog[0]["enabled"]:
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "VERIFICATION_METHOD_NOT_AVAILABLE", "message": "This method is not enabled by platform operations."},
+        )
+    forbidden = {"password", "secret", "token", "api_key", "shared_secret", "credential"}
+    if any(any(term in key.lower() for term in forbidden) for key in payload.config_public):
+        raise HTTPException(
+            status_code=422,
+            detail={"code": "SECRET_MUST_NOT_BE_SUBMITTED", "message": "Do not submit credentials in public configuration."},
+        )
+    result = await rpc(
+        "set_network_verification_method",
+        {
+            "p_network_id": str(network_id),
+            "p_method_key": payload.method_key,
+            "p_config_public": payload.config_public,
+        },
+    )
+    return {
+        **(result if isinstance(result, dict) else {}),
+        "activated": False,
+        "message": "Method selected. Integration remains inactive until adapter readiness and production credentials are verified.",
+    }
 
 
 @router.get("/campaigns")
