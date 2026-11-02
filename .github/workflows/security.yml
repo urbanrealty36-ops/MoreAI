@@ -5,6 +5,9 @@ on:
     branches: [main, phase-01-monorepo-foundation]
   schedule:
     - cron: "23 3 * * 1"
+concurrency:
+  group: moreai-security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
   security-events: write
