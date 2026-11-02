@@ -295,10 +295,15 @@ export default function Home() {
           {/* 2. LOGIN FULL SCREEN */}
           {currentSurface === 'login' && (
             <LoginScreen
-              onSuccess={(name) => {
-                setUserName(name);
+              onSuccess={(email) => {
+                setUserName(email.split('@')[0]);
                 setCurrentSurface('access-choice');
               }}
+              onOAuth={(provider) => {
+                setUserName(`${provider} preview user`);
+                setCurrentSurface('access-choice');
+              }}
+              onForgotPassword={() => window.alert('Preview only: password recovery is not connected in the visual reference.')}
               onGoToRegister={() => setCurrentSurface('register')}
               onBackToOnboarding={() => setCurrentSurface('onboarding')}
             />
