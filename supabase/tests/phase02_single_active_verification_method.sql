@@ -35,9 +35,6 @@ begin
   if exists (select 1 from public.network_verification_method_catalog where adapter_ready) then
     raise exception 'no adapter may be marked ready before production verification';
   end if;
-end;
-$$;
-
 
   if not exists (
     select 1 from pg_class c join pg_namespace n on n.oid=c.relnamespace
@@ -59,3 +56,6 @@ $$;
   if not has_function_privilege('service_role','public.consume_network_gateway_nonce(uuid,text,timestamp with time zone)','EXECUTE') then
     raise exception 'service_role must consume gateway nonces';
   end if;
+
+end;
+$$;
