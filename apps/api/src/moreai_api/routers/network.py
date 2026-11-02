@@ -11,7 +11,6 @@ UserClaims = Annotated[dict, Depends(require_authenticated_user)]
 
 class AccessVerificationRequest(BaseModel):
     network_id: str = Field(min_length=1, max_length=128)
-    verification_method: str = Field(min_length=1, max_length=40)
     access_code: str | None = Field(default=None, max_length=128)
     gateway_session_id: str | None = Field(default=None, max_length=256)
 
