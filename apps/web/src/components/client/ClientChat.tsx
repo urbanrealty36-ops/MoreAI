@@ -138,13 +138,7 @@ export const ClientChat: React.FC<ClientChatProps> = ({
         if (!response.ok) {
           throw new Error(typeof data.detail === 'string' ? data.detail : 'Permintaan AI belum dapat diproses.');
         }
-        const botResponse = typeof data.text === 'string' ? data.text : 'Provider tidak mengembalikan teks.');
-
-        const isComplex =
-          textToSend.toLowerCase().includes('buat') ||
-          textToSend.toLowerCase().includes('riset') ||
-          textToSend.toLowerCase().includes('rencana') ||
-          textToSend.toLowerCase().includes('analisis');
+        const botResponse = typeof data.text === 'string' ? data.text : 'Provider tidak mengembalikan teks.';
 
         const assistantMsg: Message = {
           id: `ai-${Date.now()}`,
@@ -155,11 +149,11 @@ export const ClientChat: React.FC<ClientChatProps> = ({
         };
 
         setMessages((prev) => [...prev, assistantMsg]);
-      } catch {
+      } catch (error: unknown) {
         const fallbackMsg: Message = {
           id: `ai-err-${Date.now()}`,
           sender: 'assistant',
-          text: 'Terjadi kendala jaringan saat menghubungi AI Engine. Pastikan koneksi internet atau kuota Anda aktif.',
+          text: error instanceof Error ? error.message : 'Terjadi kendala saat menghubungi AI Engine. Silakan coba kembali.',
           timestamp: '10:28',
         };
         setMessages((prev) => [...prev, fallbackMsg]);
