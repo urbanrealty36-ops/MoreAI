@@ -1,0 +1,1 @@
+import { Text, View } from "react-native"; export default function Home(){return <View style={{flex:1,alignItems:"center",justifyContent:"center"}}><Text>MoreAI Native</Text><Text>Application foundation; native UI parity is implemented in later phases.</Text></View>;}
