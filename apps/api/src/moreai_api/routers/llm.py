@@ -14,7 +14,6 @@ from moreai_api.db import insert_rows, rpc, select_rows
 from moreai_api.settings import settings
 
 router = APIRouter(prefix="/llm", tags=["llm"])
-MODEL_PATTERN = re.compile(r"^[a-zA-Z0-9._:-]{1,120}$")
 
 
 class GenerateRequest(BaseModel):
