@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import type { AgentRun } from "@moreai/api-client";
 import { ApiRequestError } from "@moreai/api-client";
 import { getMoreAIApi } from "@/lib/api";
