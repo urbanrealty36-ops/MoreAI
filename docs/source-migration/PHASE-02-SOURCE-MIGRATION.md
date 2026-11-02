@@ -109,7 +109,8 @@ Per owner instruction, no dedicated staging environment will be created. ADR-000
 - Super Admin FastAPI contract controls catalog availability using `network.verification.manage`; every mutation writes `admin_audit_logs`. It cannot set adapter readiness or activate a network.
 - Typed API client methods, Partner Portal selector, Super Admin catalog controls, and Captive Portal fail-closed messaging were updated. Client-supplied verification method was removed from the network verification request; server-side network configuration is authoritative.
 - Added API contract tests for supported single-method values, hybrid/unknown rejection and secret-field rejection.
-- **Not deployed/applied to production yet:** migration remains in the implementation branch pending CI and review. No production schema, credentials, network sessions, entitlements, or gateway settings were changed.
+- Migration SQL was executed inside an explicit production `BEGIN`/`ROLLBACK` validation transaction: syntax and compatibility checks returned without error; a follow-up query confirmed the catalog table and column were absent and enabled config count remained zero. This was a rollback-only check, not a deployment. Supabase Security Advisor returned zero lints after the check.
+- **Not deployed/applied to production:** migration remains in the implementation branch pending CI and review. No production schema, credentials, network sessions, entitlements, or gateway settings were changed.
 - **Still blocked intentionally:** MikroTik RouterOS credentials/protocol smoke test, signed gateway context and nonce/replay verification, GPS runtime proof, RADIUS server/shared-secret integration, gateway alternatives and ISP API contracts. No adapter is marked ready, so no network can activate partner access through this work.
 
 ## 9. Gate decision
