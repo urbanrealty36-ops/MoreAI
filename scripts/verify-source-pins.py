@@ -18,7 +18,7 @@ SOURCE_PATHS = {
 
 
 def sha(path: Path) -> str:
-    return subprocess.check_output(["git", "hash-object", str(path)], cwd=ROOT, text=True).strip()
+    return subprocess.check_output(["git", "hash-object", "--path=" + str(path.relative_to(ROOT)), str(path)], cwd=ROOT, text=True).strip()
 
 
 def main() -> None:

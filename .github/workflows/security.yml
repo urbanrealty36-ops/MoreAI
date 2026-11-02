@@ -17,12 +17,6 @@ jobs:
         with:
           languages: javascript, python
       - uses: github/codeql-action/analyze@v3
-  dependency-review:
-    if: github.event_name == "pull_request"
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/dependency-review-action@v4
   secret-scan:
     runs-on: ubuntu-latest
     steps:

@@ -59,7 +59,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A vendor .gitmodules docs/source-migration/source-mirror-verification.json
+          git add -A vendor docs/source-migration/source-mirror-verification.json
           if ! git diff --cached --quiet; then
             git commit -m "chore(migration): materialize verified upstream source snapshots"
             git fetch origin "${TARGET_BRANCH}"
