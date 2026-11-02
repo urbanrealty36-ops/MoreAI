@@ -17,9 +17,11 @@ def _config() -> tuple[str, str]:
     return base, key
 
 
-async def _request(method: str, path: str, *, params: str | None = None, payload: dict[str, Any] | None = None) -> Any:
+async def _request(method: str, path: str, *, params: str | None = None, payload: dict[str, Any] | None = None, prefer: str | None = None) -> Any:
     base, key = _config()
     headers = {"apikey": key, "Authorization": f"Bearer {key}", "Accept": "application/json", "Content-Type": "application/json"}
+    if prefer:
+        headers["Prefer"] = prefer
     try:
         async with httpx.AsyncClient(timeout=httpx.Timeout(12.0, connect=4.0)) as client:
             response = await client.request(method, f"{base}/rest/v1/{quote(path, safe='/')}", params=params, json=payload, headers=headers)
@@ -38,6 +40,11 @@ async def select_rows(table: str, query: str) -> list[dict[str, Any]]:
     if not isinstance(data, list):
         raise HTTPException(status_code=502, detail={"code": "DATABASE_RESPONSE_INVALID", "message": "Database returned an invalid response."})
     return data
+
+
+async def insert_rows(table: str, payload: dict[str, Any]) -> list[dict[str, Any]]:
+    data = await _request("POST", table, payload=payload, prefer="return=representation")
+    return data if isinstance(data, list) else []
 
 
 async def rpc(function: str, payload: dict[str, Any]) -> Any:
