@@ -4,7 +4,7 @@ import { getPortalApi } from "../../lib/client";
 
 type Data={overview?:Record<string,number>;users?:unknown[];models?:unknown[];audit?:unknown[];verificationMethods:any[];networkPolicies:any[];error?:string;loading:boolean};
 export function AdminOperations(){
- const [data,setData]=useState<Data>({loading:true,verificationMethods:[]});
+ const [data,setData]=useState<Data>({loading:true,verificationMethods:[],networkPolicies:[]});
  useEffect(()=>{let live=true;(async()=>{
   try{
    const api=getPortalApi();
