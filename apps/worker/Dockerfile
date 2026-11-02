@@ -23,7 +23,8 @@ COPY vendor/openmanusweb vendor/openmanusweb
 
 RUN uv sync --locked --package moreai-worker --extra openmanus --no-dev \
     && useradd --uid 10001 --create-home --shell /usr/sbin/nologin moreai \
-    && chown -R moreai:moreai /app
+    && chown -R moreai:moreai /app \
+    && chmod -R a-w /app
 
 USER 10001:10001
 
