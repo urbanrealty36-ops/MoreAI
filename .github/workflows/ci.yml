@@ -60,6 +60,13 @@ jobs:
       - run: uv sync --all-packages --all-extras --locked
       - run: uv run ruff check apps
       - run: uv run pytest
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    needs: lockfiles
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/dependency-review-action@v4
   security:
     needs: lockfiles
     runs-on: ubuntu-latest
