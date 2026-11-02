@@ -1,3 +1,4 @@
+from urllib.parse import urlparse
 from uuid import uuid4
 
 from fastapi import FastAPI, Request
@@ -5,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from moreai_api.settings import settings
 from moreai_api.routers.credits import router as credits_router
 from moreai_api.routers.llm import router as llm_router, internal_router as llm_internal_router
 from moreai_api.routers.partner import router as partner_router
@@ -22,15 +24,36 @@ class HealthResponse(BaseModel):
     version: str
 
 
+def resolve_cors_origins(environment: str, configured: str) -> list[str]:
+    origins = [item.strip().rstrip("/") for item in configured.split(",") if item.strip()]
+    if not origins:
+        if environment.lower() in {"production", "prod"}:
+            raise RuntimeError("CORS_ALLOWED_ORIGINS must be configured in production.")
+        return [
+            "http://localhost:3000",
+            "http://localhost:3001",
+            "http://localhost:3002",
+            "http://localhost:3003",
+        ]
+    for origin in origins:
+        parsed = urlparse(origin)
+        if (
+            origin == "*"
+            or parsed.scheme not in {"http", "https"}
+            or not parsed.netloc
+            or parsed.path
+            or parsed.query
+            or parsed.fragment
+            or (environment.lower() in {"production", "prod"} and parsed.scheme != "https")
+        ):
+            raise RuntimeError("CORS_ALLOWED_ORIGINS contains an invalid or insecure origin.")
+    return origins
+
+
 app = FastAPI(title="MoreAI API", version="0.1.0", description="Versioned business API boundary.")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://localhost:3002",
-        "http://localhost:3003",
-    ],
+    allow_origins=resolve_cors_origins(settings.moreai_env, settings.cors_allowed_origins),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Correlation-ID", "Idempotency-Key"],
