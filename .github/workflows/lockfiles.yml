@@ -1,0 +1,25 @@
+name: Refresh dependency lockfiles
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.20.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm install --lockfile-only
+      - uses: astral-sh/setup-uv@v5
+      - run: uv lock
+      - uses: actions/upload-artifact@v4
+        with:
+          name: moreai-dependency-lockfiles
+          path: |
+            pnpm-lock.yaml
+            uv.lock
