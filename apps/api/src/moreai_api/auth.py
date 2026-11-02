@@ -8,7 +8,7 @@ import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jwt import PyJWKClient
-from jwt.exceptions import InvalidTokenError
+from jwt.exceptions import InvalidTokenError, PyJWKClientError
 
 from moreai_api.settings import settings
 
@@ -45,5 +45,5 @@ async def require_authenticated_user(
         if not isinstance(claims.get("sub"), str) or not claims["sub"]:
             raise InvalidTokenError("Missing subject")
         return claims
-    except (InvalidTokenError, ValueError, OSError) as exc:
+    except (InvalidTokenError, PyJWKClientError, ValueError, OSError) as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid access token") from exc
