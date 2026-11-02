@@ -1,0 +1,18 @@
+import type { ApiError } from '@moreai/types';
+export type ApiClientOptions = { baseUrl: string; getAccessToken?: () => Promise<string | null> };
+export class ApiRequestError extends Error {
+  constructor(public readonly status: number, public readonly payload: ApiError | unknown) {
+    super('MoreAI API request failed'); this.name = 'ApiRequestError';
+  }
+}
+export function createApiClient(options: ApiClientOptions) {
+  return { async request<T>(path: `/api/v1/${string}`, init: RequestInit = {}): Promise<T> {
+    const token = await options.getAccessToken?.(); const headers = new Headers(init.headers);
+    headers.set('Accept', 'application/json');
+    if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+    if (token) headers.set('Authorization', `Bearer ${token}`);
+    const response = await fetch(new URL(path, options.baseUrl), { ...init, headers });
+    if (!response.ok) throw new ApiRequestError(response.status, await response.json().catch(() => undefined));
+    return response.json() as Promise<T>;
+  }};
+}

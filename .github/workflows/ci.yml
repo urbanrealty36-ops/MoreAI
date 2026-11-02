@@ -1,0 +1,131 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main, phase-01-monorepo-foundation]
+concurrency:
+  group: moreai-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+  pull-requests: read
+jobs:
+  lockfiles:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.20.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: astral-sh/setup-uv@v5
+      - run: pnpm install --lockfile-only --ignore-scripts --frozen-lockfile
+      - run: uv lock --check
+  web-quality:
+    needs: lockfiles
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.20.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+  python-quality:
+    needs: lockfiles
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --all-packages --all-extras --locked
+      - run: uv run ruff check apps
+      - run: uv run pytest
+  security:
+    needs: lockfiles
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          fetch-depth: 0
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript, python
+      - uses: github/codeql-action/analyze@v3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.20.0
+      - run: pnpm audit --audit-level high
+      - uses: astral-sh/setup-uv@v5
+      - name: Export Python runtime dependencies
+        run: uv export --locked --no-dev --format requirements-txt --output-file /tmp/moreai-requirements.txt
+      - name: Audit Python runtime dependencies
+        run: uvx pip-audit -r /tmp/moreai-requirements.txt
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  runtime-smoke:
+    needs: [web-quality, python-quality]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.20.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: astral-sh/setup-uv@v5
+      - run: pnpm install --frozen-lockfile
+      - run: uv sync --all-packages --all-extras --locked
+      - name: Start FastAPI and client apps
+        run: |
+          uv run --package moreai-api uvicorn moreai_api.main:app --host 127.0.0.1 --port 8000 >/tmp/moreai-api.log 2>&1 &
+          pnpm --filter @moreai/web dev >/tmp/moreai-web.log 2>&1 &
+          pnpm --filter @moreai/admin dev >/tmp/moreai-admin.log 2>&1 &
+          pnpm --filter @moreai/partner-portal dev >/tmp/moreai-partner.log 2>&1 &
+          pnpm --filter @moreai/captive-portal dev >/tmp/moreai-captive.log 2>&1 &
+          for port in 8000 3000 3001 3002 3003; do
+            ready=0
+            for attempt in $(seq 1 60); do
+              if curl --silent --fail "http://127.0.0.1:${port}/health" >/dev/null 2>&1 || [ "${port}" = "8000" ] && curl --silent --fail "http://127.0.0.1:8000/health" >/dev/null 2>&1; then
+                ready=1
+                break
+              fi
+              if [ "${port}" != "8000" ] && curl --silent --fail "http://127.0.0.1:${port}/" >/dev/null 2>&1; then
+                ready=1
+                break
+              fi
+              sleep 2
+            done
+            if [ "${ready}" != "1" ]; then
+              cat /tmp/moreai-api.log /tmp/moreai-web.log /tmp/moreai-admin.log /tmp/moreai-partner.log /tmp/moreai-captive.log
+              exit 1
+            fi
+          done
+      - name: Validate Expo app configuration
+        run: pnpm --filter @moreai/mobile exec expo config --json >/tmp/moreai-mobile-config.json

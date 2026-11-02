@@ -1,0 +1,7 @@
+packages:
+  - "apps/web"
+  - "apps/admin"
+  - "apps/partner-portal"
+  - "apps/captive-portal"
+  - "apps/mobile"
+  - "packages/*"
