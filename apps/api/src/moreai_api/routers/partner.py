@@ -147,7 +147,19 @@ async def select_network_verification_method(
             detail={"code": "VERIFICATION_METHOD_NOT_AVAILABLE", "message": "This method is not enabled by platform operations."},
         )
     forbidden = {"password", "secret", "token", "api_key", "shared_secret", "credential"}
-    if any(any(term in key.lower() for term in forbidden) for key in payload.config_public):
+
+    def contains_secret_key(value: Any) -> bool:
+        if isinstance(value, dict):
+            return any(
+                any(term in str(key).lower() for term in forbidden)
+                or contains_secret_key(nested)
+                for key, nested in value.items()
+            )
+        if isinstance(value, list):
+            return any(contains_secret_key(item) for item in value)
+        return False
+
+    if contains_secret_key(payload.config_public):
         raise HTTPException(
             status_code=422,
             detail={"code": "SECRET_MUST_NOT_BE_SUBMITTED", "message": "Do not submit credentials in public configuration."},
