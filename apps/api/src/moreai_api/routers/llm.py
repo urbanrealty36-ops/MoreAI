@@ -65,7 +65,7 @@ async def _routes(requested:str|None)->list[dict]:
 
 async def _provider(model:dict,prompt:str,max_tokens:int)->tuple[str,int,int,str|None]:
     provider=model["provider"]["key"];key=_key(provider)
-    if not key:raise ProviderFailure("PROVIDER_CREDENTIALS_NOT_CONFIGURED")
+    if not key:raise ProviderFailure("PROVIDER_CREDENTIALS_NOT_CONFIGURED",retryable=True)
     estimate=max(1,(len(prompt)+3)//4)
     try:
         async with httpx.AsyncClient(timeout=httpx.Timeout(45,connect=5)) as client:
@@ -90,6 +90,7 @@ async def _provider(model:dict,prompt:str,max_tokens:int)->tuple[str,int,int,str
         if code==429:raise ProviderFailure("PROVIDER_RATE_LIMITED",retryable=True) from e
         if code in (404,410):raise ProviderFailure("PROVIDER_MODEL_UNAVAILABLE",retryable=True) from e
         if code>=500:raise ProviderFailure("PROVIDER_SERVER_ERROR",ambiguous=True) from e
+        if code in (401,403):raise ProviderFailure("PROVIDER_AUTH_FAILED",retryable=True) from e
         raise ProviderFailure("PROVIDER_REJECTED_REQUEST") from e
     except (KeyError,TypeError,ValueError) as e:raise ProviderFailure("PROVIDER_RESPONSE_INVALID",ambiguous=True) from e
     except httpx.HTTPError as e:raise ProviderFailure("PROVIDER_TRANSPORT_ERROR",ambiguous=True) from e
