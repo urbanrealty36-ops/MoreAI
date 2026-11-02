@@ -15,11 +15,11 @@ create table if not exists public.network_verification_method_catalog (
 insert into public.network_verification_method_catalog
   (method_key, display_name, adapter_key, enabled, adapter_ready, requires_secret, setup_requirements)
 values
-  ('gps','GPS / Geolocation','gps',false,false,false,'{"permission":"location","requirements":["browser_geolocation","server_side_radius_validation"]}'),
-  ('mikrotik_hotspot','MikroTik Hotspot','mikrotik_hotspot',false,false,true,'{"requirements":["routeros_api_or_signed_callback","gateway_secret_reference","nonce_replay_protection"]}'),
-  ('radius','RADIUS','radius',false,false,true,'{"requirements":["radius_server","shared_secret_reference","accounting_or_auth_evidence"]}'),
-  ('gateway','Other Gateway / Controller','gateway',false,false,true,'{"requirements":["supported_gateway_adapter","signed_session_context"]}'),
-  ('isp_api','ISP API','isp_api',false,false,true,'{"requirements":["provider_contract","provider_credentials_reference","signed_callback_or_api_auth"]}')
+  ('gps','GPS / Geolocation','gps',true,false,false,'{"permission":"location","requirements":["browser_geolocation","server_side_radius_validation"]}'),
+  ('mikrotik_hotspot','MikroTik Hotspot','mikrotik_hotspot',true,false,true,'{"requirements":["routeros_api_or_signed_callback","gateway_secret_reference","nonce_replay_protection"]}'),
+  ('radius','RADIUS','radius',true,false,true,'{"requirements":["radius_server","shared_secret_reference","accounting_or_auth_evidence"]}'),
+  ('gateway','Other Gateway / Controller','gateway',true,false,true,'{"requirements":["supported_gateway_adapter","signed_session_context"]}'),
+  ('isp_api','ISP API','isp_api',true,false,true,'{"requirements":["provider_contract","provider_credentials_reference","signed_callback_or_api_auth"]}')
 on conflict (method_key) do nothing;
 
 alter table public.partner_networks
@@ -45,3 +45,59 @@ comment on table public.network_verification_method_catalog is
   'Platform-managed adapter catalog. Methods remain disabled until adapter readiness and production configuration are verified.';
 comment on column public.partner_networks.active_verification_method is
   'The sole selected verification adapter for this network. NULL means not configured; selection does not imply activation.';
+
+-- Atomically select one adapter. Selection is not activation: enabled remains false
+-- until a separate credential/readiness verification workflow exists.
+create or replace function public.set_network_verification_method(
+  p_network_id uuid,
+  p_method_key text,
+  p_config_public jsonb default '{}'::jsonb
+) returns jsonb
+language plpgsql
+security invoker
+set search_path = public, pg_temp
+as $$
+declare
+  v_method public.network_verification_method_catalog%rowtype;
+  v_config public.network_verification_configs%rowtype;
+begin
+  select * into v_method
+  from public.network_verification_method_catalog
+  where method_key = p_method_key and enabled = true;
+
+  if not found then
+    raise exception using errcode = '22023', message = 'VERIFICATION_METHOD_NOT_AVAILABLE';
+  end if;
+
+  update public.partner_networks
+  set active_verification_method = p_method_key, updated_at = now()
+  where id = p_network_id;
+
+  if not found then
+    raise exception using errcode = 'P0002', message = 'NETWORK_NOT_FOUND';
+  end if;
+
+  update public.network_verification_configs
+  set enabled = false, updated_at = now()
+  where network_id = p_network_id and method_key <> p_method_key and enabled = true;
+
+  insert into public.network_verification_configs
+    (network_id, method_key, config_public, enabled, policy)
+  values
+    (p_network_id, p_method_key, coalesce(p_config_public, '{}'::jsonb), false, '{}'::jsonb)
+  on conflict (network_id, method_key)
+  do update set config_public = excluded.config_public, enabled = false, updated_at = now()
+  returning * into v_config;
+
+  return jsonb_build_object(
+    'network_id', p_network_id,
+    'active_method', p_method_key,
+    'selected', true,
+    'activated', false,
+    'adapter_ready', v_method.adapter_ready
+  );
+end;
+$$;
+
+revoke all on function public.set_network_verification_method(uuid, text, jsonb) from public, anon, authenticated;
+grant execute on function public.set_network_verification_method(uuid, text, jsonb) to service_role;
