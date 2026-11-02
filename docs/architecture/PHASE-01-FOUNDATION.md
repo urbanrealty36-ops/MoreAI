@@ -1,6 +1,6 @@
 # Phase 01 — Monorepo Foundation
 
-<badge>Acceptance gate: PASSED</badge>
+**Acceptance gate: PASSED**
 
 **Last audited:** 2026-11-02  
 **Accepted branch head:** `b9b9b5d63e498652522dec8a17a3a8fbbfc697b5`
