@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict
 
 from moreai_api.auth import require_authenticated_user
 from moreai_api.db import insert_rows, select_rows, update_rows
+from moreai_api.gateway import gateway_secret_bundle, validate_mikrotik_credentials
 
 router = APIRouter(prefix="/admin", tags=["super-admin"])
 UserClaims = Annotated[dict, Depends(require_authenticated_user)]
@@ -183,3 +184,111 @@ async def set_network_verification_method_availability(
         "activated": False,
         "message": "Catalog availability changed. This does not mark an adapter ready or activate any partner network.",
     }
+
+
+
+class MikroTikSecretReference(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    secret_reference: str
+
+
+@router.put("/networks/{network_id}/mikrotik-secret-reference")
+async def set_mikrotik_secret_reference(
+    claims: UserClaims, network_id: UUID, payload: MikroTikSecretReference
+):
+    await _require_permission(claims, "network.verification.manage")
+    if not payload.secret_reference or len(payload.secret_reference) > 128:
+        raise HTTPException(status_code=422, detail="Invalid secret reference")
+    bundle = gateway_secret_bundle(payload.secret_reference)
+    if not bundle:
+        raise HTTPException(status_code=503, detail="Gateway secret reference is unavailable")
+    configs = await select_rows(
+        "network_verification_configs",
+        "select=id,method_key&network_id=eq."
+        + str(network_id)
+        + "&method_key=eq.mikrotik_hotspot",
+    )
+    if not configs:
+        raise HTTPException(status_code=404, detail="Select MikroTik Hotspot for this network first")
+    changed = await update_rows(
+        "network_verification_configs",
+        "network_id=eq." + str(network_id) + "&method_key=eq.mikrotik_hotspot",
+        {"secret_reference": payload.secret_reference, "enabled": False},
+    )
+    await insert_rows(
+        "admin_audit_logs",
+        {
+            "actor_user_id": str(UUID(str(claims.get("sub", "")))),
+            "action": "network.mikrotik.secret_reference_configured",
+            "resource_type": "partner_network",
+            "resource_id": str(network_id),
+            "scope_type": "network",
+            "scope_id": str(network_id),
+            "outcome": "success",
+            "metadata": {"secret_reference_configured": True},
+        },
+    )
+    return {"configured": bool(changed), "credentials_exposed": False, "activated": False}
+
+
+@router.post("/networks/{network_id}/mikrotik-credentials/validate")
+async def validate_network_mikrotik_credentials(claims: UserClaims, network_id: UUID):
+    await _require_permission(claims, "network.verification.manage")
+    networks = await select_rows(
+        "partner_networks",
+        "select=id,active_verification_method& id=eq." + str(network_id),
+    )
+    if not networks or networks[0].get("active_verification_method") != "mikrotik_hotspot":
+        raise HTTPException(status_code=409, detail="MikroTik must be the selected method for this network")
+    configs = await select_rows(
+        "network_verification_configs",
+        "select=id,secret_reference,config_public&network_id=eq."
+        + str(network_id)
+        + "&method_key=eq.mikrotik_hotspot",
+    )
+    if not configs or not configs[0].get("secret_reference"):
+        raise HTTPException(status_code=409, detail="MikroTik secret reference is not configured")
+    bundle = gateway_secret_bundle(configs[0]["secret_reference"])
+    if not await validate_mikrotik_credentials(bundle):
+        await insert_rows(
+            "admin_audit_logs",
+            {
+                "actor_user_id": str(UUID(str(claims.get("sub", "")))),
+                "action": "network.mikrotik.credentials_validation",
+                "resource_type": "partner_network",
+                "resource_id": str(network_id),
+                "scope_type": "network",
+                "scope_id": str(network_id),
+                "outcome": "failure",
+                "metadata": {"credentials_valid": False},
+            },
+        )
+        raise HTTPException(
+            status_code=503,
+            detail={"code": "MIKROTIK_CREDENTIAL_VALIDATION_FAILED", "message": "RouterOS HTTPS credential validation failed; adapter remains disabled."},
+        )
+
+    await update_rows(
+        "network_verification_method_catalog",
+        "method_key=eq.mikrotik_hotspot",
+        {"adapter_ready": True, "updated_at": datetime.now(timezone.utc).isoformat()},
+    )
+    activated = await update_rows(
+        "network_verification_configs",
+        "network_id=eq." + str(network_id) + "&method_key=eq.mikrotik_hotspot",
+        {"enabled": True, "updated_at": datetime.now(timezone.utc).isoformat()},
+    )
+    await insert_rows(
+        "admin_audit_logs",
+        {
+            "actor_user_id": str(UUID(str(claims.get("sub", "")))),
+            "action": "network.mikrotik.credentials_validation",
+            "resource_type": "partner_network",
+            "resource_id": str(network_id),
+            "scope_type": "network",
+            "scope_id": str(network_id),
+            "outcome": "success",
+            "metadata": {"credentials_valid": True, "adapter_ready": True, "network_config_enabled": bool(activated)},
+        },
+    )
+    return {"credentials_valid": True, "adapter_ready": True, "network_config_enabled": bool(activated), "credentials_exposed": False}
