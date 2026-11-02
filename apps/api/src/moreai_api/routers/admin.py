@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 
 from moreai_api.auth import require_authenticated_user
 from moreai_api.db import select_rows
@@ -15,26 +16,18 @@ async def _require_permission(claims: dict[str, Any], permission_key: str) -> No
     user_id = claims.get("sub")
     if not user_id:
         raise HTTPException(status_code=401, detail="Authentication required")
-    assignments = await select_rows(
-        "user_role_assignments",
-        f"select=id,role_id,scope_type,scope_id,expires_at,roles!inner(key)&user_id=eq.{user_id}&scope_type=eq.platform",
-    )
+    assignments = await select_rows("user_role_assignments", f"select=id,role_id,scope_type,scope_id,expires_at,roles!inner(key)&user_id=eq.{user_id}&scope_type=eq.platform")
     role_ids = []
     for item in assignments:
         expires = item.get("expires_at")
-        if expires:
-            from datetime import datetime, timezone
-            if datetime.fromisoformat(expires.replace("Z", "+00:00")) <= datetime.now(timezone.utc):
-                continue
+        if expires and datetime.fromisoformat(expires.replace("Z", "+00:00")) <= datetime.now(timezone.utc):
+            continue
         role = item.get("roles") or {}
         if role.get("key") in {"super_admin", "platform_admin", "finance_admin", "support_admin", "security_admin", "partner_manager", "read_only_analyst"}:
             role_ids.append(item["role_id"])
     if not role_ids:
         raise HTTPException(status_code=403, detail={"code": "ADMIN_PERMISSION_REQUIRED", "message": "Platform role assignment required."})
-    grants = await select_rows(
-        "role_permissions",
-        "select=role_id,permissions!inner(key)&role_id=in.(" + ",".join(role_ids) + ")",
-    )
+    grants = await select_rows("role_permissions", "select=role_id,permissions!inner(key)&role_id=in.(" + ",".join(role_ids) + ")")
     if not any((x.get("permissions") or {}).get("key") == permission_key for x in grants):
         raise HTTPException(status_code=403, detail={"code": "ADMIN_PERMISSION_DENIED", "message": "Required permission is not assigned."})
 
@@ -51,8 +44,7 @@ async def admin_overview(claims: UserClaims):
 @router.get("/users")
 async def admin_users(claims: UserClaims, limit: int = 50):
     await _require_permission(claims, "platform.users.read")
-    limit = max(1, min(limit, 100))
-    return {"items": await select_rows("profiles", f"select=id,display_name,avatar_path,locale,timezone,created_at&order=created_at.desc&limit={limit}")}
+    return {"items": await select_rows("profiles", f"select=id,display_name,avatar_path,locale,timezone,created_at&order=created_at.desc&limit={max(1, min(limit, 100))}")}
 
 
 @router.get("/agents")

@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException
 
 from moreai_api.auth import require_authenticated_user
 from moreai_api.db import select_rows
@@ -17,20 +17,16 @@ async def _membership(claims: dict[str, Any]) -> tuple[dict[str, Any], list[dict
     user_id = claims.get("sub")
     if not user_id:
         raise HTTPException(status_code=401, detail="Authentication required")
-    memberships = await select_rows(
-        "partner_members",
-        f"select=id,partner_id,location_id,role_key,status&user_id=eq.{user_id}&status=eq.active",
-    )
+    memberships = await select_rows("partner_members", f"select=id,partner_id,location_id,role_key,status&user_id=eq.{user_id}&status=eq.active")
     if not memberships:
         raise HTTPException(status_code=403, detail={"code": "PARTNER_MEMBERSHIP_REQUIRED", "message": "Active partner membership required."})
-    partner_ids = {m["partner_id"] for m in memberships}
-    if len(partner_ids) != 1:
+    if len({m["partner_id"] for m in memberships}) != 1:
         raise HTTPException(status_code=409, detail={"code": "PARTNER_CONTEXT_AMBIGUOUS", "message": "Select a partner context before continuing."})
     return memberships[0], memberships
 
 
-async def _partner_rows(table: str, fields: str, partner_id: str, extra: str = "") -> list[dict[str, Any]]:
-    return await select_rows(table, f"select={fields}&partner_id=eq.{partner_id}{extra}&order=created_at.desc")
+async def _partner_rows(table: str, fields: str, partner_id: str) -> list[dict[str, Any]]:
+    return await select_rows(table, f"select={fields}&partner_id=eq.{partner_id}&order=created_at.desc")
 
 
 @router.get("/me")
@@ -64,7 +60,7 @@ async def list_networks(claims: UserClaims):
 
 @router.get("/verification-methods")
 async def list_verification_methods(claims: UserClaims, network_id: UUID | None = None):
-    membership, memberships = await _membership(claims)
+    _, _ = await _membership(claims)
     networks = await list_networks(claims)
     allowed = {x["id"] for x in networks["items"]}
     if network_id and str(network_id) not in allowed:
@@ -79,8 +75,7 @@ async def list_verification_methods(claims: UserClaims, network_id: UUID | None 
 @router.get("/campaigns")
 async def list_campaigns(claims: UserClaims):
     membership, _ = await _membership(claims)
-    items = await _partner_rows("partner_campaigns", "id,partner_id,location_id,name,status,starts_at,ends_at,budget,config,created_at", membership["partner_id"])
-    return {"items": items}
+    return {"items": await _partner_rows("partner_campaigns", "id,partner_id,location_id,name,status,starts_at,ends_at,budget,config,created_at", membership["partner_id"])}
 
 
 @router.get("/rewards")
@@ -100,11 +95,4 @@ async def partner_analytics(claims: UserClaims):
     branches = await _partner_rows("partner_locations", "id", membership["partner_id"])
     networks = await _partner_rows("partner_networks", "id,status", membership["partner_id"])
     campaigns = await _partner_rows("partner_campaigns", "id,status", membership["partner_id"])
-    return {
-        "branches": len(branches),
-        "networks": len(networks),
-        "active_networks": sum(x["status"] == "active" for x in networks),
-        "campaigns": len(campaigns),
-        "active_campaigns": sum(x["status"] == "active" for x in campaigns),
-        "as_of": datetime.now(timezone.utc).isoformat(),
-    }
+    return {"branches": len(branches), "networks": len(networks), "active_networks": sum(x["status"] == "active" for x in networks), "campaigns": len(campaigns), "active_campaigns": sum(x["status"] == "active" for x in campaigns), "as_of": datetime.now(timezone.utc).isoformat()}
