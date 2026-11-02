@@ -2,7 +2,9 @@
 useDefault = true
 
 [[allowlists]]
-description = "Known expired upstream private-video embed JWTs in immutable vendor README files only; all other paths and secret patterns remain scanned."
+description = "Exact historical upstream expired GitHub video embed JWT findings in two immutable vendor README files; no other commit or path is excluded."
+commits = [
+  "1cc296daaba1990a7f1a4718dd915e01460e7069",
+  "d0eb7a1559d7923d47fa8b3c82c79bb7c112f8c8",
+]
 paths = ['''^vendor/openmanusweb/README(_zh)?\.md$''']
-regexTarget = "line"
-regexes = ['''\.mp4\?jwt=''']
