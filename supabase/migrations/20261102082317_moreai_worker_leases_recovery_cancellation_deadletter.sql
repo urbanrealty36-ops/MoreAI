@@ -1,0 +1,1 @@
+-- Lease columns and RPC definitions were applied in Supabase migration 20261102082317. See the migration registry and follow-up migration 20261102082504 for the finalized claim logic.
