@@ -1,16 +1,13 @@
+import WorkspaceAuth from "@/components/auth/WorkspaceAuth";
 import ReferenceWorkspace from "@/components/reference/ReferenceWorkspace";
 
 export default function WebHome() {
   return (
     <main className="min-h-screen bg-[#F7F4EC] p-4 text-[#171717]">
-      <section className="mx-auto max-w-3xl rounded-2xl border-2 border-amber-700 bg-amber-50 p-5 text-amber-950">
-        <h1 className="text-lg font-black">MoreAI Workspace</h1>
-        <p className="mt-2 text-sm">UI referensi asli telah dimigrasikan. Data bisnis dan autentikasi produksi masih menunggu penyelesaian backend contract. Tidak ada saldo, session, campaign, atau hasil agent demo yang ditampilkan sebagai data live.</p>
-        <p className="mt-3 text-xs font-bold">Status: API_INTEGRATION_IN_PROGRESS</p>
-      </section>
+      <WorkspaceAuth />
       <details className="mx-auto mt-4 max-w-3xl rounded-xl border-2 border-[#171717] bg-white p-4">
         <summary className="cursor-pointer text-sm font-bold">Buka UI reference preview (non-produksi)</summary>
-        <p className="my-3 text-xs text-amber-900">Preview ini mempertahankan source layout dan komponen referensi. Data contoh di dalamnya bukan data operasional. Gunakan hanya untuk inspeksi UI.</p>
+        <p className="my-3 text-xs text-amber-900">Preview mempertahankan source layout dan komponen referensi. Data contoh di dalamnya bukan data operasional dan tidak dikirim ke API produksi.</p>
         <ReferenceWorkspace />
       </details>
     </main>
