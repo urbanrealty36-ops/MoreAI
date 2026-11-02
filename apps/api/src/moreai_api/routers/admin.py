@@ -261,10 +261,14 @@ async def validate_network_mikrotik_credentials(
         + str(network_id)
         + "&method_key=eq.mikrotik_hotspot",
     )
-    if not configs or not configs[0].get("secret_reference"):
+    if (
+        not configs
+        or not configs[0].get("secret_reference")
+        or not (configs[0].get("config_public") or {}).get("gateway_id")
+    ):
         raise HTTPException(
             status_code=409,
-            detail="MikroTik secret reference is not configured",
+            detail="MikroTik secret reference or gateway ID is not configured",
         )
     bundle = gateway_secret_bundle(configs[0]["secret_reference"])
     if not await validate_mikrotik_credentials(bundle):
