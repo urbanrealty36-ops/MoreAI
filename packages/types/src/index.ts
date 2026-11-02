@@ -1,0 +1,1 @@
+export type ApiError = { code: string; message: string; correlation_id: string };\nexport type HealthStatus = { status: 'ok' | 'degraded'; service: string; version: string };\nexport type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue };\n
