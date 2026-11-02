@@ -113,32 +113,31 @@ export const ClientChat: React.FC<ClientChatProps> = ({
       setIsLoading(true);
 
       try {
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
         const apiBaseUrl = process.env.NEXT_PUBLIC_MOREAI_API_URL;
-        if (!supabaseUrl || !publishableKey || !apiBaseUrl) {
+        if (!apiBaseUrl) {
           throw new Error('Layanan belum dikonfigurasi. Silakan hubungi administrator.');
         }
         const { createBrowserClient } = await import('@supabase/ssr');
+        const { createApiClient } = await import('@moreai/api-client');
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+        if (!supabaseUrl || !publishableKey) {
+          throw new Error('Autentikasi MoreAI belum dikonfigurasi.');
+        }
         const supabase = createBrowserClient(supabaseUrl, publishableKey);
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError || !sessionData.session?.access_token) {
-          throw new Error('Silakan masuk ke akun MoreAI sebelum menggunakan AI Workspace.');
-        }
-        const response = await fetch(new URL('/api/v1/llm/generate', apiBaseUrl), {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-            Authorization: `Bearer ${sessionData.session.access_token}`,
+        const api = createApiClient({
+          baseUrl: apiBaseUrl,
+          getAccessToken: async () => {
+            const { data, error } = await supabase.auth.getSession();
+            if (error) throw new Error('Sesi akun tidak dapat dibaca.');
+            return data.session?.access_token ?? null;
           },
-          body: JSON.stringify({ prompt: textToSend, model: selectedModel, max_output_tokens: 2048 }),
         });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          throw new Error(typeof data.detail === 'string' ? data.detail : 'Permintaan AI belum dapat diproses.');
-        }
-        const botResponse = typeof data.text === 'string' ? data.text : 'Provider tidak mengembalikan teks.';
+        const data = await api.llm.generate(
+          { prompt: textToSend, model: selectedModel, max_output_tokens: 2048 },
+          crypto.randomUUID(),
+        );
+        const botResponse = data.text;
 
         const assistantMsg: Message = {
           id: `ai-${Date.now()}`,
