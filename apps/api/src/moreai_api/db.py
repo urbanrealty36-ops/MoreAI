@@ -87,8 +87,11 @@ async def rpc(function: str, payload: dict[str, Any]) -> Any:
     return await _request("POST", f"rpc/{function}", payload=payload)
 
 
-
-async def update_rows(table: str, query: str, payload: dict[str, Any]) -> list[dict[str, Any]]:
+async def update_rows(
+    table: str,
+    query: str,
+    payload: dict[str, Any],
+) -> list[dict[str, Any]]:
     data = await _request(
         "PATCH", table, params=query, payload=payload, prefer="return=representation"
     )
