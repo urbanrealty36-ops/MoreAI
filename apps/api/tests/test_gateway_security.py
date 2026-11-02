@@ -6,6 +6,7 @@ import time
 from moreai_api.gateway import (
     canonical_gateway_payload,
     valid_gateway_timestamp,
+    valid_ip_address,
     valid_mac_address,
     valid_nonce,
     verify_gateway_signature,
@@ -47,3 +48,28 @@ def test_gateway_mac_address_validation():
     assert valid_mac_address("AA:BB:CC:DD:EE:FF")
     assert not valid_mac_address("AA:BB:CC:DD:EE")
     assert not valid_mac_address("not-a-mac")
+    assert valid_ip_address("192.0.2.10")
+    assert not valid_ip_address("0.0.0.0")
+    assert not valid_ip_address("not-an-ip")
+
+
+
+def test_routeros_credentials_require_https_and_secret(monkeypatch):
+    from moreai_api.gateway import validate_mikrotik_credentials
+
+    import asyncio
+
+    invalid_http = {
+        "router_url": "http://router.example",
+        "username": "api-user",
+        "password": "not-a-real-password",
+        "hmac_secret": "x" * 48,
+    }
+    missing_hmac = {
+        "router_url": "https://router.example",
+        "username": "api-user",
+        "password": "not-a-real-password",
+        "hmac_secret": "short",
+    }
+    assert asyncio.run(validate_mikrotik_credentials(invalid_http)) is False
+    assert asyncio.run(validate_mikrotik_credentials(missing_hmac)) is False
