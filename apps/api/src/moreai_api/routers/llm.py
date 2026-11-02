@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import re
 import time
 from decimal import Decimal
 from typing import Annotated
 from uuid import uuid4
 
 import httpx
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from moreai_api.auth import require_authenticated_user
@@ -113,7 +112,7 @@ async def generate(
         output_tokens = int(usage_meta.get("candidatesTokenCount", max(1, (len(text) + 3) // 4)))
         actual_cost = _cost(input_tokens, output_tokens, model)
         actual_credits = (actual_cost * settings.credits_per_usd).quantize(Decimal("0.000001"))
-        settlement = await rpc("moreai_credit_settle", {"p_reservation_id": reservation_id, "p_actual_amount": float(actual_credits), "p_idempotency_key": f"llm-settle:{idempotency_key}"})
+        await rpc("moreai_credit_settle", {"p_reservation_id": reservation_id, "p_actual_amount": float(actual_credits), "p_idempotency_key": f"llm-settle:{idempotency_key}"})
         await insert_rows("llm_usage", {
             "user_id": user_id, "provider_key": provider_key, "model_key": model_key,
             "request_id": request_id, "input_tokens": input_tokens, "output_tokens": output_tokens,
