@@ -16,11 +16,11 @@ export const ClientAuthModal: React.FC<AuthModalProps> = ({
   onSuccess,
 }) => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [name, setName] = useState('Budi Santoso');
-  const [email, setEmail] = useState('budi@moreai.id');
-  const [password, setPassword] = useState('••••••••');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [agreeTerms, setAgreeTerms] = useState(true);
+  const [agreeTerms, setAgreeTerms] = useState(false);
 
   if (!isOpen) return null;
 
@@ -51,7 +51,7 @@ export const ClientAuthModal: React.FC<AuthModalProps> = ({
           <p className="text-xs text-gray-500 font-medium">
             {mode === 'login'
               ? 'Mulai perjalanan AI kamu bersama MoreAI.'
-              : 'Daftar gratis dan dapatkan 100 AI Credit pertama.'}
+              : 'Daftar untuk mulai menggunakan MoreAI.'}
           </p>
         </div>
 
@@ -156,6 +156,7 @@ export const ClientAuthModal: React.FC<AuthModalProps> = ({
             <label className="flex items-start gap-2 pt-1 cursor-pointer">
               <input
                 type="checkbox"
+                required
                 checked={agreeTerms}
                 onChange={(e) => setAgreeTerms(e.target.checked)}
                 className="mt-0.5 rounded border border-[#171717]"
