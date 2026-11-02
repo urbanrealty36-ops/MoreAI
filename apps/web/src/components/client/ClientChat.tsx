@@ -112,22 +112,33 @@ export const ClientChat: React.FC<ClientChatProps> = ({
       setInputMessage('');
       setIsLoading(true);
 
-      // Deduct 25 credit
-      onDeductCredit(25);
-
       try {
-        const res = await fetch('/api/gemini/generate', {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+        const apiBaseUrl = process.env.NEXT_PUBLIC_MOREAI_API_URL;
+        if (!supabaseUrl || !publishableKey || !apiBaseUrl) {
+          throw new Error('Layanan belum dikonfigurasi. Silakan hubungi administrator.');
+        }
+        const { createBrowserClient } = await import('@supabase/ssr');
+        const supabase = createBrowserClient(supabaseUrl, publishableKey);
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError || !sessionData.session?.access_token) {
+          throw new Error('Silakan masuk ke akun MoreAI sebelum menggunakan AI Workspace.');
+        }
+        const response = await fetch(new URL('/api/v1/llm/generate', apiBaseUrl), {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            prompt: textToSend,
-            model: selectedModel,
-            agentRole: selectedAgent,
-          }),
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            Authorization: `Bearer ${sessionData.session.access_token}`,
+          },
+          body: JSON.stringify({ prompt: textToSend, model: selectedModel, max_output_tokens: 2048 }),
         });
-
-        const data = await res.json();
-        const botResponse = data.text || 'Maaf, respons tidak dapat diperoleh saat ini.';
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(typeof data.detail === 'string' ? data.detail : 'Permintaan AI belum dapat diproses.');
+        }
+        const botResponse = typeof data.text === 'string' ? data.text : 'Provider tidak mengembalikan teks.');
 
         const isComplex =
           textToSend.toLowerCase().includes('buat') ||
@@ -140,19 +151,7 @@ export const ClientChat: React.FC<ClientChatProps> = ({
           sender: 'assistant',
           text: botResponse,
           timestamp: '10:27',
-          hasAgentWorkflow: isComplex,
-          steps: [
-            { name: `AI Model: MoreAI F.01 (${selectedModel})`, status: 'completed' },
-            { name: `Agen: ${selectedAgent.toUpperCase()}`, status: 'completed' },
-            { name: 'Verifikasi & format hasil instruksi', status: 'completed' },
-          ],
-          artifact: isComplex
-            ? {
-                title: 'Hasil Eksekusi MoreAI Agent',
-                type: 'Dokumen Output & Strategi',
-                summary: 'Ringkasan hasil kompilasi instruksi kerja terstruktur.',
-              }
-            : undefined,
+          hasAgentWorkflow: false,
         };
 
         setMessages((prev) => [...prev, assistantMsg]);
