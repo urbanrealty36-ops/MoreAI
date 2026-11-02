@@ -1,0 +1,1 @@
+[project]\nname = "moreai-workspace"\nversion = "0.1.0"\nrequires-python = ">=3.12"\ndependencies = []\n\n[tool.uv]\npackage = false\n\n[tool.uv.workspace]\nmembers = ["apps/api", "apps/worker", "apps/sandbox"]\n\n[tool.ruff]\nline-length = 100\ntarget-version = "py312"\n\n[tool.pytest.ini_options]\ntestpaths = ["apps/api/tests", "apps/worker/tests", "apps/sandbox/tests"]\n
