@@ -38,3 +38,9 @@ def test_admin_endpoint_uses_database_role_assignments(monkeypatch) -> None:
     response = client.get("/api/v1/admin/overview")
     assert response.status_code == 403
     assert response.json()["detail"]["code"] == "ADMIN_PERMISSION_REQUIRED"
+
+
+def test_credit_reservation_requires_idempotency_key() -> None:
+    response = client.post("/api/v1/credits/reservations", json={"amount": 1})
+    assert response.status_code == 400
+    assert response.json()["detail"]["code"] == "IDEMPOTENCY_KEY_REQUIRED"
