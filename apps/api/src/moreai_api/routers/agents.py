@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Annotated
 from uuid import UUID
 
@@ -17,8 +18,43 @@ class RunCreate(BaseModel):
     prompt: str = Field(min_length=1, max_length=12000)
     workspace_id: UUID | None = None
     conversation_id: UUID | None = None
-    agent_key: str = Field(default="manus", min_length=1, max_length=80)
+    agent_key: str = Field(default="manus", pattern=r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,79}$")
     max_attempts: int = Field(default=3, ge=1, le=10)
+
+
+def _replay_or_conflict(
+    existing: list[dict],
+    *,
+    prompt: str,
+    workspace_id: UUID | None,
+    conversation_id: UUID | None,
+    agent_definition_id: str,
+    max_attempts: int,
+) -> dict:
+    run = existing[0]
+    expected = {
+        "prompt": prompt,
+        "workspace_id": str(workspace_id) if workspace_id else None,
+        "conversation_id": str(conversation_id) if conversation_id else None,
+        "agent_definition_id": agent_definition_id,
+        "max_attempts": max_attempts,
+    }
+    actual = {
+        "prompt": (run.get("input") or {}).get("prompt"),
+        "workspace_id": run.get("workspace_id"),
+        "conversation_id": run.get("conversation_id"),
+        "agent_definition_id": run.get("agent_definition_id"),
+        "max_attempts": run.get("max_attempts"),
+    }
+    if actual != expected:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "IDEMPOTENCY_KEY_REUSED",
+                "message": "Idempotency-Key was already used with a different request.",
+            },
+        )
+    return {"run": run, "replayed": True}
 
 
 @router.post("/runs", status_code=202)
@@ -28,7 +64,10 @@ async def create_run(
     idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
 ):
     user_id = str(UUID(str(claims.get("sub", ""))))
-    if not idempotency_key or not idempotency_key.strip() or len(idempotency_key) > 200:
+    if (
+        not idempotency_key
+        or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{7,199}", idempotency_key)
+    ):
         raise HTTPException(
             status_code=400,
             detail={
@@ -70,23 +109,50 @@ async def create_run(
         )
     existing = await select_rows(
         "agent_runs",
-        f"select=id,status,input,created_at&user_id=eq.{user_id}&idempotency_key=eq.{idempotency_key}&limit=1",
+        "select=id,status,input,workspace_id,conversation_id,agent_definition_id,max_attempts,created_at"
+        f"&user_id=eq.{user_id}&idempotency_key=eq.{idempotency_key}&limit=1",
     )
     if existing:
-        return {"run": existing[0], "replayed": True}
-    created = await insert_rows(
-        "agent_runs",
-        {
-            "user_id": user_id,
-            "workspace_id": str(payload.workspace_id) if payload.workspace_id else None,
-            "conversation_id": str(payload.conversation_id) if payload.conversation_id else None,
-            "agent_definition_id": definitions[0]["id"],
-            "status": "queued",
-            "idempotency_key": idempotency_key,
-            "input": {"prompt": payload.prompt},
-            "max_attempts": payload.max_attempts,
-        },
-    )
+        return _replay_or_conflict(
+            existing,
+            prompt=payload.prompt,
+            workspace_id=payload.workspace_id,
+            conversation_id=payload.conversation_id,
+            agent_definition_id=str(definitions[0]["id"]),
+            max_attempts=payload.max_attempts,
+        )
+    try:
+        created = await insert_rows(
+            "agent_runs",
+            {
+                "user_id": user_id,
+                "workspace_id": str(payload.workspace_id) if payload.workspace_id else None,
+                "conversation_id": str(payload.conversation_id) if payload.conversation_id else None,
+                "agent_definition_id": definitions[0]["id"],
+                "status": "queued",
+                "idempotency_key": idempotency_key,
+                "input": {"prompt": payload.prompt},
+                "max_attempts": payload.max_attempts,
+            },
+        )
+    except HTTPException as exc:
+        if exc.status_code != 502:
+            raise
+        raced = await select_rows(
+            "agent_runs",
+            "select=id,status,input,workspace_id,conversation_id,agent_definition_id,max_attempts,created_at"
+            f"&user_id=eq.{user_id}&idempotency_key=eq.{idempotency_key}&limit=1",
+        )
+        if raced:
+            return _replay_or_conflict(
+                raced,
+                prompt=payload.prompt,
+                workspace_id=payload.workspace_id,
+                conversation_id=payload.conversation_id,
+                agent_definition_id=str(definitions[0]["id"]),
+                max_attempts=payload.max_attempts,
+            )
+        raise
     if not created:
         raise HTTPException(
             status_code=503,
