@@ -32,7 +32,7 @@ Saldo, postingan, transaksi, riwayat, metrik, tool success atau sesi demo upstre
 
 Ikuti Bab 4.2 Master PRD. Domain inti:
 ```text
-apps/{web,mobile,admin,partner-portal,captive-portal,api,worker,browser-worker,python-sandbox}/
+apps/{web,mobile,admin,partner-portal,captive-portal,api,worker,sandbox}/
 engine/{agents,orchestration,tools,memory,llm,credits,entitlements,subscriptions,network_partnership}/
 packages/{ui-web,ui-native,design-tokens,icons,api-client,types,validation,localization}/
 supabase/{migrations,functions,tests}/
