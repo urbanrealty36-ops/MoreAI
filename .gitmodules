@@ -1,8 +1,0 @@
-[submodule "vendor/openmanusweb"]
-	path = vendor/openmanusweb
-	url = https://github.com/YunQiAI/OpenManusWeb.git
-	branch = dev_web_app
-[submodule "vendor/reference-ui"]
-	path = vendor/reference-ui
-	url = https://github.com/urbanrealty36-ops/Front-End-UI-MoreAI.git
-	branch = main
