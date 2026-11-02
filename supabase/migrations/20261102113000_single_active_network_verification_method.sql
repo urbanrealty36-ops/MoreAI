@@ -137,3 +137,46 @@ create trigger enforce_selected_verification_adapter
 before insert or update of network_id, method_key, enabled
 on public.network_verification_configs
 for each row execute function public.enforce_selected_verification_adapter();
+
+
+-- Replay-protected gateway context nonces. Only the API service role can consume/read these.
+create table if not exists public.network_gateway_nonces (
+  id uuid primary key default gen_random_uuid(),
+  network_id uuid not null references public.partner_networks(id) on delete cascade,
+  nonce_hash text not null check (length(nonce_hash) = 64),
+  expires_at timestamptz not null,
+  consumed_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  unique (network_id, nonce_hash)
+);
+create index if not exists network_gateway_nonces_expiry_idx
+  on public.network_gateway_nonces(expires_at);
+alter table public.network_gateway_nonces enable row level security;
+revoke all on public.network_gateway_nonces from public, anon, authenticated;
+grant select, insert, delete on public.network_gateway_nonces to service_role;
+
+create or replace function public.consume_network_gateway_nonce(
+  p_network_id uuid,
+  p_nonce_hash text,
+  p_expires_at timestamptz
+) returns boolean
+language plpgsql
+security invoker
+set search_path = public, pg_temp
+as $$
+declare
+  v_inserted uuid;
+begin
+  if p_expires_at <= now() or p_expires_at > now() + interval '5 minutes' then
+    return false;
+  end if;
+  delete from public.network_gateway_nonces where expires_at < now() - interval '1 hour';
+  insert into public.network_gateway_nonces(network_id, nonce_hash, expires_at)
+  values (p_network_id, p_nonce_hash, p_expires_at)
+  on conflict (network_id, nonce_hash) do nothing
+  returning id into v_inserted;
+  return v_inserted is not null;
+end;
+$$;
+revoke all on function public.consume_network_gateway_nonce(uuid,text,timestamptz) from public, anon, authenticated;
+grant execute on function public.consume_network_gateway_nonce(uuid,text,timestamptz) to service_role;
