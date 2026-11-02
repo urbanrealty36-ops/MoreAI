@@ -25,15 +25,20 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - run: pnpm install --lockfile-only --ignore-scripts
       - run: uv lock
-      - name: Commit generated lockfiles
+      - run: uv sync --all-packages --all-extras --locked
+      - name: Format Python workspace
+        run: uv run ruff format apps
+      - name: Commit generated lockfiles and formatted Python sources
         env:
           TARGET_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add pnpm-lock.yaml uv.lock
+          git add -u apps
+          git add apps
           if ! git diff --cached --quiet; then
-            git commit -m "chore(deps): generate workspace lockfiles"
+            git commit -m "chore: format Python workspace and refresh lockfiles"
             git fetch origin "${TARGET_BRANCH}"
             git rebase FETCH_HEAD
             git push origin "HEAD:${TARGET_BRANCH}"
