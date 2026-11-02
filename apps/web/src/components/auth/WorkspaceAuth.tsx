@@ -42,7 +42,7 @@ export default function WorkspaceAuth() {
     };
   }, []);
 
-  const signIn = async (userEmail: string, password: string) => {
+  const signIn = async (userEmail: string, password: string, rememberEmail: boolean) => {
     setBusy(true);
     setError("");
     setNotice("");
@@ -55,6 +55,8 @@ export default function WorkspaceAuth() {
       });
       if (authError) throw authError;
       setSignedInAs(data.user.email ?? userEmail.trim());
+      if (rememberEmail) window.localStorage.setItem("moreai_login_email", userEmail.trim());
+      else window.localStorage.removeItem("moreai_login_email");
       setNotice("Berhasil masuk. Data bisnis tetap diakses melalui FastAPI.");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Login gagal.");
