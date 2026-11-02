@@ -148,7 +148,7 @@ async def select_network_verification_method(
         )
     allowed_config_keys = {
         "gps": {"radius_meters", "max_accuracy_meters"},
-        "mikrotik_hotspot": {"router_label", "hotspot_profile"},
+        "mikrotik_hotspot": {"gateway_id", "router_label", "hotspot_profile"},
         "radius": {"nas_identifier", "accounting_interval_seconds"},
         "gateway": {"controller_label"},
         "isp_api": {"provider_code"},
