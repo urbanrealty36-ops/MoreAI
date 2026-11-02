@@ -2,6 +2,7 @@
 useDefault = true
 
 [[allowlists]]
-description = "Documented upstream video embed uses a jwt query parameter placeholder, not a credential."
+description = "Exact expired GitHub private-video embed JWT copied from the immutable upstream README (exp claim is 2025-03-07); only this signature is allowlisted in the two documentation files."
 paths = ['''vendor/openmanusweb/README\.md''', '''vendor/openmanusweb/README_zh\.md''']
-regexes = ['''jwt=\.\.\.''']
+regexTarget = "match"
+regexes = ['''UuHQCgWYkh0OQq9qsUWqGsUbhG3i9jcZDAMeHjLt5T4''']
