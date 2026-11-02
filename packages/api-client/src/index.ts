@@ -4,61 +4,71 @@ export type ApiClientOptions = {
   baseUrl: string;
   getAccessToken?: () => Promise<string | null>;
 };
-export type LlmGenerateInput = {
-  prompt: string;
-  model?: string;
-  max_output_tokens?: number;
-};
+export type LlmGenerateInput = { prompt: string; model?: string; max_output_tokens?: number };
 export type LlmGenerateOutput = {
-  text: string;
-  model: string;
-  provider: "google";
+  text: string; model: string; provider: string; request_id: string;
+  usage: { input_tokens: number; output_tokens: number };
 };
+export type AgentRun = {
+  id: string; status: "queued" | "running" | "waiting_approval" | "succeeded" | "failed" | "cancelled" | "expired";
+  attempt: number; max_attempts: number; created_at: string;
+  started_at?: string | null; finished_at?: string | null; output?: unknown; error?: unknown;
+};
+export type CreateAgentRunInput = {
+  prompt: string; workspace_id?: string; conversation_id?: string; agent_key?: string; max_attempts?: number;
+};
+export type PartnerSummary = { partner: { id: string; legal_name?: string; display_name?: string; status: string }; membership: unknown };
+export type Collection<T> = { items: T[] };
 
 export class ApiRequestError extends Error {
-  constructor(
-    public readonly status: number,
-    public readonly payload: ApiError | unknown,
-  ) {
-    super("MoreAI API request failed");
-    this.name = "ApiRequestError";
+  constructor(public readonly status: number, public readonly payload: ApiError | unknown) {
+    super("MoreAI API request failed"); this.name = "ApiRequestError";
   }
 }
-
 export function createApiClient(options: ApiClientOptions) {
-  async function request<T>(
-    path: `/api/v1/${string}`,
-    init: RequestInit = {},
-  ): Promise<T> {
+  async function request<T>(path: `/api/v1/${string}`, init: RequestInit = {}, idempotencyKey?: string): Promise<T> {
     const token = await options.getAccessToken?.();
     const headers = new Headers(init.headers);
     headers.set("Accept", "application/json");
-    if (init.body && !headers.has("Content-Type")) {
-      headers.set("Content-Type", "application/json");
-    }
+    if (init.body && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
     if (token) headers.set("Authorization", `Bearer ${token}`);
-
-    const response = await fetch(new URL(path, options.baseUrl), {
-      ...init,
-      headers,
-    });
-    if (!response.ok) {
-      throw new ApiRequestError(
-        response.status,
-        await response.json().catch(() => undefined),
-      );
-    }
+    if (idempotencyKey) headers.set("Idempotency-Key", idempotencyKey);
+    const response = await fetch(new URL(path, options.baseUrl), { ...init, headers });
+    if (!response.ok) throw new ApiRequestError(response.status, await response.json().catch(() => undefined));
+    if (response.status === 204) return undefined as T;
     return response.json() as Promise<T>;
   }
-
+  const get = <T>(path: `/api/v1/${string}`) => request<T>(path);
+  const post = <T>(path: `/api/v1/${string}`, body?: unknown, key?: string) =>
+    request<T>(path, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) }, key);
   return {
-    request,
-    llm: {
-      generate: (input: LlmGenerateInput) =>
-        request<LlmGenerateOutput>("/api/v1/llm/generate", {
-          method: "POST",
-          body: JSON.stringify(input),
-        }),
+    request, get, post,
+    llm: { generate: (input: LlmGenerateInput, key: string) => post<LlmGenerateOutput>("/api/v1/llm/generate", input, key) },
+    agents: {
+      list: () => get<Collection<AgentRun>>("/api/v1/agents/runs"),
+      get: (id: string) => get<{ run: AgentRun }>(`/api/v1/agents/runs/${id}`),
+      create: (input: CreateAgentRunInput, key: string) => post<{ run: AgentRun; replayed: boolean }>("/api/v1/agents/runs", input, key),
+      cancel: (id: string) => post<{ run_id: string; status: string }>(`/api/v1/agents/runs/${id}/cancel`),
+      resume: (id: string) => post<{ run_id: string; status: string }>(`/api/v1/agents/runs/${id}/resume`),
+    },
+    partner: {
+      me: () => get<PartnerSummary>("/api/v1/partner/me"),
+      branches: () => get<Collection<unknown>>("/api/v1/partner/branches"),
+      networks: () => get<Collection<unknown>>("/api/v1/partner/networks"),
+      campaigns: () => get<Collection<unknown>>("/api/v1/partner/campaigns"),
+      rewards: () => get<Collection<unknown>>("/api/v1/partner/rewards"),
+      analytics: () => get<Record<string, number | string>>("/api/v1/partner/analytics"),
+    },
+    admin: {
+      overview: () => get<Record<string, number>>("/api/v1/admin/overview"),
+      users: () => get<Collection<unknown>>("/api/v1/admin/users"),
+      models: () => get<Collection<unknown>>("/api/v1/admin/models"),
+      audit: () => get<Collection<unknown>>("/api/v1/admin/audit"),
+    },
+    network: {
+      context: () => get<Record<string, unknown>>("/api/v1/network/portal-context"),
+      verify: (input: unknown, key: string) => post<Record<string, unknown>>("/api/v1/network/access/verify", input, key),
+      session: () => get<Record<string, unknown>>("/api/v1/network/access/session"),
     },
   };
 }
