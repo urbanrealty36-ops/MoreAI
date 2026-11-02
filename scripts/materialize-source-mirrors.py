@@ -60,7 +60,7 @@ def main() -> None:
                 if blob != row["blob_sha"]:
                     raise SystemExit(f"Upstream object mismatch: {name}/{source_path}: {blob}")
                 data = subprocess.check_output(["git", "-C", str(source), "cat-file", "blob", blob])
-                calculated = hashlib.sha1(b"blob " + str(len(data)).encode() + b"\\0" + data).hexdigest()
+                calculated = hashlib.sha1(b"blob " + str(len(data)).encode() + b"\0" + data).hexdigest()
                 if calculated != blob or len(data) != int(row["bytes"]):
                     raise SystemExit(f"Upstream blob integrity failure: {name}/{source_path}")
                 target = temp / name / source_path
@@ -82,7 +82,7 @@ def main() -> None:
         for row in rows:
             source = ROOT / SOURCES[row["source_repo"]] / row["source_path"]
             data = source.read_bytes()
-            actual_sha = hashlib.sha1(b"blob " + str(len(data)).encode() + b"\\0" + data).hexdigest()
+            actual_sha = hashlib.sha1(b"blob " + str(len(data)).encode() + b"\0" + data).hexdigest()
             if actual_sha != row["blob_sha"] or len(data) != int(row["bytes"]):
                 raise SystemExit(f"Blob SHA/size mismatch: {source}: {actual_sha}")
             verified += 1
