@@ -198,10 +198,16 @@ async def set_mikrotik_secret_reference(
 ):
     await _require_permission(claims, "network.verification.manage")
     if not payload.secret_reference or len(payload.secret_reference) > 128:
-        raise HTTPException(status_code=422, detail="Invalid secret reference")
+        raise HTTPException(
+            status_code=422,
+            detail="Invalid secret reference",
+        )
     bundle = gateway_secret_bundle(payload.secret_reference)
     if not bundle:
-        raise HTTPException(status_code=503, detail="Gateway secret reference is unavailable")
+        raise HTTPException(
+            status_code=503,
+            detail="Gateway secret reference is unavailable",
+        )
     configs = await select_rows(
         "network_verification_configs",
         "select=id,method_key&network_id=eq."
@@ -209,7 +215,10 @@ async def set_mikrotik_secret_reference(
         + "&method_key=eq.mikrotik_hotspot",
     )
     if not configs:
-        raise HTTPException(status_code=404, detail="Select MikroTik Hotspot for this network first")
+        raise HTTPException(
+            status_code=404,
+            detail="Select MikroTik Hotspot for this network first",
+        )
     changed = await update_rows(
         "network_verification_configs",
         "network_id=eq." + str(network_id) + "&method_key=eq.mikrotik_hotspot",
@@ -232,14 +241,20 @@ async def set_mikrotik_secret_reference(
 
 
 @router.post("/networks/{network_id}/mikrotik-credentials/validate")
-async def validate_network_mikrotik_credentials(claims: UserClaims, network_id: UUID):
+async def validate_network_mikrotik_credentials(
+    claims: UserClaims,
+    network_id: UUID,
+):
     await _require_permission(claims, "network.verification.manage")
     networks = await select_rows(
         "partner_networks",
         "select=id,active_verification_method&id=eq." + str(network_id),
     )
     if not networks or networks[0].get("active_verification_method") != "mikrotik_hotspot":
-        raise HTTPException(status_code=409, detail="MikroTik must be the selected method for this network")
+        raise HTTPException(
+            status_code=409,
+            detail="MikroTik must be the selected method for this network",
+        )
     configs = await select_rows(
         "network_verification_configs",
         "select=id,secret_reference,config_public&network_id=eq."
@@ -247,7 +262,10 @@ async def validate_network_mikrotik_credentials(claims: UserClaims, network_id: 
         + "&method_key=eq.mikrotik_hotspot",
     )
     if not configs or not configs[0].get("secret_reference"):
-        raise HTTPException(status_code=409, detail="MikroTik secret reference is not configured")
+        raise HTTPException(
+            status_code=409,
+            detail="MikroTik secret reference is not configured",
+        )
     bundle = gateway_secret_bundle(configs[0]["secret_reference"])
     if not await validate_mikrotik_credentials(bundle):
         await insert_rows(
@@ -265,7 +283,13 @@ async def validate_network_mikrotik_credentials(claims: UserClaims, network_id: 
         )
         raise HTTPException(
             status_code=503,
-            detail={"code": "MIKROTIK_CREDENTIAL_VALIDATION_FAILED", "message": "RouterOS HTTPS credential validation failed; adapter remains disabled."},
+            detail={
+                "code": "MIKROTIK_CREDENTIAL_VALIDATION_FAILED",
+                "message": (
+                    "RouterOS HTTPS credential validation failed; "
+                    "adapter remains disabled."
+                ),
+            },
         )
 
     await update_rows(
@@ -288,7 +312,16 @@ async def validate_network_mikrotik_credentials(claims: UserClaims, network_id: 
             "scope_type": "network",
             "scope_id": str(network_id),
             "outcome": "success",
-            "metadata": {"credentials_valid": True, "adapter_ready": True, "network_config_enabled": bool(activated)},
+            "metadata": {
+                "credentials_valid": True,
+                "adapter_ready": True,
+                "network_config_enabled": bool(activated),
+            },
         },
     )
-    return {"credentials_valid": True, "adapter_ready": True, "network_config_enabled": bool(activated), "credentials_exposed": False}
+    return {
+        "credentials_valid": True,
+        "adapter_ready": True,
+        "network_config_enabled": bool(activated),
+        "credentials_exposed": False,
+    }
