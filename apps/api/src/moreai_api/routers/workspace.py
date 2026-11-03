@@ -127,11 +127,11 @@ async def send_message(
     idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
 ):
     user_id = _user_id(claims)
-    conversation = await _owned_conversation(conversation_id, user_id)
     if not idempotency_key or not re.fullmatch(
         r"[A-Za-z0-9][A-Za-z0-9._:-]{7,199}", idempotency_key
     ):
         raise HTTPException(status_code=400, detail={"code": "IDEMPOTENCY_KEY_REQUIRED"})
+    conversation = await _owned_conversation(conversation_id, user_id)
 
     request_key = f"chat:{conversation_id}:{hashlib.sha256(idempotency_key.encode()).hexdigest()}"
     history_rows = await select_rows(
