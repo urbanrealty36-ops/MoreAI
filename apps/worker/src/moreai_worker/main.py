@@ -10,6 +10,7 @@ import socket
 import sys
 import uuid
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -399,8 +400,9 @@ class Worker:
                 )
             )
             cancel_wait = asyncio.create_task(cancel.wait())
+            lost_wait = asyncio.create_task(lost.wait())
             done, _ = await asyncio.wait(
-                {execution, cancel_wait},
+                {execution, cancel_wait, lost_wait},
                 return_when=asyncio.FIRST_COMPLETED,
             )
 
@@ -418,8 +420,14 @@ class Worker:
                 )
                 return
 
+            if lost_wait in done and lost.is_set():
+                execution.cancel()
+                await asyncio.gather(execution, return_exceptions=True)
+                return
+
             cancel_wait.cancel()
-            await asyncio.gather(cancel_wait, return_exceptions=True)
+            lost_wait.cancel()
+            await asyncio.gather(cancel_wait, lost_wait, return_exceptions=True)
             output = await execution
             if not lost.is_set():
                 text_output = output.get("text") if isinstance(output, dict) else None
