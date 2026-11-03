@@ -134,6 +134,12 @@ async def send_message(
         raise HTTPException(status_code=400, detail={"code": "IDEMPOTENCY_KEY_REQUIRED"})
 
     request_key = f"chat:{conversation_id}:{hashlib.sha256(idempotency_key.encode()).hexdigest()}"
+    history_rows = await select_rows(
+        "conversation_messages",
+        "select=role,content,metadata"
+        f"&conversation_id=eq.{conversation_id}&user_id=eq.{user_id}"
+        "&role=in.(user,assistant)&order=created_at.desc&limit=12",
+    )
     existing = await select_rows(
         "conversation_messages",
         "select=id,role,content,model_key,token_input,token_output,created_at"
@@ -158,9 +164,32 @@ async def send_message(
     if not user_rows:
         raise HTTPException(status_code=503, detail={"code": "MESSAGE_PERSIST_FAILED"})
 
+    context_budget = max(0, 11500 - len(payload.content))
+    context_lines: list[str] = []
+    for item in history_rows:
+        metadata = item.get("metadata") if isinstance(item.get("metadata"), dict) else {}
+        if metadata.get("request_key") == request_key:
+            continue
+        content = item.get("content") if isinstance(item.get("content"), str) else ""
+        if not content or context_budget <= 0:
+            continue
+        prefix = "User: " if item.get("role") == "user" else "Assistant: "
+        snippet = content[-max(1, min(len(content), context_budget - len(prefix) - 1)):]
+        line = f"{prefix}{snippet}"
+        context_lines.append(line)
+        context_budget -= len(line) + 1
+    context_lines.reverse()
+    prompt = (
+        "Recent conversation context:\n"
+        + "\n".join(context_lines)
+        + "\n\nCurrent user message:\n"
+        + payload.content
+        if context_lines
+        else payload.content
+    )
     generated = await _generate(
         GenerateRequest(
-            prompt=payload.content,
+            prompt=prompt,
             model=payload.model,
             max_output_tokens=payload.max_output_tokens,
         ),
