@@ -32,7 +32,9 @@ def test_provider_creation_uses_atomic_audit_rpc_and_never_returns_secret(monkey
     monkeypatch.setattr(admin, "_require_permission", allow)
     monkeypatch.setattr(admin, "rpc", call)
     monkeypatch.setattr(admin.settings, "llm_provider_api_key", None)
-    response = client.post("/api/v1/admin/providers", json={"key": "google", "display_name": "Google"})
+    response = client.post(
+        "/api/v1/admin/providers", json={"key": "google", "display_name": "Google"}
+    )
     assert response.status_code == 201
     assert "api_key" not in response.json()["provider"]
 
@@ -51,14 +53,17 @@ def test_model_create_sends_decimal_cost_as_json_safe_string(monkeypatch):
 
     monkeypatch.setattr(admin, "_require_permission", allow)
     monkeypatch.setattr(admin, "rpc", call)
-    response = client.post("/api/v1/admin/models", json={
-        "provider_id": PROVIDER_ID,
-        "key": "gemini-test",
-        "display_name": "Gemini Test",
-        "input_cost_per_million": "0.25",
-        "output_cost_per_million": "1.5",
-        "capabilities": ["general"],
-    })
+    response = client.post(
+        "/api/v1/admin/models",
+        json={
+            "provider_id": PROVIDER_ID,
+            "key": "gemini-test",
+            "display_name": "Gemini Test",
+            "input_cost_per_million": "0.25",
+            "output_cost_per_million": "1.5",
+            "capabilities": ["general"],
+        },
+    )
     assert response.status_code == 201
     assert response.json()["model"]["enabled"] is False
 

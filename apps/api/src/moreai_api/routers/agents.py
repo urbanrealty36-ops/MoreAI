@@ -200,17 +200,29 @@ async def list_run_events(run_id: UUID, claims: Claims, limit: int = 100):
         "select=id,event_type,sequence,created_at,payload"
         f"&run_id=eq.{run_id}&order=sequence.asc&limit={max(1, min(limit, 200))}",
     )
-    safe_payload_keys = {"step", "step_key", "checkpoint_key", "status", "message", "code", "attempt", "tool_key", "duration_ms"}
+    safe_payload_keys = {
+        "step",
+        "step_key",
+        "checkpoint_key",
+        "status",
+        "message",
+        "code",
+        "attempt",
+        "tool_key",
+        "duration_ms",
+    }
     items = []
     for row in rows:
         payload = row.get("payload") if isinstance(row.get("payload"), dict) else {}
-        items.append({
-            "id": row["id"],
-            "event_type": row["event_type"],
-            "sequence": row["sequence"],
-            "created_at": row["created_at"],
-            "payload": {key: payload[key] for key in safe_payload_keys if key in payload},
-        })
+        items.append(
+            {
+                "id": row["id"],
+                "event_type": row["event_type"],
+                "sequence": row["sequence"],
+                "created_at": row["created_at"],
+                "payload": {key: payload[key] for key in safe_payload_keys if key in payload},
+            }
+        )
     return {"items": items}
 
 

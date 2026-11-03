@@ -23,7 +23,9 @@ def test_permission_matrix_uses_persisted_role_permission_links(monkeypatch):
 
     async def rows(table, query):
         if table == "roles":
-            return [{"id": "role-1", "key": "super_admin", "scope": "platform", "system_role": True}]
+            return [
+                {"id": "role-1", "key": "super_admin", "scope": "platform", "system_role": True}
+            ]
         if table == "permissions":
             return [{"id": "perm-1", "key": "platform.roles.read"}]
         if table == "role_permissions":
@@ -45,7 +47,14 @@ def test_llm_routing_includes_resolved_model_metadata(monkeypatch):
 
     async def rows(table, query):
         if table == "llm_routing_policies":
-            return [{"id": "route-1", "model_id": "model-1", "fallback_model_id": None, "task_type": "general"}]
+            return [
+                {
+                    "id": "route-1",
+                    "model_id": "model-1",
+                    "fallback_model_id": None,
+                    "task_type": "general",
+                }
+            ]
         if table == "llm_models":
             return [{"id": "model-1", "key": "model-key", "display_name": "Model Display"}]
         return []

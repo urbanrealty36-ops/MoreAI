@@ -30,7 +30,6 @@ def test_worker_accepts_secure_runtime_config(monkeypatch):
     assert config.api_base_url == "https://api.example.com"
 
 
-
 def test_openmanus_tool_registry_rejects_unavailable_tools():
     from moreai_worker.main import OpenManusToolRegistry
 

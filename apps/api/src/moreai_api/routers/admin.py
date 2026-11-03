@@ -130,13 +130,17 @@ async def admin_network_policies(claims: UserClaims):
     }
 
 
-
 class PlatformRoleAssignmentCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     target_user_id: UUID
     role_key: Literal[
-        "super_admin", "platform_admin", "finance_admin", "partner_manager",
-        "security_admin", "support_admin", "read_only_analyst",
+        "super_admin",
+        "platform_admin",
+        "finance_admin",
+        "partner_manager",
+        "security_admin",
+        "support_admin",
+        "read_only_analyst",
     ]
     expires_at: datetime | None = None
 
@@ -182,11 +186,13 @@ class RoutingMutation(BaseModel):
 
 
 def _provider_credentials_ready(provider_key: str) -> bool:
-    return bool({
-        "google": settings.llm_provider_api_key,
-        "openai": settings.llm_openai_api_key,
-        "anthropic": settings.llm_anthropic_api_key,
-    }.get(provider_key))
+    return bool(
+        {
+            "google": settings.llm_provider_api_key,
+            "openai": settings.llm_openai_api_key,
+            "anthropic": settings.llm_anthropic_api_key,
+        }.get(provider_key)
+    )
 
 
 @router.get("/role-assignments")
@@ -268,8 +274,11 @@ async def create_llm_provider(payload: ProviderCreate, claims: UserClaims, reque
     result = await rpc(
         "moreai_admin_mutate_llm_provider",
         {
-            "p_actor_user_id": actor, "p_provider_id": None, "p_key": payload.key,
-            "p_display_name": payload.display_name, "p_enabled": payload.enabled,
+            "p_actor_user_id": actor,
+            "p_provider_id": None,
+            "p_key": payload.key,
+            "p_display_name": payload.display_name,
+            "p_enabled": payload.enabled,
             "p_credentials_ready": _provider_credentials_ready(payload.key),
             "p_correlation_id": request.headers.get("X-Correlation-ID"),
         },
@@ -282,17 +291,18 @@ async def update_llm_provider(
     provider_id: UUID, payload: ProviderUpdate, claims: UserClaims, request: Request
 ):
     await _require_permission(claims, "platform.models.manage")
-    rows = await select_rows(
-        "llm_providers", f"select=id,key&id=eq.{provider_id}&limit=1"
-    )
+    rows = await select_rows("llm_providers", f"select=id,key&id=eq.{provider_id}&limit=1")
     if not rows:
         raise HTTPException(status_code=404, detail={"code": "LLM_PROVIDER_NOT_FOUND"})
     actor = str(UUID(str(claims.get("sub", ""))))
     result = await rpc(
         "moreai_admin_mutate_llm_provider",
         {
-            "p_actor_user_id": actor, "p_provider_id": str(provider_id), "p_key": rows[0]["key"],
-            "p_display_name": payload.display_name, "p_enabled": payload.enabled,
+            "p_actor_user_id": actor,
+            "p_provider_id": str(provider_id),
+            "p_key": rows[0]["key"],
+            "p_display_name": payload.display_name,
+            "p_enabled": payload.enabled,
             "p_credentials_ready": _provider_credentials_ready(rows[0]["key"]),
             "p_correlation_id": request.headers.get("X-Correlation-ID"),
         },
@@ -312,8 +322,11 @@ async def disable_llm_provider(provider_id: UUID, claims: UserClaims, request: R
     result = await rpc(
         "moreai_admin_mutate_llm_provider",
         {
-            "p_actor_user_id": actor, "p_provider_id": str(provider_id), "p_key": rows[0]["key"],
-            "p_display_name": rows[0]["display_name"], "p_enabled": False,
+            "p_actor_user_id": actor,
+            "p_provider_id": str(provider_id),
+            "p_key": rows[0]["key"],
+            "p_display_name": rows[0]["display_name"],
+            "p_enabled": False,
             "p_credentials_ready": _provider_credentials_ready(rows[0]["key"]),
             "p_correlation_id": request.headers.get("X-Correlation-ID"),
         },
@@ -328,12 +341,17 @@ async def create_llm_model(payload: ModelMutation, claims: UserClaims, request: 
     result = await rpc(
         "moreai_admin_mutate_llm_model",
         {
-            "p_actor_user_id": actor, "p_model_id": None, "p_provider_id": str(payload.provider_id),
-            "p_key": payload.key, "p_display_name": payload.display_name,
+            "p_actor_user_id": actor,
+            "p_model_id": None,
+            "p_provider_id": str(payload.provider_id),
+            "p_key": payload.key,
+            "p_display_name": payload.display_name,
             "p_input_cost_per_million": str(payload.input_cost_per_million),
             "p_output_cost_per_million": str(payload.output_cost_per_million),
-            "p_max_input_tokens": payload.max_input_tokens, "p_max_output_tokens": payload.max_output_tokens,
-            "p_capabilities": payload.capabilities, "p_enabled": payload.enabled,
+            "p_max_input_tokens": payload.max_input_tokens,
+            "p_max_output_tokens": payload.max_output_tokens,
+            "p_capabilities": payload.capabilities,
+            "p_enabled": payload.enabled,
             "p_correlation_id": request.headers.get("X-Correlation-ID"),
         },
     )
@@ -349,12 +367,17 @@ async def update_llm_model(
     result = await rpc(
         "moreai_admin_mutate_llm_model",
         {
-            "p_actor_user_id": actor, "p_model_id": str(model_id), "p_provider_id": str(payload.provider_id),
-            "p_key": payload.key, "p_display_name": payload.display_name,
+            "p_actor_user_id": actor,
+            "p_model_id": str(model_id),
+            "p_provider_id": str(payload.provider_id),
+            "p_key": payload.key,
+            "p_display_name": payload.display_name,
             "p_input_cost_per_million": payload.input_cost_per_million,
             "p_output_cost_per_million": payload.output_cost_per_million,
-            "p_max_input_tokens": payload.max_input_tokens, "p_max_output_tokens": payload.max_output_tokens,
-            "p_capabilities": payload.capabilities, "p_enabled": payload.enabled,
+            "p_max_input_tokens": payload.max_input_tokens,
+            "p_max_output_tokens": payload.max_output_tokens,
+            "p_capabilities": payload.capabilities,
+            "p_enabled": payload.enabled,
             "p_correlation_id": request.headers.get("X-Correlation-ID"),
         },
     )
@@ -368,10 +391,15 @@ async def create_llm_route(payload: RoutingMutation, claims: UserClaims, request
     result = await rpc(
         "moreai_admin_mutate_llm_route",
         {
-            "p_actor_user_id": actor, "p_policy_id": None, "p_task_type": payload.task_type,
+            "p_actor_user_id": actor,
+            "p_policy_id": None,
+            "p_task_type": payload.task_type,
             "p_model_id": str(payload.model_id),
-            "p_fallback_model_id": str(payload.fallback_model_id) if payload.fallback_model_id else None,
-            "p_priority": payload.priority, "p_enabled": payload.enabled,
+            "p_fallback_model_id": str(payload.fallback_model_id)
+            if payload.fallback_model_id
+            else None,
+            "p_priority": payload.priority,
+            "p_enabled": payload.enabled,
             "p_correlation_id": request.headers.get("X-Correlation-ID"),
         },
     )
@@ -387,10 +415,15 @@ async def update_llm_route(
     result = await rpc(
         "moreai_admin_mutate_llm_route",
         {
-            "p_actor_user_id": actor, "p_policy_id": str(policy_id), "p_task_type": payload.task_type,
+            "p_actor_user_id": actor,
+            "p_policy_id": str(policy_id),
+            "p_task_type": payload.task_type,
             "p_model_id": str(payload.model_id),
-            "p_fallback_model_id": str(payload.fallback_model_id) if payload.fallback_model_id else None,
-            "p_priority": payload.priority, "p_enabled": payload.enabled,
+            "p_fallback_model_id": str(payload.fallback_model_id)
+            if payload.fallback_model_id
+            else None,
+            "p_priority": payload.priority,
+            "p_enabled": payload.enabled,
             "p_correlation_id": request.headers.get("X-Correlation-ID"),
         },
     )
@@ -411,12 +444,17 @@ async def disable_llm_model(model_id: UUID, claims: UserClaims, request: Request
     result = await rpc(
         "moreai_admin_mutate_llm_model",
         {
-            "p_actor_user_id": actor, "p_model_id": str(model_id), "p_provider_id": row["provider_id"],
-            "p_key": row["key"], "p_display_name": row["display_name"],
+            "p_actor_user_id": actor,
+            "p_model_id": str(model_id),
+            "p_provider_id": row["provider_id"],
+            "p_key": row["key"],
+            "p_display_name": row["display_name"],
             "p_input_cost_per_million": row["input_cost_per_million"],
             "p_output_cost_per_million": row["output_cost_per_million"],
-            "p_max_input_tokens": row.get("max_input_tokens"), "p_max_output_tokens": row.get("max_output_tokens"),
-            "p_capabilities": row.get("capabilities") or [], "p_enabled": False,
+            "p_max_input_tokens": row.get("max_input_tokens"),
+            "p_max_output_tokens": row.get("max_output_tokens"),
+            "p_capabilities": row.get("capabilities") or [],
+            "p_enabled": False,
             "p_correlation_id": request.headers.get("X-Correlation-ID"),
         },
     )
@@ -437,9 +475,13 @@ async def disable_llm_route(policy_id: UUID, claims: UserClaims, request: Reques
     result = await rpc(
         "moreai_admin_mutate_llm_route",
         {
-            "p_actor_user_id": actor, "p_policy_id": str(policy_id), "p_task_type": row["task_type"],
-            "p_model_id": row["model_id"], "p_fallback_model_id": row.get("fallback_model_id"),
-            "p_priority": row["priority"], "p_enabled": False,
+            "p_actor_user_id": actor,
+            "p_policy_id": str(policy_id),
+            "p_task_type": row["task_type"],
+            "p_model_id": row["model_id"],
+            "p_fallback_model_id": row.get("fallback_model_id"),
+            "p_priority": row["priority"],
+            "p_enabled": False,
             "p_correlation_id": request.headers.get("X-Correlation-ID"),
         },
     )
@@ -496,10 +538,7 @@ async def admin_permission_matrix(claims: UserClaims):
         if key:
             by_role.setdefault(item["role_id"], []).append(key)
     return {
-        "roles": [
-            {**role, "permissions": sorted(by_role.get(role["id"], []))}
-            for role in roles
-        ],
+        "roles": [{**role, "permissions": sorted(by_role.get(role["id"], []))} for role in roles],
         "permissions": permissions,
     }
 
@@ -529,7 +568,10 @@ async def admin_llm_routing(claims: UserClaims):
 
 
 @router.get("/partners")
-async def admin_partners(claims: UserClaims, status_filter: Literal["pending", "active", "suspended", "rejected", "closed"] | None = None):
+async def admin_partners(
+    claims: UserClaims,
+    status_filter: Literal["pending", "active", "suspended", "rejected", "closed"] | None = None,
+):
     await _require_permission(claims, "partner.organization.read")
     query = "select=id,legal_name,display_name,status,created_by,created_at,updated_at&order=created_at.desc&limit=100"
     if status_filter:
@@ -594,7 +636,6 @@ async def set_network_verification_method_availability(
     }
 
 
-
 class MikroTikSecretReference(BaseModel):
     model_config = ConfigDict(extra="forbid")
     secret_reference: str
@@ -618,9 +659,7 @@ async def set_mikrotik_secret_reference(
         )
     configs = await select_rows(
         "network_verification_configs",
-        "select=id,method_key&network_id=eq."
-        + str(network_id)
-        + "&method_key=eq.mikrotik_hotspot",
+        "select=id,method_key&network_id=eq." + str(network_id) + "&method_key=eq.mikrotik_hotspot",
     )
     if not configs:
         raise HTTPException(
@@ -698,8 +737,7 @@ async def validate_network_mikrotik_credentials(
             detail={
                 "code": "MIKROTIK_CREDENTIAL_VALIDATION_FAILED",
                 "message": (
-                    "RouterOS HTTPS credential validation failed; "
-                    "adapter remains disabled."
+                    "RouterOS HTTPS credential validation failed; adapter remains disabled."
                 ),
             },
         )

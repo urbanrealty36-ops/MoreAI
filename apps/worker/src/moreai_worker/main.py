@@ -69,7 +69,9 @@ class OpenManusToolRegistry:
             raise RuntimeError("No OpenManus tools are enabled")
         unavailable = sorted(set(requested) - self._factories.keys())
         if unavailable:
-            raise RuntimeError(f"OpenManus tools are not registered or sandboxed: {', '.join(unavailable)}")
+            raise RuntimeError(
+                f"OpenManus tools are not registered or sandboxed: {', '.join(unavailable)}"
+            )
         return collection_factory(*(self._factories[key]() for key in requested))
 
 
@@ -121,10 +123,17 @@ class Store:
             },
         )
 
-    async def start_step(self, run_id: str, sequence: int, step_key: str, input_data: dict[str, Any]) -> None:
+    async def start_step(
+        self, run_id: str, sequence: int, step_key: str, input_data: dict[str, Any]
+    ) -> None:
         response = await self.client.get(
             "agent_run_steps",
-            params={"select": "id", "run_id": f"eq.{run_id}", "sequence": f"eq.{sequence}", "limit": "1"},
+            params={
+                "select": "id",
+                "run_id": f"eq.{run_id}",
+                "sequence": f"eq.{sequence}",
+                "limit": "1",
+            },
         )
         response.raise_for_status()
         rows = response.json()

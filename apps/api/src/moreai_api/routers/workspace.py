@@ -89,9 +89,7 @@ async def create_conversation(payload: ConversationCreate, claims: Claims):
 
 
 @router.patch("/conversations/{conversation_id}")
-async def update_conversation(
-    conversation_id: UUID, payload: ConversationUpdate, claims: Claims
-):
+async def update_conversation(conversation_id: UUID, payload: ConversationUpdate, claims: Claims):
     user_id = _user_id(claims)
     await _owned_conversation(conversation_id, user_id)
     changes = payload.model_dump(exclude_unset=True)
@@ -130,7 +128,9 @@ async def send_message(
 ):
     user_id = _user_id(claims)
     conversation = await _owned_conversation(conversation_id, user_id)
-    if not idempotency_key or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{7,199}", idempotency_key):
+    if not idempotency_key or not re.fullmatch(
+        r"[A-Za-z0-9][A-Za-z0-9._:-]{7,199}", idempotency_key
+    ):
         raise HTTPException(status_code=400, detail={"code": "IDEMPOTENCY_KEY_REQUIRED"})
 
     request_key = f"chat:{conversation_id}:{hashlib.sha256(idempotency_key.encode()).hexdigest()}"
@@ -174,7 +174,7 @@ async def send_message(
         if not content or context_budget <= 0:
             continue
         prefix = "User: " if item.get("role") == "user" else "Assistant: "
-        snippet = content[-max(1, min(len(content), context_budget - len(prefix) - 1)):]
+        snippet = content[-max(1, min(len(content), context_budget - len(prefix) - 1)) :]
         line = f"{prefix}{snippet}"
         context_lines.append(line)
         context_budget -= len(line) + 1
@@ -206,19 +206,28 @@ async def send_message(
             "model_key": generated.model,
             "token_input": generated.usage["input_tokens"],
             "token_output": generated.usage["output_tokens"],
-            "metadata": {"request_key": request_key, "provider": generated.provider, "request_id": generated.request_id},
+            "metadata": {
+                "request_key": request_key,
+                "provider": generated.provider,
+                "request_id": generated.request_id,
+            },
         },
     )
     if not assistant_rows:
         raise HTTPException(
             status_code=503,
-            detail={"code": "ASSISTANT_MESSAGE_PERSIST_PENDING", "request_id": generated.request_id},
+            detail={
+                "code": "ASSISTANT_MESSAGE_PERSIST_PENDING",
+                "request_id": generated.request_id,
+            },
         )
     await update_rows(
         "conversations",
         f"id=eq.{conversation_id}&user_id=eq.{user_id}",
         {
-            "title": payload.content[:80] if conversation.get("title") in (None, "Percakapan baru") else conversation.get("title"),
+            "title": payload.content[:80]
+            if conversation.get("title") in (None, "Percakapan baru")
+            else conversation.get("title"),
             "updated_at": datetime.now(timezone.utc).isoformat(),
         },
     )

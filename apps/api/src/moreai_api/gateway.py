@@ -180,10 +180,6 @@ async def validate_mikrotik_credentials(bundle: dict[str, Any]) -> bool:
             response = await client.get(f"{router_url}/rest/system/resource")
             response.raise_for_status()
             data = response.json()
-        return (
-            isinstance(data, dict)
-            and bool(data.get("version"))
-            and bool(data.get("board-name"))
-        )
+        return isinstance(data, dict) and bool(data.get("version")) and bool(data.get("board-name"))
     except (httpx.HTTPError, ValueError):
         return False

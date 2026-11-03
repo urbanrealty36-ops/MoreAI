@@ -35,7 +35,11 @@ def test_partner_application_uses_atomic_rpc(monkeypatch):
         assert name == "moreai_submit_partner_application"
         assert payload["p_user_id"] == USER_ID
         assert payload["p_legal_name"] == "PT Contoh Legal"
-        return {"partner": {"id": "partner-1", "status": "pending"}, "membership": {"role_key": "partner_owner"}, "replayed": False}
+        return {
+            "partner": {"id": "partner-1", "status": "pending"},
+            "membership": {"role_key": "partner_owner"},
+            "replayed": False,
+        }
 
     monkeypatch.setattr(partner, "rpc", call)
     response = client.post(

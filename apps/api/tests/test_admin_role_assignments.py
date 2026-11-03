@@ -49,7 +49,11 @@ def test_role_assignment_requires_timezone_aware_expiry(monkeypatch):
     monkeypatch.setattr(admin, "_require_permission", allow)
     response = client.post(
         "/api/v1/admin/role-assignments",
-        json={"target_user_id": TARGET_ID, "role_key": "support_admin", "expires_at": "2026-12-01T12:00:00"},
+        json={
+            "target_user_id": TARGET_ID,
+            "role_key": "support_admin",
+            "expires_at": "2026-12-01T12:00:00",
+        },
     )
     assert response.status_code == 422
     assert response.json()["detail"]["code"] == "ROLE_EXPIRY_TIMEZONE_REQUIRED"

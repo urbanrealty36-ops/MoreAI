@@ -57,7 +57,6 @@ def test_gateway_mac_address_validation():
     assert not valid_ip_address("not-an-ip")
 
 
-
 def test_routeros_credentials_require_https_and_secret():
     from moreai_api.gateway import validate_mikrotik_credentials
 

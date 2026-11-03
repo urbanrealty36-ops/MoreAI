@@ -91,17 +91,12 @@ async def verify_mikrotik_gateway_context(payload: MikroTikGatewayContext):
         "select=id,partner_id,location_id,active_verification_method&id=eq."
         + str(payload.network_id),
     )
-    if (
-        not networks
-        or networks[0].get("active_verification_method") != "mikrotik_hotspot"
-    ):
+    if not networks or networks[0].get("active_verification_method") != "mikrotik_hotspot":
         raise HTTPException(
             status_code=409,
             detail={
                 "code": "GATEWAY_METHOD_NOT_SELECTED",
-                "message": (
-                    "MikroTik is not the selected verification method for this network."
-                ),
+                "message": ("MikroTik is not the selected verification method for this network."),
             },
         )
 
@@ -125,9 +120,7 @@ async def verify_mikrotik_gateway_context(payload: MikroTikGatewayContext):
             status_code=503,
             detail={
                 "code": "GATEWAY_ADAPTER_NOT_READY",
-                "message": (
-                    "MikroTik integration is not production-ready for this network."
-                ),
+                "message": ("MikroTik integration is not production-ready for this network."),
             },
         )
 
@@ -173,8 +166,7 @@ async def verify_mikrotik_gateway_context(payload: MikroTikGatewayContext):
             "p_network_id": str(payload.network_id),
             "p_nonce_hash": nonce_hash,
             "p_expires_at": datetime.fromtimestamp(
-                payload.timestamp
-                + settings.network_gateway_max_clock_skew_seconds,
+                payload.timestamp + settings.network_gateway_max_clock_skew_seconds,
                 tz=timezone.utc,
             ).isoformat(),
         },

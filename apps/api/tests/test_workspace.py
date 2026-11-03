@@ -52,14 +52,16 @@ def test_send_message_persists_user_and_assistant_messages(monkeypatch):
 
     async def rows(table, query):
         if table == "conversations":
-            return [{
-                "id": CONVERSATION_ID,
-                "user_id": USER_ID,
-                "workspace_id": None,
-                "title": "Percakapan baru",
-                "status": "active",
-                "metadata": {},
-            }]
+            return [
+                {
+                    "id": CONVERSATION_ID,
+                    "user_id": USER_ID,
+                    "workspace_id": None,
+                    "title": "Percakapan baru",
+                    "status": "active",
+                    "metadata": {},
+                }
+            ]
         if table == "conversation_messages":
             return []
         return []

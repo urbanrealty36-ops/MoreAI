@@ -23,13 +23,19 @@ def test_run_events_are_owner_scoped_and_payload_is_allowlisted(monkeypatch):
         if table == "agent_runs":
             return [{"id": RUN_ID}]
         if table == "agent_run_events":
-            return [{
-                "id": "event-1",
-                "event_type": "tool.completed",
-                "sequence": 1,
-                "created_at": "2026-11-03T00:00:00Z",
-                "payload": {"tool_key": "search", "status": "succeeded", "api_key": "must-not-leak"},
-            }]
+            return [
+                {
+                    "id": "event-1",
+                    "event_type": "tool.completed",
+                    "sequence": 1,
+                    "created_at": "2026-11-03T00:00:00Z",
+                    "payload": {
+                        "tool_key": "search",
+                        "status": "succeeded",
+                        "api_key": "must-not-leak",
+                    },
+                }
+            ]
         return []
 
     monkeypatch.setattr(agents, "select_rows", rows)
