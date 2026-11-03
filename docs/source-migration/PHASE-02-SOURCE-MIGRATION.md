@@ -127,3 +127,21 @@ Per owner instruction, no dedicated staging environment will be created. ADR-000
 ## 9. Gate decision
 
 **PHASE 02 IS NOT PASSED.** Source provenance, database/RLS posture, API foundations, Auth entry flows, and some runtime/security gates are evidenced, but the expanded product/runtime integrations, isolated execution, transactional partner/admin operations, Captive Portal gateway integration, Native parity, and visual regression criteria remain incomplete. Phase 03 must not start until these blockers have evidence-backed closure.
+
+
+## Owner scope update — 3 November 2026
+
+Per [ADR-0005](../adr/ADR-0005-defer-live-network-provider-validation.md), live MikroTik RouterOS, RADIUS, GPS runtime, gateway/controller and ISP provider validation is deferred and is not required to complete the code integration workstream. Code-level quality gates remain required. No network adapter may be marked operational/ready without independent real provider/device validation; network access and sponsored entitlement remain fail-closed until then.
+
+### Partner operational API implementation — in progress
+
+A follow-up implementation branch, `phase-02-partner-api-operations`, adds:
+- FastAPI partner mutations for branch create/update, network create/update, campaign create/update and reward create/update.
+- Partner role checks and location-level visibility checks for branch, network, campaign, reward and analytics reads.
+- Partner mutation audit records.
+- Typed `@moreai/api-client` methods for the new endpoints.
+- Partner Portal forms wired to FastAPI for branch, network, campaign draft and reward creation.
+- API tests covering partner role denial, branch creation/audit, location-scoped campaign reads and draft campaign creation.
+- CI workflow push trigger for the implementation branch.
+
+The work is under review in [PR #8](https://github.com/urbanrealty36-ops/MoreAI/pull/8). This is implementation evidence, not production deployment or Phase 02 acceptance. CI status for the latest PR head must be checked before merging.
