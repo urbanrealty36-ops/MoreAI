@@ -418,11 +418,15 @@ class Worker:
                     "cancelled",
                     error={"code": "CANCEL_REQUESTED"},
                 )
+                lost_wait.cancel()
+                await asyncio.gather(lost_wait, return_exceptions=True)
                 return
 
             if lost_wait in done and lost.is_set():
                 execution.cancel()
                 await asyncio.gather(execution, return_exceptions=True)
+                cancel_wait.cancel()
+                await asyncio.gather(cancel_wait, return_exceptions=True)
                 return
 
             cancel_wait.cancel()
