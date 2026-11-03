@@ -89,6 +89,7 @@ def test_send_message_persists_user_and_assistant_messages(monkeypatch):
     monkeypatch.setattr(workspace, "select_rows", rows)
     monkeypatch.setattr(workspace, "insert_rows", insert)
     monkeypatch.setattr(workspace, "update_rows", update)
+
     async def call(name, payload):
         if name == "moreai_workspace_claim_chat_idempotency":
             return {"state": "claimed"}
@@ -218,14 +219,16 @@ def test_chat_completed_idempotency_returns_cached_response_without_llm(monkeypa
 
     async def rows(table, query):
         assert table == "conversations"
-        return [{
-            "id": CONVERSATION_ID,
-            "user_id": USER_ID,
-            "workspace_id": None,
-            "title": "Riset",
-            "status": "active",
-            "metadata": {},
-        }]
+        return [
+            {
+                "id": CONVERSATION_ID,
+                "user_id": USER_ID,
+                "workspace_id": None,
+                "title": "Riset",
+                "status": "active",
+                "metadata": {},
+            }
+        ]
 
     async def call(name, payload):
         assert name == "moreai_workspace_claim_chat_idempotency"
@@ -260,14 +263,16 @@ def test_chat_in_progress_idempotency_does_not_duplicate_llm_work(monkeypatch):
 
     async def rows(table, query):
         if table == "conversations":
-            return [{
-                "id": CONVERSATION_ID,
-                "user_id": USER_ID,
-                "workspace_id": None,
-                "title": "Riset",
-                "status": "active",
-                "metadata": {},
-            }]
+            return [
+                {
+                    "id": CONVERSATION_ID,
+                    "user_id": USER_ID,
+                    "workspace_id": None,
+                    "title": "Riset",
+                    "status": "active",
+                    "metadata": {},
+                }
+            ]
         return []
 
     async def call(name, payload):
@@ -289,14 +294,16 @@ def test_chat_idempotency_key_cannot_be_reused_for_different_payload(monkeypatch
 
     async def rows(table, query):
         if table == "conversations":
-            return [{
-                "id": CONVERSATION_ID,
-                "user_id": USER_ID,
-                "workspace_id": None,
-                "title": "Riset",
-                "status": "active",
-                "metadata": {},
-            }]
+            return [
+                {
+                    "id": CONVERSATION_ID,
+                    "user_id": USER_ID,
+                    "workspace_id": None,
+                    "title": "Riset",
+                    "status": "active",
+                    "metadata": {},
+                }
+            ]
         return []
 
     async def call(name, payload):

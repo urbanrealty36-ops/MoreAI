@@ -165,7 +165,10 @@ async def send_message(
     if claim_state == "conflict":
         raise HTTPException(
             status_code=409,
-            detail={"code": "IDEMPOTENCY_KEY_REUSED", "message": "Idempotency key was already used for a different request."},
+            detail={
+                "code": "IDEMPOTENCY_KEY_REUSED",
+                "message": "Idempotency key was already used for a different request.",
+            },
         )
     if claim_state == "completed":
         cached = claim.get("response_body")
@@ -215,15 +218,19 @@ async def send_message(
             f"&conversation_id=eq.{conversation_id}&user_id=eq.{user_id}"
             "&role=in.(user,assistant)&order=created_at.desc&limit=12",
         )
-        user_rows = [existing_user] if existing_user else await insert_rows(
-            "conversation_messages",
-            {
-                "conversation_id": str(conversation_id),
-                "user_id": user_id,
-                "role": "user",
-                "content": payload.content,
-                "metadata": {"request_key": request_key},
-            },
+        user_rows = (
+            [existing_user]
+            if existing_user
+            else await insert_rows(
+                "conversation_messages",
+                {
+                    "conversation_id": str(conversation_id),
+                    "user_id": user_id,
+                    "role": "user",
+                    "content": payload.content,
+                    "metadata": {"request_key": request_key},
+                },
+            )
         )
         if not user_rows:
             raise HTTPException(status_code=503, detail={"code": "MESSAGE_PERSIST_FAILED"})
@@ -311,7 +318,9 @@ async def send_message(
             },
         )
         if finalized is not True:
-            raise HTTPException(status_code=503, detail={"code": "CHAT_IDEMPOTENCY_FINALIZE_PENDING"})
+            raise HTTPException(
+                status_code=503, detail={"code": "CHAT_IDEMPOTENCY_FINALIZE_PENDING"}
+            )
         return response_body
     except Exception:
         try:
