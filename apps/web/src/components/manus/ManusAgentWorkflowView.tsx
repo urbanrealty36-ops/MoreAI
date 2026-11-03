@@ -73,7 +73,12 @@ export const ManusAgentWorkflowView: React.FC<AgentWorkflowProps> = ({
   const artifacts: { name: string; type: string; size: string; summary: string }[] = [];
 
   const refreshRun = async (id: string) => {
-    const response = await getMoreAIApi().agents.get(id);
+    const api = getMoreAIApi();
+    const [response, events, steps] = await Promise.all([
+      api.agents.get(id),
+      api.agents.events(id),
+      api.agents.steps(id),
+    ]);
     const status = response.run.status;
     const mapped: TaskStatus = status === "succeeded" ? "COMPLETED"
       : status === "failed" ? "FAILED"
@@ -81,10 +86,18 @@ export const ManusAgentWorkflowView: React.FC<AgentWorkflowProps> = ({
       : status === "expired" ? "EXPIRED"
       : status === "running" ? "RUNNING" : "QUEUED";
     setTaskStatus(mapped);
+    const eventLines = events.items.map((event) => {
+      const details = Object.entries(event.payload).map(([key, value]) => `${key}: ${String(value)}`).join(" · ");
+      return `[${event.event_type}] ${details || new Date(event.created_at).toLocaleTimeString('id-ID')}`;
+    });
+    const stepLines = steps.items.map((step) => `[STEP] ${step.sequence}. ${step.step_key} · ${step.status}`);
     setTerminalLogs([
       `[API] Run ${response.run.id}`,
       `[STATE] ${response.run.status} · attempt ${response.run.attempt}/${response.run.max_attempts}`,
+      ...eventLines,
+      ...stepLines,
       ...(response.run.error ? [`[ERROR] ${JSON.stringify(response.run.error)}`] : []),
+      ...(response.run.output ? [`[OUTPUT] ${JSON.stringify(response.run.output)}`] : []),
     ]);
   };
 
