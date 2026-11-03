@@ -103,7 +103,7 @@ async def admin_models(claims: UserClaims):
     return {
         "items": await select_rows(
             "llm_models",
-            "select=id,key,display_name,enabled,input_cost_per_million,output_cost_per_million,capabilities&order=key",
+            "select=id,provider_id,key,display_name,enabled,input_cost_per_million,output_cost_per_million,max_input_tokens,max_output_tokens,capabilities,provider:llm_providers(key,display_name,enabled)&order=key",
         )
     }
 
@@ -228,6 +228,27 @@ async def update_llm_provider(
     return {"provider": result}
 
 
+@router.delete("/providers/{provider_id}")
+async def disable_llm_provider(provider_id: UUID, claims: UserClaims, request: Request):
+    await _require_permission(claims, "platform.models.manage")
+    rows = await select_rows(
+        "llm_providers", f"select=id,key,display_name&id=eq.{provider_id}&limit=1"
+    )
+    if not rows:
+        raise HTTPException(status_code=404, detail={"code": "LLM_PROVIDER_NOT_FOUND"})
+    actor = str(UUID(str(claims.get("sub", ""))))
+    result = await rpc(
+        "moreai_admin_mutate_llm_provider",
+        {
+            "p_actor_user_id": actor, "p_provider_id": str(provider_id), "p_key": rows[0]["key"],
+            "p_display_name": rows[0]["display_name"], "p_enabled": False,
+            "p_credentials_ready": _provider_credentials_ready(rows[0]["key"]),
+            "p_correlation_id": request.headers.get("X-Correlation-ID"),
+        },
+    )
+    return {"provider": result, "disabled": True}
+
+
 @router.post("/models", status_code=201)
 async def create_llm_model(payload: ModelMutation, claims: UserClaims, request: Request):
     await _require_permission(claims, "platform.models.manage")
@@ -237,8 +258,8 @@ async def create_llm_model(payload: ModelMutation, claims: UserClaims, request: 
         {
             "p_actor_user_id": actor, "p_model_id": None, "p_provider_id": str(payload.provider_id),
             "p_key": payload.key, "p_display_name": payload.display_name,
-            "p_input_cost_per_million": payload.input_cost_per_million,
-            "p_output_cost_per_million": payload.output_cost_per_million,
+            "p_input_cost_per_million": str(payload.input_cost_per_million),
+            "p_output_cost_per_million": str(payload.output_cost_per_million),
             "p_max_input_tokens": payload.max_input_tokens, "p_max_output_tokens": payload.max_output_tokens,
             "p_capabilities": payload.capabilities, "p_enabled": payload.enabled,
             "p_correlation_id": request.headers.get("X-Correlation-ID"),
