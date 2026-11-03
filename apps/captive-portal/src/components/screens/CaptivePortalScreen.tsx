@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Wifi, ShieldCheck, ShieldAlert, Clock, ArrowRight, RefreshCw } from 'lucide-react';
-import { getMoreAIApi } from '../../../web/src/lib/api';
+import { getCaptivePortalApi } from '../../lib/client';
 
 interface CaptivePortalScreenProps {
   onSuccessConnect: (venueName: string, creditBonus: number) => void;
@@ -36,7 +36,7 @@ export const CaptivePortalScreen: React.FC<CaptivePortalScreenProps> = ({ onGoTo
     setStatus('checking');
     setMessage('Memvalidasi signature, nonce, network binding, dan status sesi gateway melalui FastAPI…');
     try {
-      const result = await getMoreAIApi().network.verifyGatewayContext({
+      const result = await getCaptivePortalApi().network.verifyGatewayContext({
         network_id: values.network_id!,
         gateway_id: values.gateway_id!,
         session_id: values.session_id!,
