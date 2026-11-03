@@ -130,6 +130,11 @@ async def admin_network_policies(claims: UserClaims):
     }
 
 
+class RolePermissionUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    enabled: bool
+
+
 class PlatformRoleAssignmentCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     target_user_id: UUID
@@ -192,6 +197,28 @@ def _provider_credentials_ready(provider_key: str) -> bool:
             "openai": settings.llm_openai_api_key,
             "anthropic": settings.llm_anthropic_api_key,
         }.get(provider_key)
+    )
+
+
+@router.put("/roles/{role_key}/permissions/{permission_key}")
+async def set_role_permission(
+    role_key: str,
+    permission_key: str,
+    payload: RolePermissionUpdate,
+    claims: UserClaims,
+    request: Request,
+):
+    await _require_permission(claims, "platform.security.manage")
+    actor = str(UUID(str(claims.get("sub", ""))))
+    return await rpc(
+        "moreai_admin_set_role_permission",
+        {
+            "p_actor_user_id": actor,
+            "p_role_key": role_key,
+            "p_permission_key": permission_key,
+            "p_enabled": payload.enabled,
+            "p_correlation_id": request.headers.get("X-Correlation-ID"),
+        },
     )
 
 
