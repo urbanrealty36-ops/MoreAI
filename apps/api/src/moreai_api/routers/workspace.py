@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import hashlib
 import re
+from urllib.parse import quote
+
+import httpx
 from datetime import datetime, timezone
 from typing import Annotated
 from uuid import UUID
@@ -12,6 +15,7 @@ from pydantic import BaseModel, Field
 from moreai_api.auth import require_authenticated_user
 from moreai_api.db import insert_rows, select_rows, update_rows
 from moreai_api.routers.llm import GenerateRequest, _generate
+from moreai_api.settings import settings
 
 router = APIRouter(prefix="/workspace", tags=["customer-workspace"])
 Claims = Annotated[dict, Depends(require_authenticated_user)]
@@ -244,10 +248,48 @@ async def list_workspace_files(claims: Claims, limit: int = 50):
     return {
         "items": await select_rows(
             "artifacts",
-            "select=id,workspace_id,run_id,storage_path,mime_type,size_bytes,checksum_sha256,metadata,created_at"
+            "select=id,workspace_id,run_id,file_name,mime_type,size_bytes,checksum_sha256,metadata,created_at"
             f"&user_id=eq.{user_id}&order=created_at.desc&limit={max(1, min(limit, 100))}",
         )
     }
+
+
+@router.get("/files/{artifact_id}/download")
+async def create_workspace_file_download(artifact_id: UUID, claims: Claims):
+    user_id = _user_id(claims)
+    rows = await select_rows(
+        "artifacts",
+        "select=id,storage_bucket,storage_key,file_name"
+        f"&id=eq.{artifact_id}&user_id=eq.{user_id}&limit=1",
+    )
+    if not rows:
+        raise HTTPException(status_code=404, detail={"code": "ARTIFACT_NOT_FOUND"})
+    artifact = rows[0]
+    service_key = settings.supabase_service_role_key
+    if not service_key or not settings.supabase_url:
+        raise HTTPException(status_code=503, detail={"code": "STORAGE_SIGNING_UNAVAILABLE"})
+    bucket = quote(str(artifact["storage_bucket"]), safe="")
+    object_key = quote(str(artifact["storage_key"]), safe="/")
+    base_url = settings.supabase_url.rstrip("/")
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            response = await client.post(
+                f"{base_url}/storage/v1/object/sign/{bucket}/{object_key}",
+                headers={"apikey": service_key, "Authorization": f"Bearer {service_key}"},
+                json={"expiresIn": 300},
+            )
+            response.raise_for_status()
+            signed = response.json()
+    except (httpx.HTTPError, ValueError) as exc:
+        raise HTTPException(
+            status_code=503, detail={"code": "STORAGE_SIGNING_UNAVAILABLE"}
+        ) from exc
+    signed_url = signed.get("signedURL") if isinstance(signed, dict) else None
+    if not isinstance(signed_url, str) or not signed_url:
+        raise HTTPException(status_code=503, detail={"code": "STORAGE_SIGNING_UNAVAILABLE"})
+    if signed_url.startswith("/"):
+        signed_url = f"{base_url}{signed_url}"
+    return {"url": signed_url, "expires_in": 300, "file_name": artifact["file_name"]}
 
 
 @router.get("/wallet")
