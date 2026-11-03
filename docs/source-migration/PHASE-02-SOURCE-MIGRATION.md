@@ -190,3 +190,17 @@ Next implementation order: close transactional audit RPC + partner onboarding; t
 - Agent monitor event projection now includes the safe checkpoint key, while sensitive event payload fields remain filtered.
 - Replaced sample Customer Workspace history, file catalog, wallet ledger, memory, and subscription values with actual API reads or explicit unavailable states.
 - Captive Portal no longer includes simulated venue selectors, fabricated sponsor credit, or timer-based success. It only submits the signed context supplied by the gateway and reports the exact fail-closed result.
+
+
+## 2026-11-03 — Atomic Partner Onboarding, Approval, and LLM Governance
+
+- Added database RPC `moreai_submit_partner_application`: creates the partner organization, `partner_owner` membership, and submission audit record in one transaction. A per-user advisory transaction lock serializes concurrent submissions; repeat submissions return the existing application.
+- Added database RPC `moreai_admin_review_partner`: validates the actor's live `partner.organization.manage` assignment, locks the organization, enforces pending/active status transitions, updates member access, and writes the approval/rejection/suspension audit record in the same transaction.
+- Added partner onboarding status and submission endpoints, typed client methods, and a Partner Portal gate. Applicants see their real pending/active/rejected/suspended status; operational portal screens are only shown when the organization and membership are active.
+- Added Super Admin approval/rejection controls backed by the transactional review RPC.
+- Added atomic audited LLM provider/model/routing mutation RPCs and FastAPI endpoints. Provider secrets are never stored in provider rows or returned to the browser; enabling a provider requires the matching server environment credential to be configured. Models and routes are created disabled, and routes can only be enabled when primary/fallback models and providers are enabled.
+- Added Admin UI forms and enable/disable controls for provider, model and general platform routing management. The live provider/model/routing tables are currently empty; no sample providers or models were seeded.
+- Corrected the Super Admin role permission mapping to include `partner.organization.read` and `partner.organization.manage`, so the approval queue and review actions are available to the intended platform role.
+- Applied and versioned migrations `20261103101050`, `20261103101208`, `20261103101333`, and `20261103101453` in the existing Supabase project and repository.
+
+Remaining limitations: role-assignment CRUD still needs its own transactional audit RPC; QR/access-code issuance/redemption requires its dedicated hashed-code schema and explicit expiry/use policy; memory/subscription schema remains absent; access-session lifecycle remains fail-closed.
