@@ -28,3 +28,35 @@ def test_worker_accepts_secure_runtime_config(monkeypatch):
     config = WorkerConfig.from_env()
     assert config.lease_seconds == 90
     assert config.api_base_url == "https://api.example.com"
+
+
+
+def test_openmanus_tool_registry_rejects_unavailable_tools():
+    from moreai_worker.main import OpenManusToolRegistry
+
+    registry = OpenManusToolRegistry()
+    registry.register("terminate", object)
+    with pytest.raises(RuntimeError, match="not registered or sandboxed"):
+        registry.build(lambda *tools: tools, ["browser"])
+
+
+def test_openmanus_tool_registry_builds_only_explicit_allowlist():
+    from moreai_worker.main import OpenManusToolRegistry
+
+    class Tool:
+        pass
+
+    registry = OpenManusToolRegistry()
+    registry.register("terminate", Tool)
+    result = registry.build(lambda *tools: tools, ["terminate"])
+    assert len(result) == 1
+    assert isinstance(result[0], Tool)
+
+
+def test_openmanus_tool_registry_rejects_duplicate_keys():
+    from moreai_worker.main import OpenManusToolRegistry
+
+    registry = OpenManusToolRegistry()
+    registry.register("terminate", object)
+    with pytest.raises(ValueError, match="unique"):
+        registry.register("terminate", object)
