@@ -162,9 +162,7 @@ def test_workspace_file_download_is_owner_scoped_and_short_lived(monkeypatch):
             return None
 
         def json(self):
-            return {
-                "signedURL": "/object/sign/workspace/users/private/report.pdf?token=opaque"
-            }
+            return {"signedURL": "/object/sign/workspace/users/private/report.pdf?token=opaque"}
 
     class FakeAsyncClient:
         def __init__(self, timeout):
@@ -330,24 +328,28 @@ def test_chat_rejects_reused_key_when_persisted_message_hash_differs(monkeypatch
 
     async def rows(table, query):
         if table == "conversations":
-            return [{
-                "id": CONVERSATION_ID,
-                "user_id": USER_ID,
-                "workspace_id": None,
-                "title": "Riset",
-                "status": "active",
-                "metadata": {},
-            }]
+            return [
+                {
+                    "id": CONVERSATION_ID,
+                    "user_id": USER_ID,
+                    "workspace_id": None,
+                    "title": "Riset",
+                    "status": "active",
+                    "metadata": {},
+                }
+            ]
         if table == "conversation_messages":
-            return [{
-                "id": "user-old",
-                "role": "user",
-                "content": "Pesan lama",
-                "metadata": {
-                    "request_key": f"chat:{CONVERSATION_ID}:{token_hash}",
-                    "request_hash": "different-request-hash",
-                },
-            }]
+            return [
+                {
+                    "id": "user-old",
+                    "role": "user",
+                    "content": "Pesan lama",
+                    "metadata": {
+                        "request_key": f"chat:{CONVERSATION_ID}:{token_hash}",
+                        "request_hash": "different-request-hash",
+                    },
+                }
+            ]
         return []
 
     async def call(name, payload):

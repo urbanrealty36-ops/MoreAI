@@ -189,9 +189,7 @@ async def send_message(
     existing_assistant = next((item for item in existing if item.get("role") == "assistant"), None)
     if existing_user:
         existing_metadata = (
-            existing_user.get("metadata")
-            if isinstance(existing_user.get("metadata"), dict)
-            else {}
+            existing_user.get("metadata") if isinstance(existing_user.get("metadata"), dict) else {}
         )
         if existing_metadata.get("request_hash") != request_hash:
             raise HTTPException(
