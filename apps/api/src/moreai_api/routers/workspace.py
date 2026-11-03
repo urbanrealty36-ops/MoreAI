@@ -246,11 +246,17 @@ async def send_message(
 async def list_workspace_files(claims: Claims, limit: int = 50):
     user_id = _user_id(claims)
     return {
-        "items": await select_rows(
-            "artifacts",
-            "select=id,workspace_id,run_id,file_name,mime_type,size_bytes,checksum_sha256,metadata,created_at"
-            f"&user_id=eq.{user_id}&order=created_at.desc&limit={max(1, min(limit, 100))}",
-        )
+        "items": [
+            {
+                **item,
+                "file_name": str(item["storage_path"]).rsplit("/", 1)[-1],
+            }
+            for item in await select_rows(
+                "artifacts",
+                "select=id,workspace_id,run_id,storage_path,mime_type,size_bytes,checksum_sha256,metadata,created_at"
+                f"&user_id=eq.{user_id}&order=created_at.desc&limit={max(1, min(limit, 100))}",
+            )
+        ]
     }
 
 
@@ -259,17 +265,18 @@ async def create_workspace_file_download(artifact_id: UUID, claims: Claims):
     user_id = _user_id(claims)
     rows = await select_rows(
         "artifacts",
-        "select=id,storage_bucket,storage_key,file_name"
+        "select=id,storage_path"
         f"&id=eq.{artifact_id}&user_id=eq.{user_id}&limit=1",
     )
     if not rows:
         raise HTTPException(status_code=404, detail={"code": "ARTIFACT_NOT_FOUND"})
     artifact = rows[0]
-    service_key = settings.supabase_service_role_key
-    if not service_key or not settings.supabase_url:
+    service_key = settings.supabase_secret_key
+    bucket_name = settings.workspace_artifacts_bucket
+    if not service_key or not settings.supabase_url or not bucket_name:
         raise HTTPException(status_code=503, detail={"code": "STORAGE_SIGNING_UNAVAILABLE"})
-    bucket = quote(str(artifact["storage_bucket"]), safe="")
-    object_key = quote(str(artifact["storage_key"]), safe="/")
+    bucket = quote(bucket_name, safe="")
+    object_key = quote(str(artifact["storage_path"]), safe="/")
     base_url = settings.supabase_url.rstrip("/")
     try:
         async with httpx.AsyncClient(timeout=10) as client:
@@ -289,7 +296,13 @@ async def create_workspace_file_download(artifact_id: UUID, claims: Claims):
         raise HTTPException(status_code=503, detail={"code": "STORAGE_SIGNING_UNAVAILABLE"})
     if signed_url.startswith("/"):
         signed_url = f"{base_url}{signed_url}"
-    return {"url": signed_url, "expires_in": 300, "file_name": artifact["file_name"]}
+    separator = "&" if "?" in signed_url else "?"
+    signed_url = f"{signed_url}{separator}download="
+    return {
+        "url": signed_url,
+        "expires_in": 300,
+        "file_name": str(artifact["storage_path"]).rsplit("/", 1)[-1],
+    }
 
 
 @router.get("/wallet")
