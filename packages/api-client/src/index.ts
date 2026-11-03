@@ -60,6 +60,18 @@ export function createApiClient(options: ApiClientOptions) {
       cancel: (id: string) => post<{ run_id: string; status: string }>(`/api/v1/agents/runs/${id}/cancel`),
       resume: (id: string) => post<{ run_id: string; status: string }>(`/api/v1/agents/runs/${id}/resume`),
     },
+    workspace: {
+      conversations: () => get<Collection<Conversation>>("/api/v1/workspace/conversations"),
+      createConversation: (input: {title?: string; workspace_id?: string}) => post<{conversation: Conversation}>("/api/v1/workspace/conversations", input),
+      updateConversation: (id: string, input: {title?: string; status?: "active" | "archived"}) => patch<{conversation: Conversation}>(`/api/v1/workspace/conversations/${id}`, input),
+      messages: (id: string) => get<Collection<ConversationMessage>>(`/api/v1/workspace/conversations/${id}/messages`),
+      sendMessage: (id: string, input: {content: string; model?: string; max_output_tokens?: number}, key: string) => post<{user_message: ConversationMessage; assistant_message: ConversationMessage; replayed: boolean}>(`/api/v1/workspace/conversations/${id}/messages`, input, key),
+      files: () => get<Collection<Record<string, unknown>>>("/api/v1/workspace/files"),
+      wallet: () => get<WorkspaceWallet>("/api/v1/workspace/wallet"),
+      entitlements: () => get<Collection<Record<string, unknown>>>("/api/v1/workspace/entitlements"),
+      memory: () => get<Record<string, unknown>>("/api/v1/workspace/memory"),
+      subscription: () => get<Record<string, unknown>>("/api/v1/workspace/subscription"),
+    },
     partner: {
       me: () => get<PartnerSummary>("/api/v1/partner/me"),
       branches: () => get<Collection<unknown>>("/api/v1/partner/branches"),
