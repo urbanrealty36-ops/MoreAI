@@ -14,6 +14,7 @@ type WorkspaceFile = {
   storage_path: string;
   mime_type?: string | null;
   size_bytes?: number | null;
+  checksum_sha256?: string | null;
   created_at: string;
   metadata?: Record<string, unknown>;
 };
