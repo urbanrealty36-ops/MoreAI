@@ -4,11 +4,11 @@ from datetime import datetime, timezone
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict
 
 from moreai_api.auth import require_authenticated_user
-from moreai_api.db import insert_rows, select_rows, update_rows
+from moreai_api.db import insert_rows, select_rows, update_rows, rpc
 from moreai_api.gateway import gateway_secret_bundle, validate_mikrotik_credentials
 
 router = APIRouter(prefix="/admin", tags=["super-admin"])
@@ -127,6 +127,34 @@ async def admin_network_policies(claims: UserClaims):
         )
     }
 
+
+
+class PartnerReviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    decision: Literal["approve", "reject", "suspend"]
+    reason: str | None = None
+
+
+@router.post("/partners/{partner_id}/review")
+async def review_partner_application(
+    partner_id: UUID,
+    payload: PartnerReviewRequest,
+    claims: UserClaims,
+    request: Request,
+):
+    await _require_permission(claims, "partner.organization.manage")
+    actor_user_id = str(UUID(str(claims.get("sub", ""))))
+    result = await rpc(
+        "moreai_admin_review_partner",
+        {
+            "p_actor_user_id": actor_user_id,
+            "p_partner_id": str(partner_id),
+            "p_decision": payload.decision,
+            "p_reason": payload.reason,
+            "p_correlation_id": request.headers.get("X-Correlation-ID"),
+        },
+    )
+    return result
 
 
 @router.get("/permission-matrix")
