@@ -121,7 +121,10 @@ export function createApiClient(options: ApiClientOptions) {
     network: {
       context: () => get<Record<string, unknown>>("/api/v1/network/portal-context"),
       verify: (input: unknown, key: string) => post<Record<string, unknown>>("/api/v1/network/access/verify", input, key),
+      verifyGatewayContext: (input: GatewayContextInput) => post<Record<string, unknown>>("/api/v1/network/gateway/mikrotik/context/verify", input),
       session: () => get<Record<string, unknown>>("/api/v1/network/access/session"),
+      refreshSession: () => post<Record<string, unknown>>("/api/v1/network/access/session/refresh"),
+      endSession: () => post<Record<string, unknown>>("/api/v1/network/access/session/end"),
     },
   };
 }
