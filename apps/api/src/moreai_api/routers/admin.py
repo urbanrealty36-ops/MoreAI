@@ -509,7 +509,7 @@ async def admin_llm_routing(claims: UserClaims):
     await _require_permission(claims, "platform.models.read")
     policies = await select_rows(
         "llm_routing_policies",
-        "select=id,scope_type,scope_id,task_type,model_id,priority,fallback_model_id,enabled&order=scope_type,task_type,priority",
+        "select=id,scope_type,scope_id,task_type,model_id,priority,fallback_model_id,enabled&order=scope_type,task_type,priority,id",
     )
     models = await select_rows(
         "llm_models",
