@@ -54,6 +54,8 @@ export function createApiClient(options: ApiClientOptions) {
     agents: {
       list: () => get<Collection<AgentRun>>("/api/v1/agents/runs"),
       get: (id: string) => get<{ run: AgentRun }>(`/api/v1/agents/runs/${id}`),
+      events: (id: string) => get<Collection<{id:string;event_type:string;sequence:number;created_at:string;payload:Record<string,unknown>}>>(`/api/v1/agents/runs/${id}/events`),
+      steps: (id: string) => get<Collection<{id:string;sequence:number;step_key:string;status:string;started_at?:string|null;finished_at?:string|null;created_at:string}>>(`/api/v1/agents/runs/${id}/steps`),
       create: (input: CreateAgentRunInput, key: string) => post<{ run: AgentRun; replayed: boolean }>("/api/v1/agents/runs", input, key),
       cancel: (id: string) => post<{ run_id: string; status: string }>(`/api/v1/agents/runs/${id}/cancel`),
       resume: (id: string) => post<{ run_id: string; status: string }>(`/api/v1/agents/runs/${id}/resume`),
