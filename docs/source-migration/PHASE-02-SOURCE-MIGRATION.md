@@ -145,3 +145,37 @@ A follow-up implementation branch, `phase-02-partner-api-operations`, adds:
 - CI workflow push trigger for the implementation branch.
 
 The work is under review in [PR #8](https://github.com/urbanrealty36-ops/MoreAI/pull/8). This is implementation evidence, not production deployment or Phase 02 acceptance. CI status for the latest PR head must be checked before merging.
+
+
+## 2026-11-03 — Customer Workspace, Admin Governance, Captive Portal Integration
+
+Implementation on `phase-02-partner-api-operations` (PR #8):
+
+- Added `/api/v1/workspace` conversation create/list/archive, message history, and chat-send endpoints. Chat generation uses the existing server-side LLM gateway and durable LLM request idempotency; the browser no longer calls the provider endpoint directly.
+- Added owner-scoped workspace files metadata, wallet/credit-ledger read, and entitlement read endpoints.
+- Added owner-scoped agent run events and step endpoints with event payload allowlisting; the Agent monitor reads persisted events and steps.
+- Added Super Admin read endpoints for the persisted permission matrix, partner approval queue, and LLM routing policies. The Admin UI displays these real database records.
+- Replaced prototype-only Customer Workspace history/files/wallet/memory/subscription data with backend-backed state or explicit unavailable states. No sample balance, transaction, memory, file or subscription prices are shown as production records.
+- Replaced the Captive Portal's simulated venue, timed success animation, and fabricated credit reward with signed gateway-context verification through the typed API client. Verification success explicitly does not claim that access or a partner benefit is active.
+- Added typed API-client contracts for workspace, agent monitor, admin governance, and captive gateway/session operations.
+- Applied Supabase migration `20261103100442_single_active_network_verification_method` to the existing MoreAI database. The migration adds the platform method catalog, selected-method column, one-enabled-method guard, and replay-protected gateway nonce storage. All adapters remain not ready; no hardware/provider integration was activated.
+
+### Verified database state
+
+- Applied migration is recorded in Supabase as `20261103100442`.
+- `network_verification_method_catalog` and `network_gateway_nonces` now exist.
+- Before applying, `partner_networks` and `network_verification_configs` each had zero rows, so the one-enabled-method index had no existing duplicate rows to reject.
+- Security advisor reports two INFO findings: RLS is enabled on the two server-only tables with no client policies. Direct client grants are revoked and the service role is explicitly granted access.
+- Performance advisor reports existing unindexed foreign keys (45 findings) and unused indexes (27 findings); these are tracked as a separate DB performance-hardening backlog, not silently altered in this migration.
+
+### Remaining gates — Phase 02 remains IN PROGRESS
+
+- Memory schema/retention/embedding and subscription catalog/payment lifecycle are absent from the live schema. Their APIs return explicit unavailable responses.
+- QR/access-code issuance/redemption storage and partner onboarding atomic RPC are not yet present.
+- Admin approval, role assignment, model CRUD and routing mutation require transactional audit RPCs before write controls can be enabled.
+- Captive Portal context proof can be verified, but access-session creation/refresh/end and benefit/Free/Paid transitions remain fail-closed pending approved lifecycle policies and provider readiness.
+- Artifact listing returns metadata only; secure signed Storage downloads require bucket/ownership integration.
+- Agent worker retains durable lease/checkpoint/retry/recovery behavior from the existing implementation. Browser/Python/search/file tools remain disabled unless isolated sandbox adapters are available and explicitly approved.
+- CI status is not yet confirmed by the connected GitHub status interface. No lint/typecheck/build/test result is claimed in this report.
+
+Next implementation order: close transactional audit RPC + partner onboarding; then memory/subscription/QR schema; then Captive Portal session and entitlement lifecycle; then complete admin CRUD and sandboxed tool registry. Do not begin Phase 03 until Phase 02 acceptance gates pass.
