@@ -1,6 +1,7 @@
 'use client';
 
-import React, { FormEvent, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import type { FormEvent } from 'react';
 import { Building2, ShieldCheck, Clock, AlertCircle } from 'lucide-react';
 import { getPortalApi } from '../../lib/client';
 import { PartnerOperations } from './PartnerOperations';
