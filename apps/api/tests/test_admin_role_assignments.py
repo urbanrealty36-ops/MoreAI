@@ -57,3 +57,31 @@ def test_role_assignment_requires_timezone_aware_expiry(monkeypatch):
     )
     assert response.status_code == 422
     assert response.json()["detail"]["code"] == "ROLE_EXPIRY_TIMEZONE_REQUIRED"
+
+
+def test_permission_matrix_mutation_uses_atomic_audit_rpc(monkeypatch):
+    from moreai_api.routers import admin
+
+    async def allow(claims, permission):
+        assert permission == "platform.security.manage"
+
+    async def call(name, payload):
+        assert name == "moreai_admin_set_role_permission"
+        assert payload["p_actor_user_id"] == USER_ID
+        assert payload["p_role_key"] == "support_admin"
+        assert payload["p_permission_key"] == "platform.users.read"
+        assert payload["p_enabled"] is True
+        return {
+            "role_key": "support_admin",
+            "permission_key": "platform.users.read",
+            "enabled": True,
+        }
+
+    monkeypatch.setattr(admin, "_require_permission", allow)
+    monkeypatch.setattr(admin, "rpc", call)
+    response = client.put(
+        "/api/v1/admin/roles/support_admin/permissions/platform.users.read",
+        json={"enabled": True},
+    )
+    assert response.status_code == 200
+    assert response.json()["enabled"] is True
