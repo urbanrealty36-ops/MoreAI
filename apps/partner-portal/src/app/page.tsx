@@ -1,5 +1,5 @@
 import { PartnerPortalView } from "@/components/partner/PartnerPortalView";
-import { PartnerOperations } from "@/components/partner/PartnerOperations";
+import { PartnerAccessGate } from "@/components/partner/PartnerAccessGate";
 import { PortalAuthGate } from "@/components/PortalAuthGate";
 
 export default function PartnerHome() {
@@ -10,7 +10,7 @@ export default function PartnerHome() {
         <p className="text-xs text-gray-500">Lokasi, jaringan, campaign, reward, dan statistik melalui FastAPI.</p>
       </header>
       <div className="mx-auto max-w-5xl">
-        <PortalAuthGate title="Partner Portal · Masuk"><PartnerOperations /></PortalAuthGate>
+        <PortalAuthGate title="Partner Portal · Masuk"><PartnerAccessGate /></PortalAuthGate>
       </div>
       <details className="mx-auto mt-4 max-w-5xl rounded-xl border border-[#171717] bg-white p-3">
         <summary className="cursor-pointer text-sm font-bold">Buka referensi visual Partner Portal (non-operasional)</summary>
