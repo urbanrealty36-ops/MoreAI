@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import re
 from urllib.parse import quote
 
 import httpx
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Annotated
 from uuid import UUID
 
@@ -13,7 +14,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from moreai_api.auth import require_authenticated_user
-from moreai_api.db import insert_rows, select_rows, update_rows
+from moreai_api.db import insert_rows, rpc, select_rows, update_rows
 from moreai_api.routers.llm import GenerateRequest, _generate
 from moreai_api.settings import settings
 
@@ -137,25 +138,84 @@ async def send_message(
         raise HTTPException(status_code=400, detail={"code": "IDEMPOTENCY_KEY_REQUIRED"})
     conversation = await _owned_conversation(conversation_id, user_id)
 
-    request_key = f"chat:{conversation_id}:{hashlib.sha256(idempotency_key.encode()).hexdigest()}"
-    history_rows = await select_rows(
-        "conversation_messages",
-        "select=role,content,metadata"
-        f"&conversation_id=eq.{conversation_id}&user_id=eq.{user_id}"
-        "&role=in.(user,assistant)&order=created_at.desc&limit=12",
+    scope_key = f"workspace.chat:{user_id}:{conversation_id}"
+    idempotency_token = hashlib.sha256(idempotency_key.encode()).hexdigest()
+    request_hash = hashlib.sha256(
+        json.dumps(
+            {
+                "content": payload.content,
+                "model": payload.model,
+                "max_output_tokens": payload.max_output_tokens,
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    ).hexdigest()
+    claim = await rpc(
+        "moreai_workspace_claim_chat_idempotency",
+        {
+            "p_scope_key": scope_key,
+            "p_idempotency_key": idempotency_token,
+            "p_request_hash": request_hash,
+            "p_expires_at": (datetime.now(timezone.utc) + timedelta(minutes=5)).isoformat(),
+        },
     )
+    claim_state = claim.get("state") if isinstance(claim, dict) else None
+    if claim_state == "conflict":
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "IDEMPOTENCY_KEY_REUSED", "message": "Idempotency key was already used for a different request."},
+        )
+    if claim_state == "completed":
+        cached = claim.get("response_body")
+        if not isinstance(cached, dict):
+            raise HTTPException(status_code=503, detail={"code": "IDEMPOTENCY_RESPONSE_INVALID"})
+        return {**cached, "replayed": True}
+    if claim_state not in {"claimed", "processing"}:
+        raise HTTPException(status_code=503, detail={"code": "CHAT_IDEMPOTENCY_UNAVAILABLE"})
+
+    request_key = f"chat:{conversation_id}:{idempotency_token}"
     existing = await select_rows(
         "conversation_messages",
-        "select=id,role,content,model_key,token_input,token_output,created_at"
+        "select=id,role,content,model_key,token_input,token_output,created_at,metadata"
         f"&conversation_id=eq.{conversation_id}&user_id=eq.{user_id}"
         f"&metadata->>request_key=eq.{request_key}&order=created_at.asc&limit=2",
     )
-    if len(existing) >= 2 and existing[-1].get("role") == "assistant":
-        return {"user_message": existing[0], "assistant_message": existing[-1], "replayed": True}
+    existing_user = next((item for item in existing if item.get("role") == "user"), None)
+    existing_assistant = next((item for item in existing if item.get("role") == "assistant"), None)
+    if existing_user and existing_assistant:
+        response_body = {
+            "user_message": existing_user,
+            "assistant_message": existing_assistant,
+            "replayed": False,
+        }
+        await rpc(
+            "moreai_workspace_finish_chat_idempotency",
+            {
+                "p_scope_key": scope_key,
+                "p_idempotency_key": idempotency_token,
+                "p_request_hash": request_hash,
+                "p_response_body": response_body,
+                "p_success": True,
+            },
+        )
+        return {**response_body, "replayed": True}
+    if claim_state == "processing":
+        raise HTTPException(
+            status_code=409,
+            detail={"code": "IDEMPOTENCY_REQUEST_IN_PROGRESS"},
+            headers={"Retry-After": "2"},
+        )
 
-    user_rows = [item for item in existing if item.get("role") == "user"][:1]
-    if not user_rows:
-        user_rows = await insert_rows(
+    try:
+        history_rows = await select_rows(
+            "conversation_messages",
+            "select=role,content,metadata"
+            f"&conversation_id=eq.{conversation_id}&user_id=eq.{user_id}"
+            "&role=in.(user,assistant)&order=created_at.desc&limit=12",
+        )
+        user_rows = [existing_user] if existing_user else await insert_rows(
             "conversation_messages",
             {
                 "conversation_id": str(conversation_id),
@@ -165,81 +225,109 @@ async def send_message(
                 "metadata": {"request_key": request_key},
             },
         )
-    if not user_rows:
-        raise HTTPException(status_code=503, detail={"code": "MESSAGE_PERSIST_FAILED"})
+        if not user_rows:
+            raise HTTPException(status_code=503, detail={"code": "MESSAGE_PERSIST_FAILED"})
 
-    context_budget = max(0, 11500 - len(payload.content))
-    context_lines: list[str] = []
-    for item in history_rows:
-        metadata = item.get("metadata") if isinstance(item.get("metadata"), dict) else {}
-        if metadata.get("request_key") == request_key:
-            continue
-        content = item.get("content") if isinstance(item.get("content"), str) else ""
-        if not content or context_budget <= 0:
-            continue
-        prefix = "User: " if item.get("role") == "user" else "Assistant: "
-        snippet = content[-max(1, min(len(content), context_budget - len(prefix) - 1)) :]
-        line = f"{prefix}{snippet}"
-        context_lines.append(line)
-        context_budget -= len(line) + 1
-    context_lines.reverse()
-    prompt = (
-        "Recent conversation context:\n"
-        + "\n".join(context_lines)
-        + "\n\nCurrent user message:\n"
-        + payload.content
-        if context_lines
-        else payload.content
-    )
-    generated = await _generate(
-        GenerateRequest(
-            prompt=prompt,
-            model=payload.model,
-            max_output_tokens=payload.max_output_tokens,
-        ),
-        user_id,
-        request_key,
-    )
-    assistant_rows = await insert_rows(
-        "conversation_messages",
-        {
-            "conversation_id": str(conversation_id),
-            "user_id": user_id,
-            "role": "assistant",
-            "content": generated.text,
-            "model_key": generated.model,
-            "token_input": generated.usage["input_tokens"],
-            "token_output": generated.usage["output_tokens"],
-            "metadata": {
-                "request_key": request_key,
-                "provider": generated.provider,
-                "request_id": generated.request_id,
-            },
-        },
-    )
-    if not assistant_rows:
-        raise HTTPException(
-            status_code=503,
-            detail={
-                "code": "ASSISTANT_MESSAGE_PERSIST_PENDING",
-                "request_id": generated.request_id,
+        context_budget = max(0, 11500 - len(payload.content))
+        context_lines: list[str] = []
+        for item in history_rows:
+            metadata = item.get("metadata") if isinstance(item.get("metadata"), dict) else {}
+            if metadata.get("request_key") == request_key:
+                continue
+            content = item.get("content") if isinstance(item.get("content"), str) else ""
+            if not content or context_budget <= 0:
+                continue
+            prefix = "User: " if item.get("role") == "user" else "Assistant: "
+            snippet = content[-max(1, min(len(content), context_budget - len(prefix) - 1)) :]
+            line = f"{prefix}{snippet}"
+            context_lines.append(line)
+            context_budget -= len(line) + 1
+        context_lines.reverse()
+        prompt = (
+            "Recent conversation context:\\n"
+            + "\\n".join(context_lines)
+            + "\\n\\nCurrent user message:\\n"
+            + payload.content
+            if context_lines
+            else payload.content
+        )
+        generated = await _generate(
+            GenerateRequest(
+                prompt=prompt,
+                model=payload.model,
+                max_output_tokens=payload.max_output_tokens,
+            ),
+            user_id,
+            request_key,
+        )
+        assistant_rows = await insert_rows(
+            "conversation_messages",
+            {
+                "conversation_id": str(conversation_id),
+                "user_id": user_id,
+                "role": "assistant",
+                "content": generated.text,
+                "model_key": generated.model,
+                "token_input": generated.usage["input_tokens"],
+                "token_output": generated.usage["output_tokens"],
+                "metadata": {
+                    "request_key": request_key,
+                    "provider": generated.provider,
+                    "request_id": generated.request_id,
+                },
             },
         )
-    await update_rows(
-        "conversations",
-        f"id=eq.{conversation_id}&user_id=eq.{user_id}",
-        {
-            "title": payload.content[:80]
-            if conversation.get("title") in (None, "Percakapan baru")
-            else conversation.get("title"),
-            "updated_at": datetime.now(timezone.utc).isoformat(),
-        },
-    )
-    return {
-        "user_message": user_rows[0],
-        "assistant_message": assistant_rows[0],
-        "replayed": False,
-    }
+        if not assistant_rows:
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "code": "ASSISTANT_MESSAGE_PERSIST_PENDING",
+                    "request_id": generated.request_id,
+                },
+            )
+        await update_rows(
+            "conversations",
+            f"id=eq.{conversation_id}&user_id=eq.{user_id}",
+            {
+                "title": payload.content[:80]
+                if conversation.get("title") in (None, "Percakapan baru")
+                else conversation.get("title"),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            },
+        )
+        response_body = {
+            "user_message": user_rows[0],
+            "assistant_message": assistant_rows[0],
+            "replayed": False,
+        }
+        finalized = await rpc(
+            "moreai_workspace_finish_chat_idempotency",
+            {
+                "p_scope_key": scope_key,
+                "p_idempotency_key": idempotency_token,
+                "p_request_hash": request_hash,
+                "p_response_body": response_body,
+                "p_success": True,
+            },
+        )
+        if finalized is not True:
+            raise HTTPException(status_code=503, detail={"code": "CHAT_IDEMPOTENCY_FINALIZE_PENDING"})
+        return response_body
+    except Exception:
+        try:
+            await rpc(
+                "moreai_workspace_finish_chat_idempotency",
+                {
+                    "p_scope_key": scope_key,
+                    "p_idempotency_key": idempotency_token,
+                    "p_request_hash": request_hash,
+                    "p_response_body": {},
+                    "p_success": False,
+                },
+            )
+        except Exception:
+            pass
+        raise
 
 
 @router.get("/files")
