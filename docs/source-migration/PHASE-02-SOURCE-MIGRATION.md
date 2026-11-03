@@ -204,3 +204,14 @@ Next implementation order: close transactional audit RPC + partner onboarding; t
 - Applied and versioned migrations `20261103101050`, `20261103101208`, `20261103101333`, and `20261103101453` in the existing Supabase project and repository.
 
 Remaining limitations: role-assignment CRUD still needs its own transactional audit RPC; QR/access-code issuance/redemption requires its dedicated hashed-code schema and explicit expiry/use policy; memory/subscription schema remains absent; access-session lifecycle remains fail-closed.
+
+
+## 2026-11-03 — Super Admin Role Assignment and LLM Control Plane
+
+- Added atomic platform role assignment and revocation RPCs. Only an active Super Admin with `platform.roles.assign` may call them.
+- Role assignment supports explicit platform role keys and optional timezone-aware expiry. Duplicate active assignment requests return the existing assignment; expired assignments can be renewed.
+- Role revocation is audited in the same transaction. The last active Super Admin cannot be revoked; a transaction advisory lock serializes concurrent attempts to remove the final Super Admin.
+- Added FastAPI read/create/revoke role-assignment endpoints and typed API-client methods. The Admin UI now lists assignments and provides assignment/revocation controls.
+- Added audited LLM provider/model/routing create/update/disable endpoints. Provider API keys remain server environment values and are never sent to the client. Model and routing entries are disabled by default; enabling is guarded by provider/model readiness.
+- Added Super Admin UI forms for provider registration, model registry creation, and general platform route creation, with explicit enable controls.
+- Applied and versioned migrations `20261103102141_atomic_platform_role_assignment_and_revocation` and `20261103102304_serialize_super_admin_role_revocation`.
