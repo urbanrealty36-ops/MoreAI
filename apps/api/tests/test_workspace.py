@@ -89,7 +89,15 @@ def test_send_message_persists_user_and_assistant_messages(monkeypatch):
     monkeypatch.setattr(workspace, "select_rows", rows)
     monkeypatch.setattr(workspace, "insert_rows", insert)
     monkeypatch.setattr(workspace, "update_rows", update)
+    async def call(name, payload):
+        if name == "moreai_workspace_claim_chat_idempotency":
+            return {"state": "claimed"}
+        if name == "moreai_workspace_finish_chat_idempotency":
+            return True
+        raise AssertionError(name)
+
     monkeypatch.setattr(workspace, "_generate", generate)
+    monkeypatch.setattr(workspace, "rpc", call)
 
     response = client.post(
         f"/api/v1/workspace/conversations/{CONVERSATION_ID}/messages",
@@ -158,6 +166,9 @@ def test_workspace_file_download_is_owner_scoped_and_short_lived(monkeypatch):
             }
 
     class FakeAsyncClient:
+        def __init__(self, timeout):
+            assert timeout == 10
+
         async def __aenter__(self):
             return self
 
@@ -200,3 +211,103 @@ def test_workspace_file_download_does_not_expose_storage_when_bucket_unconfigure
     response = client.get("/api/v1/workspace/files/00000000-0000-0000-0000-000000000004/download")
     assert response.status_code == 503
     assert response.json()["detail"]["code"] == "STORAGE_SIGNING_UNAVAILABLE"
+
+
+def test_chat_completed_idempotency_returns_cached_response_without_llm(monkeypatch):
+    from moreai_api.routers import workspace
+
+    async def rows(table, query):
+        assert table == "conversations"
+        return [{
+            "id": CONVERSATION_ID,
+            "user_id": USER_ID,
+            "workspace_id": None,
+            "title": "Riset",
+            "status": "active",
+            "metadata": {},
+        }]
+
+    async def call(name, payload):
+        assert name == "moreai_workspace_claim_chat_idempotency"
+        return {
+            "state": "completed",
+            "response_status": 200,
+            "response_body": {
+                "user_message": {"id": "user-1", "role": "user", "content": "Halo"},
+                "assistant_message": {"id": "assistant-1", "role": "assistant", "content": "Hai"},
+                "replayed": False,
+            },
+        }
+
+    async def should_not_generate(*args, **kwargs):
+        raise AssertionError("LLM must not be called for a completed idempotency key")
+
+    monkeypatch.setattr(workspace, "select_rows", rows)
+    monkeypatch.setattr(workspace, "rpc", call)
+    monkeypatch.setattr(workspace, "_generate", should_not_generate)
+    response = client.post(
+        f"/api/v1/workspace/conversations/{CONVERSATION_ID}/messages",
+        headers={"Idempotency-Key": "chat-message-002"},
+        json={"content": "Halo"},
+    )
+    assert response.status_code == 200
+    assert response.json()["replayed"] is True
+    assert response.json()["assistant_message"]["content"] == "Hai"
+
+
+def test_chat_in_progress_idempotency_does_not_duplicate_llm_work(monkeypatch):
+    from moreai_api.routers import workspace
+
+    async def rows(table, query):
+        if table == "conversations":
+            return [{
+                "id": CONVERSATION_ID,
+                "user_id": USER_ID,
+                "workspace_id": None,
+                "title": "Riset",
+                "status": "active",
+                "metadata": {},
+            }]
+        return []
+
+    async def call(name, payload):
+        return {"state": "processing"}
+
+    monkeypatch.setattr(workspace, "select_rows", rows)
+    monkeypatch.setattr(workspace, "rpc", call)
+    response = client.post(
+        f"/api/v1/workspace/conversations/{CONVERSATION_ID}/messages",
+        headers={"Idempotency-Key": "chat-message-003"},
+        json={"content": "Halo"},
+    )
+    assert response.status_code == 409
+    assert response.json()["detail"]["code"] == "IDEMPOTENCY_REQUEST_IN_PROGRESS"
+
+
+def test_chat_idempotency_key_cannot_be_reused_for_different_payload(monkeypatch):
+    from moreai_api.routers import workspace
+
+    async def rows(table, query):
+        if table == "conversations":
+            return [{
+                "id": CONVERSATION_ID,
+                "user_id": USER_ID,
+                "workspace_id": None,
+                "title": "Riset",
+                "status": "active",
+                "metadata": {},
+            }]
+        return []
+
+    async def call(name, payload):
+        return {"state": "conflict"}
+
+    monkeypatch.setattr(workspace, "select_rows", rows)
+    monkeypatch.setattr(workspace, "rpc", call)
+    response = client.post(
+        f"/api/v1/workspace/conversations/{CONVERSATION_ID}/messages",
+        headers={"Idempotency-Key": "chat-message-004"},
+        json={"content": "Payload berbeda"},
+    )
+    assert response.status_code == 409
+    assert response.json()["detail"]["code"] == "IDEMPOTENCY_KEY_REUSED"
