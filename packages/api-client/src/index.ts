@@ -66,7 +66,7 @@ export function createApiClient(options: ApiClientOptions) {
       selectVerificationMethod: (networkId: string, methodKey: VerificationMethodKey, configPublic: Record<string,unknown> = {}) => post<Record<string,unknown>>(`/api/v1/partner/networks/${networkId}/verification-method`, {method_key:methodKey,config_public:configPublic}),
       createBranch: (input: {name:string;address?:Record<string,unknown>;latitude?:number|null;longitude?:number|null;timezone?:string}) => post<{item:Record<string,unknown>}>("/api/v1/partner/branches", input),
       updateBranch: (id:string,input:Record<string,unknown>) => patch<{item:Record<string,unknown>}>(`/api/v1/partner/branches/${id}`,input),
-      createNetwork: (input: {location_id:string;name:string;ssid_label?:string|null;gateway_type:string;provider_id?:string|null;gateway_network_ref?:string|null}) => post<{item:Record<string,unknown}>("/api/v1/partner/networks",input),
+      createNetwork: (input: {location_id:string;name:string;ssid_label?:string|null;gateway_type:string;provider_id?:string|null;gateway_network_ref?:string|null}) => post<{item:Record<string,unknown>}>("/api/v1/partner/networks",input),
       updateNetwork: (id:string,input:Record<string,unknown>) => patch<{item:Record<string,unknown>}>(`/api/v1/partner/networks/${id}`,input),
       createCampaign: (input: {name:string;location_id?:string|null;starts_at?:string|null;ends_at?:string|null;budget?:number|null;config?:Record<string,unknown>}) => post<{item:Record<string,unknown>}>("/api/v1/partner/campaigns",input),
       updateCampaign: (id:string,input:Record<string,unknown>) => patch<{item:Record<string,unknown>}>(`/api/v1/partner/campaigns/${id}`,input),
