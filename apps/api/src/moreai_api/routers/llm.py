@@ -82,7 +82,7 @@ async def _model(model_id: str) -> dict | None:
 async def _routes(requested: str | None) -> list[dict]:
     policies = await select_rows(
         "llm_routing_policies",
-        "select=model_id,fallback_model_id,model:llm_models(id,key,input_cost_per_million,output_cost_per_million,max_output_tokens,enabled,provider:llm_providers(key,enabled))&scope_type=eq.platform&scope_id=is.null&task_type=eq.general&enabled=eq.true&order=priority.asc&limit=20",
+        "select=model_id,fallback_model_id,model:llm_models(id,key,input_cost_per_million,output_cost_per_million,max_output_tokens,enabled,provider:llm_providers(key,enabled))&scope_type=eq.platform&scope_id=is.null&task_type=eq.general&enabled=eq.true&order=priority.asc,id.asc&limit=20",
     )
     for policy in policies:
         primary = policy.get("model") or {}
