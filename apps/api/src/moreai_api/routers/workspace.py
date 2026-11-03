@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import re
 from datetime import datetime, timezone
 from typing import Annotated
@@ -132,7 +133,7 @@ async def send_message(
     if not idempotency_key or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{7,199}", idempotency_key):
         raise HTTPException(status_code=400, detail={"code": "IDEMPOTENCY_KEY_REQUIRED"})
 
-    request_key = f"chat:{conversation_id}:{idempotency_key}"
+    request_key = f"chat:{conversation_id}:{hashlib.sha256(idempotency_key.encode()).hexdigest()}"
     existing = await select_rows(
         "conversation_messages",
         "select=id,role,content,model_key,token_input,token_output,created_at"
@@ -142,16 +143,18 @@ async def send_message(
     if len(existing) >= 2 and existing[-1].get("role") == "assistant":
         return {"user_message": existing[0], "assistant_message": existing[-1], "replayed": True}
 
-    user_rows = await insert_rows(
-        "conversation_messages",
-        {
-            "conversation_id": str(conversation_id),
-            "user_id": user_id,
-            "role": "user",
-            "content": payload.content,
-            "metadata": {"request_key": request_key},
-        },
-    )
+    user_rows = [item for item in existing if item.get("role") == "user"][:1]
+    if not user_rows:
+        user_rows = await insert_rows(
+            "conversation_messages",
+            {
+                "conversation_id": str(conversation_id),
+                "user_id": user_id,
+                "role": "user",
+                "content": payload.content,
+                "metadata": {"request_key": request_key},
+            },
+        )
     if not user_rows:
         raise HTTPException(status_code=503, detail={"code": "MESSAGE_PERSIST_FAILED"})
 
@@ -186,7 +189,7 @@ async def send_message(
         "conversations",
         f"id=eq.{conversation_id}&user_id=eq.{user_id}",
         {
-            "title": conversation.get("title") or payload.content[:80],
+            "title": payload.content[:80] if conversation.get("title") in (None, "Percakapan baru") else conversation.get("title"),
             "updated_at": datetime.now(timezone.utc).isoformat(),
         },
     )
