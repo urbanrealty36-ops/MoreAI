@@ -131,6 +131,21 @@ async def admin_network_policies(claims: UserClaims):
 
 
 
+class PlatformRoleAssignmentCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    target_user_id: UUID
+    role_key: Literal[
+        "super_admin", "platform_admin", "finance_admin", "partner_manager",
+        "security_admin", "support_admin", "read_only_analyst",
+    ]
+    expires_at: datetime | None = None
+
+
+class PlatformRoleRevocation(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    reason: str | None = Field(default=None, max_length=500)
+
+
 class ProviderCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     key: Literal["google", "openai", "anthropic"]
@@ -172,6 +187,63 @@ def _provider_credentials_ready(provider_key: str) -> bool:
         "openai": settings.llm_openai_api_key,
         "anthropic": settings.llm_anthropic_api_key,
     }.get(provider_key))
+
+
+@router.get("/role-assignments")
+async def list_platform_role_assignments(claims: UserClaims):
+    await _require_permission(claims, "platform.roles.read")
+    assignments = await select_rows(
+        "user_role_assignments",
+        "select=id,user_id,role_id,scope_type,scope_id,assigned_by,expires_at,created_at"
+        "&scope_type=eq.platform&scope_id=is.null&order=created_at.desc&limit=200",
+    )
+    roles = await select_rows("roles", "select=id,key,description&scope=eq.platform")
+    role_by_id = {role["id"]: role for role in roles}
+    return {
+        "items": [
+            {**assignment, "role": role_by_id.get(assignment["role_id"])}
+            for assignment in assignments
+        ]
+    }
+
+
+@router.post("/role-assignments", status_code=201)
+async def assign_platform_role(
+    payload: PlatformRoleAssignmentCreate, claims: UserClaims, request: Request
+):
+    await _require_permission(claims, "platform.roles.assign")
+    if payload.expires_at and payload.expires_at.tzinfo is None:
+        raise HTTPException(status_code=422, detail={"code": "ROLE_EXPIRY_TIMEZONE_REQUIRED"})
+    actor = str(UUID(str(claims.get("sub", ""))))
+    result = await rpc(
+        "moreai_admin_assign_platform_role",
+        {
+            "p_actor_user_id": actor,
+            "p_target_user_id": str(payload.target_user_id),
+            "p_role_key": payload.role_key,
+            "p_expires_at": payload.expires_at.isoformat() if payload.expires_at else None,
+            "p_correlation_id": request.headers.get("X-Correlation-ID"),
+        },
+    )
+    return result
+
+
+@router.delete("/role-assignments/{assignment_id}")
+async def revoke_platform_role(
+    assignment_id: UUID, payload: PlatformRoleRevocation, claims: UserClaims, request: Request
+):
+    await _require_permission(claims, "platform.roles.assign")
+    actor = str(UUID(str(claims.get("sub", ""))))
+    result = await rpc(
+        "moreai_admin_revoke_platform_role",
+        {
+            "p_actor_user_id": actor,
+            "p_assignment_id": str(assignment_id),
+            "p_reason": payload.reason,
+            "p_correlation_id": request.headers.get("X-Correlation-ID"),
+        },
+    )
+    return result
 
 
 @router.get("/providers")
