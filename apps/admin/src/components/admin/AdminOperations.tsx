@@ -21,7 +21,7 @@ type Data = {
 export function AdminOperations() {
   const [data, setData] = useState<Data>({
     loading: true, models: [], providers: [], audit: [], llmRouting: [],
-    partners: [], verificationMethods: [], networkPolicies: [],
+    partners: [], roleAssignments: [], verificationMethods: [], networkPolicies: [],
   });
   const [providerKey, setProviderKey] = useState<"google" | "openai" | "anthropic">("google");
   const [providerName, setProviderName] = useState("");
@@ -36,21 +36,21 @@ export function AdminOperations() {
   const [routeModelId, setRouteModelId] = useState("");
   const [fallbackModelId, setFallbackModelId] = useState("");
   const [routePriority, setRoutePriority] = useState("100");
-  const [busy, setBusy] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);\n  const [targetUserId, setTargetUserId] = useState("");\n  const [roleKey, setRoleKey] = useState<"platform_admin"|"finance_admin"|"partner_manager"|"security_admin"|"support_admin"|"read_only_analyst"|"super_admin">("platform_admin");\n  const [roleExpiresAt, setRoleExpiresAt] = useState("");
 
   const refresh = useCallback(async () => {
     const api = getPortalApi();
-    const [overview, users, models, providers, audit, verification, policies, permissionMatrix, llmRouting, partners] = await Promise.all([
+    const [overview, users, models, providers, audit, verification, policies, permissionMatrix, llmRouting, partners, roleAssignments] = await Promise.all([
       api.admin.overview(), api.admin.users(), api.admin.models(), api.admin.providers(),
       api.admin.audit(), api.admin.verificationMethods(), api.admin.networkPolicies(),
       api.admin.permissionMatrix().catch(() => null), api.admin.llmRouting().catch(() => null),
-      api.admin.partners("pending").catch(() => null),
+      api.admin.partners("pending").catch(() => null), api.admin.roleAssignments().catch(() => null),
     ]);
     setData({
       loading: false, overview, users: users.items, models: models.items as any[],
       providers: providers.items, audit: audit.items, verificationMethods: verification.items,
       networkPolicies: policies.items, permissionMatrix, llmRouting: llmRouting?.items ?? [],
-      partners: partners?.items ?? [],
+      partners: partners?.items ?? [], roleAssignments: roleAssignments?.items ?? [],
     });
   }, []);
 
@@ -117,6 +117,19 @@ export function AdminOperations() {
       task_type: "general", model_id: route.model_id, fallback_model_id: route.fallback_model_id ?? null,
       priority: route.priority, enabled,
     }));
+  }
+
+  async function assignRole(event: FormEvent) {
+    event.preventDefault();
+    await runAction("role-assign", () => getPortalApi().admin.assignRole({
+      target_user_id: targetUserId.trim(), role_key: roleKey,
+      expires_at: roleExpiresAt ? new Date(roleExpiresAt).toISOString() : null,
+    }));
+    setTargetUserId(""); setRoleExpiresAt("");
+  }
+
+  async function revokeRole(assignmentId: string) {
+    await runAction(`role-revoke-${assignmentId}`, () => getPortalApi().admin.revokeRole(assignmentId, { reason: "Revoked from Super Admin console" }));
   }
 
   async function reviewPartner(partnerId: string, decision: "approve" | "reject") {
@@ -191,6 +204,11 @@ export function AdminOperations() {
 
     {data.permissionMatrix && <div className="rounded-xl border-2 border-[#171717] bg-white p-3"><h2 className="font-black">Permission Matrix</h2><p className="text-xs text-gray-500">Role dan permission aktif pada database.</p><div className="mt-2 space-y-2">{data.permissionMatrix.roles.map((role: any) => <div key={role.id} className="border-t py-2 text-xs"><strong>{role.key}</strong><span className="ml-2 text-gray-500">({role.scope})</span><p className="mt-1 text-gray-600">{role.permissions.join(" · ") || "Tidak ada permission"}</p></div>)}</div></div>}
 
+    <div className="rounded-xl border-2 border-[#171717] bg-white p-3"><h2 className="font-black">Platform Role Assignments</h2><p className="text-xs text-gray-500">Assignment platform hanya dapat dikelola Super Admin. Pencabutan super_admin terakhir diblokir di database.</p>
+      <form onSubmit={assignRole} className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3"><input required value={targetUserId} onChange={(event)=>setTargetUserId(event.target.value)} placeholder="Target user UUID" className="rounded border p-2 text-xs"/><select value={roleKey} onChange={(event)=>setRoleKey(event.target.value as typeof roleKey)} className="rounded border p-2 text-xs"><option value="platform_admin">Platform Admin</option><option value="finance_admin">Finance Admin</option><option value="partner_manager">Partner Manager</option><option value="security_admin">Security Admin</option><option value="support_admin">Support Admin</option><option value="read_only_analyst">Read-only Analyst</option><option value="super_admin">Super Admin</option></select><input type="datetime-local" value={roleExpiresAt} onChange={(event)=>setRoleExpiresAt(event.target.value)} className="rounded border p-2 text-xs" aria-label="Role expiry optional"/><button disabled={busy!==null||!targetUserId.trim()} className="rounded border-2 border-[#171717] bg-[#D9D5FF] p-2 text-xs font-black disabled:opacity-50 sm:col-span-3">{busy==="role-assign"?"Menyimpan…":"Assign Role"}</button></form>
+      <div className="mt-3 space-y-1">{data.roleAssignments.map((assignment:any)=><div key={assignment.id} className="flex flex-wrap items-center justify-between gap-2 border-t py-2 text-xs"><div><strong>{assignment.role?.key??assignment.role_id}</strong><p className="text-gray-500">User {assignment.user_id} · Expiry {assignment.expires_at??"Tidak terbatas"}</p></div><button disabled={busy!==null} onClick={()=>void revokeRole(assignment.id)} className="rounded border border-[#171717] bg-[#F9D8E5] px-2 py-1 text-[10px] font-bold disabled:opacity-50">Revoke</button></div>)}
+      {!data.roleAssignments.length&&<p className="py-2 text-xs text-gray-500">Tidak ada assignment platform yang dapat diakses.</p>}</div>
+    </div>
     <div className="rounded-xl border-2 border-[#171717] bg-white p-3"><h2 className="font-black">Audit Terbaru</h2><p className="text-xs text-gray-500">{data.audit.length} catatan yang dapat diakses</p><div className="mt-2 space-y-1">{data.audit.slice(0,8).map((item: any) => <div key={item.id} className="border-t py-2 text-xs"><strong>{item.action}</strong><span className="ml-2 text-gray-500">{item.resource_type} · {item.outcome}</span></div>)}</div></div>
     <p className="text-xs text-gray-500">Provider credentials tetap di environment server. Perubahan provider/model/routing dan approval tercatat secara atomik pada audit log.</p>
   </section>;
