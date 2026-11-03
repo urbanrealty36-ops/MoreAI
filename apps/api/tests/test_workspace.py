@@ -119,3 +119,80 @@ def test_memory_and_subscription_report_schema_unavailable():
     assert memory.json()["detail"]["code"] == "MEMORY_SCHEMA_NOT_PROVISIONED"
     assert subscription.status_code == 503
     assert subscription.json()["detail"]["code"] == "SUBSCRIPTION_SCHEMA_NOT_PROVISIONED"
+
+
+def test_workspace_file_listing_uses_real_artifact_schema(monkeypatch):
+    from moreai_api.routers import workspace
+
+    async def rows(table, query):
+        assert table == "artifacts"
+        assert "storage_path" in query
+        assert "file_name" not in query
+        return [{
+            "id": "artifact-1",
+            "storage_path": "users/private/report.pdf",
+            "mime_type": "application/pdf",
+            "size_bytes": 1024,
+            "checksum_sha256": "a" * 64,
+            "created_at": "2026-11-03T00:00:00Z",
+        }]
+
+    monkeypatch.setattr(workspace, "select_rows", rows)
+    response = client.get("/api/v1/workspace/files")
+    assert response.status_code == 200
+    assert response.json()["items"][0]["file_name"] == "report.pdf"
+
+
+def test_workspace_file_download_is_owner_scoped_and_short_lived(monkeypatch):
+    from moreai_api.routers import workspace
+
+    class FakeResponse:
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"signedURL": "/storage/v1/object/sign/workspace/users/private/report.pdf?token=opaque"}
+
+    class FakeAsyncClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return None
+
+        async def post(self, url, headers, json):
+            assert "/object/sign/workspace/users/private/report.pdf" in url
+            assert json == {"expiresIn": 300}
+            assert headers["apikey"] == "server-secret"
+            return FakeResponse()
+
+    async def rows(table, query):
+        assert table == "artifacts"
+        assert f"user_id=eq.{USER_ID}" in query
+        return [{"id": "artifact-1", "storage_path": "users/private/report.pdf"}]
+
+    monkeypatch.setattr(workspace, "select_rows", rows)
+    monkeypatch.setattr(workspace.httpx, "AsyncClient", FakeAsyncClient)
+    monkeypatch.setattr(workspace.settings, "supabase_secret_key", "server-secret")
+    monkeypatch.setattr(workspace.settings, "supabase_url", "https://example.supabase.co")
+    monkeypatch.setattr(workspace.settings, "workspace_artifacts_bucket", "workspace")
+    response = client.get("/api/v1/workspace/files/00000000-0000-0000-0000-000000000004/download")
+    assert response.status_code == 200
+    assert response.json()["expires_in"] == 300
+    assert response.json()["file_name"] == "report.pdf"
+    assert response.json()["url"].endswith("&download=")
+
+
+def test_workspace_file_download_does_not_expose_storage_when_bucket_unconfigured(monkeypatch):
+    from moreai_api.routers import workspace
+
+    async def rows(table, query):
+        return [{"id": "artifact-1", "storage_path": "users/private/report.pdf"}]
+
+    monkeypatch.setattr(workspace, "select_rows", rows)
+    monkeypatch.setattr(workspace.settings, "supabase_secret_key", "server-secret")
+    monkeypatch.setattr(workspace.settings, "supabase_url", "https://example.supabase.co")
+    monkeypatch.setattr(workspace.settings, "workspace_artifacts_bucket", None)
+    response = client.get("/api/v1/workspace/files/00000000-0000-0000-0000-000000000004/download")
+    assert response.status_code == 503
+    assert response.json()["detail"]["code"] == "STORAGE_SIGNING_UNAVAILABLE"
