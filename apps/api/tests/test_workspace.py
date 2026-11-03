@@ -163,7 +163,7 @@ def test_workspace_file_download_is_owner_scoped_and_short_lived(monkeypatch):
 
         def json(self):
             return {
-                "signedURL": "/storage/v1/object/sign/workspace/users/private/report.pdf?token=opaque"
+                "signedURL": "/object/sign/workspace/users/private/report.pdf?token=opaque"
             }
 
     class FakeAsyncClient:
@@ -196,6 +196,7 @@ def test_workspace_file_download_is_owner_scoped_and_short_lived(monkeypatch):
     assert response.status_code == 200
     assert response.json()["expires_in"] == 300
     assert response.json()["file_name"] == "report.pdf"
+    assert response.json()["url"].startswith("https://example.supabase.co/storage/v1/object/sign/")
     assert response.json()["url"].endswith("&download=")
 
 
@@ -315,6 +316,53 @@ def test_chat_idempotency_key_cannot_be_reused_for_different_payload(monkeypatch
         f"/api/v1/workspace/conversations/{CONVERSATION_ID}/messages",
         headers={"Idempotency-Key": "chat-message-004"},
         json={"content": "Payload berbeda"},
+    )
+    assert response.status_code == 409
+    assert response.json()["detail"]["code"] == "IDEMPOTENCY_KEY_REUSED"
+
+
+def test_chat_rejects_reused_key_when_persisted_message_hash_differs(monkeypatch):
+    import hashlib
+
+    from moreai_api.routers import workspace
+
+    token_hash = hashlib.sha256("chat-message-005".encode()).hexdigest()
+
+    async def rows(table, query):
+        if table == "conversations":
+            return [{
+                "id": CONVERSATION_ID,
+                "user_id": USER_ID,
+                "workspace_id": None,
+                "title": "Riset",
+                "status": "active",
+                "metadata": {},
+            }]
+        if table == "conversation_messages":
+            return [{
+                "id": "user-old",
+                "role": "user",
+                "content": "Pesan lama",
+                "metadata": {
+                    "request_key": f"chat:{CONVERSATION_ID}:{token_hash}",
+                    "request_hash": "different-request-hash",
+                },
+            }]
+        return []
+
+    async def call(name, payload):
+        return {"state": "claimed"}
+
+    async def should_not_generate(*args, **kwargs):
+        raise AssertionError("A reused key with a different payload must be rejected")
+
+    monkeypatch.setattr(workspace, "select_rows", rows)
+    monkeypatch.setattr(workspace, "rpc", call)
+    monkeypatch.setattr(workspace, "_generate", should_not_generate)
+    response = client.post(
+        f"/api/v1/workspace/conversations/{CONVERSATION_ID}/messages",
+        headers={"Idempotency-Key": "chat-message-005"},
+        json={"content": "Pesan berbeda"},
     )
     assert response.status_code == 409
     assert response.json()["detail"]["code"] == "IDEMPOTENCY_KEY_REUSED"
