@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
 from moreai_api.auth import require_authenticated_user
-from moreai_api.db import select_rows, rpc
+from moreai_api.db import insert_rows, select_rows, rpc, update_rows
 
 router = APIRouter(prefix="/partner", tags=["partner-portal"])
 UserClaims = Annotated[dict, Depends(require_authenticated_user)]
@@ -507,9 +507,15 @@ async def create_reward(claims: UserClaims, payload: RewardCreate):
 async def update_reward(claims: UserClaims, reward_id: UUID, payload: RewardUpdate):
     membership, memberships = await _membership(claims)
     await _require_partner_roles(memberships, {"partner_owner", "partner_admin"})
+    campaigns = await _partner_rows("partner_campaigns", "id", membership["partner_id"])
+    campaign_ids = [item["id"] for item in campaigns]
+    if not campaign_ids:
+        raise HTTPException(status_code=404, detail="Reward not found")
     rewards = await select_rows(
         "campaign_rewards",
-        f"select=id,campaign_id,quantity_claimed,quantity_limit&campaign_id=in.({','.join(x['id'] for x in await _partner_rows('partner_campaigns', 'id', membership['partner_id']))})&id=eq.{reward_id}",
+        "select=id,campaign_id,quantity_claimed,quantity_limit&campaign_id=in.("
+        + ",".join(campaign_ids)
+        + f")&id=eq.{reward_id}",
     )
     if not rewards:
         raise HTTPException(status_code=404, detail="Reward not found")
@@ -518,7 +524,6 @@ async def update_reward(claims: UserClaims, reward_id: UUID, payload: RewardUpda
         raise HTTPException(status_code=422, detail="At least one field is required")
     if "quantity_limit" in changes and changes["quantity_limit"] is not None and changes["quantity_limit"] < rewards[0]["quantity_claimed"]:
         raise HTTPException(status_code=409, detail="Quantity limit cannot be lower than claims already issued")
-    changes["updated_at"] = datetime.now(timezone.utc).isoformat()
     rows = await update_rows("campaign_rewards", f"id=eq.{reward_id}", changes)
     if not rows:
         raise HTTPException(status_code=404, detail="Reward not found")
