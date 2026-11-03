@@ -167,6 +167,7 @@ export function AdminOperations() {
       <div className="mt-2 space-y-1">{data.providers.map((provider: any) => <div key={provider.id} className="flex flex-wrap items-center justify-between gap-2 border-t py-2 text-xs"><div><strong>{provider.display_name}</strong><p className="text-gray-500">{provider.key} · Credential {provider.credentials_configured ? "tersedia di server" : "belum dikonfigurasi"}</p></div><label className="flex items-center gap-2"><input type="checkbox" checked={provider.enabled} disabled={busy !== null || (!provider.enabled && !provider.credentials_configured)} onChange={(event) => void toggleProvider(provider, event.target.checked)}/>Enabled</label></div>)}
       {!data.providers.length && <p className="py-2 text-xs text-gray-500">Belum ada provider terdaftar. Tidak ada provider contoh yang dibuat.</p>}
     </div>
+    </div>
 
     <div className="rounded-xl border-2 border-[#171717] bg-white p-3">
       <h2 className="font-black">Model Registry</h2>
@@ -185,6 +186,7 @@ export function AdminOperations() {
       <div className="mt-3 space-y-1">{data.models.map((model: any) => <div key={model.id} className="flex flex-wrap items-center justify-between gap-2 border-t py-2 text-xs"><div><strong>{model.display_name}</strong><p className="text-gray-500">{model.provider?.key ?? model.provider_id} · {model.key} · Input {model.input_cost_per_million}/1M · Output {model.output_cost_per_million}/1M</p></div><label className="flex items-center gap-2"><input type="checkbox" checked={model.enabled} disabled={busy !== null || (!model.enabled && !model.provider?.enabled)} onChange={(event) => void toggleModel(model, event.target.checked)}/>Enabled</label></div>)}
       {!data.models.length && <p className="py-2 text-xs text-gray-500">Belum ada model terdaftar. Tambahkan model yang sesuai dengan provider aktif.</p>}
     </div>
+    </div>
 
     <div className="rounded-xl border-2 border-[#171717] bg-white p-3">
       <h2 className="font-black">LLM Routing Policies</h2>
@@ -197,6 +199,7 @@ export function AdminOperations() {
       </form>
       <div className="mt-3 space-y-1">{data.llmRouting.map((route: any) => <div key={route.id} className="flex flex-wrap items-center justify-between gap-2 border-t py-2 text-xs"><div><strong>{route.model?.display_name ?? route.model?.key ?? route.model_id}</strong><p className="text-gray-500">Fallback: {route.fallback_model?.key ?? "—"} · Priority {route.priority} · {route.task_type}</p></div><label className="flex items-center gap-2"><input type="checkbox" checked={route.enabled} disabled={busy !== null || (!route.enabled && (!route.model?.enabled || !route.model?.provider?.enabled || (route.fallback_model_id && (!route.fallback_model?.enabled || !route.fallback_model?.provider?.enabled))))} onChange={(event) => void toggleRoute(route, event.target.checked)}/>Enabled</label></div>)}
       {!data.llmRouting.length && <p className="py-2 text-xs text-gray-500">Belum ada routing policy. Tidak ada route default buatan.</p>}
+    </div>
     </div>
 
     <div className="rounded-xl border-2 border-[#171717] bg-white p-3"><h2 className="font-black">Katalog Integrasi Verifikasi Network</h2><p className="text-xs text-gray-500">Ketersediaan opsi tidak berarti adapter sudah siap atau aktif.</p><div className="mt-2 space-y-2">{data.verificationMethods.map((method: any) => <div key={method.method_key} className="flex flex-wrap items-center justify-between gap-2 border-t py-2 text-xs"><div><strong>{method.display_name}</strong><p className="text-gray-500">Adapter: {method.adapter_key} · {method.adapter_ready ? "Ready" : "Belum siap"}{method.requires_secret ? " · Memerlukan secret" : ""}</p></div><label className="flex items-center gap-2"><input type="checkbox" checked={method.enabled} disabled={busy !== null} onChange={(event) => void toggleMethod(method.method_key, event.target.checked)}/>Opsi tersedia untuk mitra</label></div>)}</div></div>
