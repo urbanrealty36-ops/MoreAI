@@ -15,7 +15,7 @@ The current live schema does not contain dedicated memory persistence/embedding 
 
 1. All multi-row privileged operations that require audit must be performed by one Postgres transaction/RPC. Do not implement the business mutation and audit insert as independent calls and then report the operation as atomic.
 2. Partner onboarding must create the organization and its owner membership atomically, with a pending status and an immutable audit event.
-3. Super Admin approval, role assignment, model registry changes, and routing changes must validate permission/scope and write their audit record in the same transaction.
+3. Super Admin approval, model/provider registry changes, and routing changes must validate permission/scope and write their audit record in the same transaction. Role assignment/revocation still requires its own transactional audit RPC before write controls are enabled.
 4. Memory persistence must have explicit retention, deletion, embedding model, vector dimension, tenant isolation, and consent policy before schema or UI controls are enabled.
 5. Subscription lifecycle must have approved plan catalog, billing period, payment provider, webhook signature policy, refund/cancellation rules, and entitlement mapping before a purchase action is exposed.
 6. QR/access codes must be stored as hashes, have expiry, single-use/replay protection, scope, issuance audit, and atomic redemption. Plaintext access codes must never be stored or returned after issuance.
@@ -27,9 +27,11 @@ The current live schema does not contain dedicated memory persistence/embedding 
 
 - Supabase migration `20261103100442_single_active_network_verification_method` was applied to the existing MoreAI project. It adds the platform verification-method catalog, the selected method field, one-enabled-method guard, server-only replay nonce storage, and atomic method selection. Every adapter remains `adapter_ready=false`; the migration does not activate any hardware integration.
 - Customer Workspace chat/history, wallet/entitlement read APIs, and owner-scoped agent run event/step APIs are being wired through FastAPI.
-- Super Admin permission matrix, partner approval queue, and LLM routing are read-only endpoints. Privileged mutations remain blocked until atomic audit RPCs exist.
+- Super Admin permission matrix and partner approval queue are read endpoints; partner approval/rejection is now backed by a transactional audit RPC. Provider/model/routing create/update/disable operations are backed by transactional audit RPCs. Role assignment/revocation remains blocked until its own atomic RPC is added.
 - Memory and subscription endpoints explicitly return unavailable rather than inventing data.
 - Captive Portal now verifies only signed gateway context and does not claim that internet access or partner benefits are active.
+- Partner onboarding creates organization + owner membership + audit atomically. Super Admin partner review locks the organization and records the status transition in the same transaction.
+- LLM provider/model/routing mutations write the data change and audit record atomically. Provider credentials are read only from server environment variables; model and routing entries default to disabled. The live provider/model/routing tables are currently empty.
 
 ## Consequences
 
