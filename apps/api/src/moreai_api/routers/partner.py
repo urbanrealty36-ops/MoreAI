@@ -524,6 +524,12 @@ async def update_reward(claims: UserClaims, reward_id: UUID, payload: RewardUpda
     )
     if not rewards:
         raise HTTPException(status_code=404, detail="Reward not found")
+    campaign = await select_rows(
+        "partner_campaigns",
+        f"select=id,status&partner_id=eq.{membership['partner_id']}&id=eq.{rewards[0]['campaign_id']}",
+    )
+    if not campaign or campaign[0]["status"] != "draft":
+        raise HTTPException(status_code=409, detail="Only draft campaign rewards can be changed")
     changes = payload.model_dump(exclude_unset=True, mode="json")
     if not changes:
         raise HTTPException(status_code=422, detail="At least one field is required")
