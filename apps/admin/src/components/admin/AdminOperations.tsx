@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import { getPortalApi } from "../../lib/client";
 
 type Data = {
@@ -38,7 +38,7 @@ export function AdminOperations() {
   const [routePriority, setRoutePriority] = useState("100");
   const [busy, setBusy] = useState<string | null>(null);
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     const api = getPortalApi();
     const [overview, users, models, providers, audit, verification, policies, permissionMatrix, llmRouting, partners] = await Promise.all([
       api.admin.overview(), api.admin.users(), api.admin.models(), api.admin.providers(),
@@ -52,7 +52,7 @@ export function AdminOperations() {
       networkPolicies: policies.items, permissionMatrix, llmRouting: llmRouting?.items ?? [],
       partners: partners?.items ?? [],
     });
-  };
+  }, []);
 
   useEffect(() => {
     let live = true;
@@ -60,7 +60,7 @@ export function AdminOperations() {
       if (live) setData((current) => ({ ...current, loading: false, error: error instanceof Error ? error.message : "Admin data unavailable" }));
     });
     return () => { live = false; };
-  }, []);
+  }, [refresh]);
 
   async function runAction(key: string, action: () => Promise<unknown>) {
     setBusy(key);
