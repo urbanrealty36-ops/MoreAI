@@ -2,7 +2,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main, phase-01-monorepo-foundation, phase-02-source-migration]
+    branches: [main, phase-01-monorepo-foundation, phase-02-source-migration, phase-02-partner-api-operations]
 concurrency:
   group: moreai-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
