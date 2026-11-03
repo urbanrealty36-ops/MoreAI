@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from moreai_api.auth import require_authenticated_user
 from moreai_api.db import insert_rows, select_rows, update_rows, rpc
 from moreai_api.gateway import gateway_secret_bundle, validate_mikrotik_credentials
+from moreai_api.settings import settings
 
 router = APIRouter(prefix="/admin", tags=["super-admin"])
 UserClaims = Annotated[dict, Depends(require_authenticated_user)]
@@ -127,6 +129,228 @@ async def admin_network_policies(claims: UserClaims):
         )
     }
 
+
+
+class ProviderCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    key: Literal["google", "openai", "anthropic"]
+    display_name: str = Field(min_length=2, max_length=120)
+    enabled: bool = False
+
+
+class ProviderUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    display_name: str = Field(min_length=2, max_length=120)
+    enabled: bool
+
+
+class ModelMutation(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    provider_id: UUID
+    key: str = Field(min_length=1, max_length=160)
+    display_name: str = Field(min_length=2, max_length=160)
+    input_cost_per_million: Decimal = Field(ge=0)
+    output_cost_per_million: Decimal = Field(ge=0)
+    max_input_tokens: int | None = Field(default=None, ge=1)
+    max_output_tokens: int | None = Field(default=None, ge=1)
+    capabilities: list[str] = Field(default_factory=list, max_length=32)
+    enabled: bool = False
+
+
+class RoutingMutation(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    task_type: Literal["general"] = "general"
+    model_id: UUID
+    fallback_model_id: UUID | None = None
+    priority: int = Field(default=100, ge=0, le=100000)
+    enabled: bool = False
+
+
+def _provider_credentials_ready(provider_key: str) -> bool:
+    return bool({
+        "google": settings.llm_provider_api_key,
+        "openai": settings.llm_openai_api_key,
+        "anthropic": settings.llm_anthropic_api_key,
+    }.get(provider_key))
+
+
+@router.get("/providers")
+async def admin_llm_providers(claims: UserClaims):
+    await _require_permission(claims, "platform.models.read")
+    rows = await select_rows(
+        "llm_providers",
+        "select=id,key,display_name,enabled,created_at,updated_at&order=key",
+    )
+    return {
+        "items": [
+            {**row, "credentials_configured": _provider_credentials_ready(row["key"])}
+            for row in rows
+        ]
+    }
+
+
+@router.post("/providers", status_code=201)
+async def create_llm_provider(payload: ProviderCreate, claims: UserClaims, request: Request):
+    await _require_permission(claims, "platform.models.manage")
+    actor = str(UUID(str(claims.get("sub", ""))))
+    result = await rpc(
+        "moreai_admin_mutate_llm_provider",
+        {
+            "p_actor_user_id": actor, "p_provider_id": None, "p_key": payload.key,
+            "p_display_name": payload.display_name, "p_enabled": payload.enabled,
+            "p_credentials_ready": _provider_credentials_ready(payload.key),
+            "p_correlation_id": request.headers.get("X-Correlation-ID"),
+        },
+    )
+    return {"provider": result}
+
+
+@router.patch("/providers/{provider_id}")
+async def update_llm_provider(
+    provider_id: UUID, payload: ProviderUpdate, claims: UserClaims, request: Request
+):
+    await _require_permission(claims, "platform.models.manage")
+    rows = await select_rows(
+        "llm_providers", f"select=id,key& id=eq.{provider_id}&limit=1".replace("& ", "&")
+    )
+    if not rows:
+        raise HTTPException(status_code=404, detail={"code": "LLM_PROVIDER_NOT_FOUND"})
+    actor = str(UUID(str(claims.get("sub", ""))))
+    result = await rpc(
+        "moreai_admin_mutate_llm_provider",
+        {
+            "p_actor_user_id": actor, "p_provider_id": str(provider_id), "p_key": rows[0]["key"],
+            "p_display_name": payload.display_name, "p_enabled": payload.enabled,
+            "p_credentials_ready": _provider_credentials_ready(rows[0]["key"]),
+            "p_correlation_id": request.headers.get("X-Correlation-ID"),
+        },
+    )
+    return {"provider": result}
+
+
+@router.post("/models", status_code=201)
+async def create_llm_model(payload: ModelMutation, claims: UserClaims, request: Request):
+    await _require_permission(claims, "platform.models.manage")
+    actor = str(UUID(str(claims.get("sub", ""))))
+    result = await rpc(
+        "moreai_admin_mutate_llm_model",
+        {
+            "p_actor_user_id": actor, "p_model_id": None, "p_provider_id": str(payload.provider_id),
+            "p_key": payload.key, "p_display_name": payload.display_name,
+            "p_input_cost_per_million": payload.input_cost_per_million,
+            "p_output_cost_per_million": payload.output_cost_per_million,
+            "p_max_input_tokens": payload.max_input_tokens, "p_max_output_tokens": payload.max_output_tokens,
+            "p_capabilities": payload.capabilities, "p_enabled": payload.enabled,
+            "p_correlation_id": request.headers.get("X-Correlation-ID"),
+        },
+    )
+    return {"model": result}
+
+
+@router.put("/models/{model_id}")
+async def update_llm_model(
+    model_id: UUID, payload: ModelMutation, claims: UserClaims, request: Request
+):
+    await _require_permission(claims, "platform.models.manage")
+    actor = str(UUID(str(claims.get("sub", ""))))
+    result = await rpc(
+        "moreai_admin_mutate_llm_model",
+        {
+            "p_actor_user_id": actor, "p_model_id": str(model_id), "p_provider_id": str(payload.provider_id),
+            "p_key": payload.key, "p_display_name": payload.display_name,
+            "p_input_cost_per_million": payload.input_cost_per_million,
+            "p_output_cost_per_million": payload.output_cost_per_million,
+            "p_max_input_tokens": payload.max_input_tokens, "p_max_output_tokens": payload.max_output_tokens,
+            "p_capabilities": payload.capabilities, "p_enabled": payload.enabled,
+            "p_correlation_id": request.headers.get("X-Correlation-ID"),
+        },
+    )
+    return {"model": result}
+
+
+@router.post("/llm-routing", status_code=201)
+async def create_llm_route(payload: RoutingMutation, claims: UserClaims, request: Request):
+    await _require_permission(claims, "platform.models.manage")
+    actor = str(UUID(str(claims.get("sub", ""))))
+    result = await rpc(
+        "moreai_admin_mutate_llm_route",
+        {
+            "p_actor_user_id": actor, "p_policy_id": None, "p_task_type": payload.task_type,
+            "p_model_id": str(payload.model_id),
+            "p_fallback_model_id": str(payload.fallback_model_id) if payload.fallback_model_id else None,
+            "p_priority": payload.priority, "p_enabled": payload.enabled,
+            "p_correlation_id": request.headers.get("X-Correlation-ID"),
+        },
+    )
+    return {"policy": result}
+
+
+@router.put("/llm-routing/{policy_id}")
+async def update_llm_route(
+    policy_id: UUID, payload: RoutingMutation, claims: UserClaims, request: Request
+):
+    await _require_permission(claims, "platform.models.manage")
+    actor = str(UUID(str(claims.get("sub", ""))))
+    result = await rpc(
+        "moreai_admin_mutate_llm_route",
+        {
+            "p_actor_user_id": actor, "p_policy_id": str(policy_id), "p_task_type": payload.task_type,
+            "p_model_id": str(payload.model_id),
+            "p_fallback_model_id": str(payload.fallback_model_id) if payload.fallback_model_id else None,
+            "p_priority": payload.priority, "p_enabled": payload.enabled,
+            "p_correlation_id": request.headers.get("X-Correlation-ID"),
+        },
+    )
+    return {"policy": result}
+
+
+@router.delete("/models/{model_id}")
+async def disable_llm_model(model_id: UUID, claims: UserClaims, request: Request):
+    await _require_permission(claims, "platform.models.manage")
+    rows = await select_rows(
+        "llm_models",
+        f"select=id,provider_id,key,display_name,input_cost_per_million,output_cost_per_million,max_input_tokens,max_output_tokens,capabilities& id=eq.{model_id}&limit=1".replace("& ", "&"),
+    )
+    if not rows:
+        raise HTTPException(status_code=404, detail={"code": "LLM_MODEL_NOT_FOUND"})
+    row = rows[0]
+    actor = str(UUID(str(claims.get("sub", ""))))
+    result = await rpc(
+        "moreai_admin_mutate_llm_model",
+        {
+            "p_actor_user_id": actor, "p_model_id": str(model_id), "p_provider_id": row["provider_id"],
+            "p_key": row["key"], "p_display_name": row["display_name"],
+            "p_input_cost_per_million": row["input_cost_per_million"],
+            "p_output_cost_per_million": row["output_cost_per_million"],
+            "p_max_input_tokens": row.get("max_input_tokens"), "p_max_output_tokens": row.get("max_output_tokens"),
+            "p_capabilities": row.get("capabilities") or [], "p_enabled": False,
+            "p_correlation_id": request.headers.get("X-Correlation-ID"),
+        },
+    )
+    return {"model": result, "disabled": True}
+
+
+@router.delete("/llm-routing/{policy_id}")
+async def disable_llm_route(policy_id: UUID, claims: UserClaims, request: Request):
+    await _require_permission(claims, "platform.models.manage")
+    rows = await select_rows(
+        "llm_routing_policies",
+        f"select=id,task_type,model_id,fallback_model_id,priority& id=eq.{policy_id}&scope_type=eq.platform&scope_id=is.null&limit=1".replace("& ", "&"),
+    )
+    if not rows:
+        raise HTTPException(status_code=404, detail={"code": "LLM_ROUTE_NOT_FOUND"})
+    row = rows[0]
+    actor = str(UUID(str(claims.get("sub", ""))))
+    result = await rpc(
+        "moreai_admin_mutate_llm_route",
+        {
+            "p_actor_user_id": actor, "p_policy_id": str(policy_id), "p_task_type": row["task_type"],
+            "p_model_id": row["model_id"], "p_fallback_model_id": row.get("fallback_model_id"),
+            "p_priority": row["priority"], "p_enabled": False,
+            "p_correlation_id": request.headers.get("X-Correlation-ID"),
+        },
+    )
+    return {"policy": result, "disabled": True}
 
 
 class PartnerReviewRequest(BaseModel):
