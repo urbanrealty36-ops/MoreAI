@@ -19,6 +19,9 @@ export type CreateAgentRunInput = {
 };
 export type PartnerSummary = { partner: { id: string; legal_name?: string; display_name?: string; status: string }; membership: unknown };
 export type Collection<T> = { items: T[] };
+export type Conversation = { id: string; workspace_id?: string | null; title?: string | null; status: "active" | "archived" | "deleted"; created_at: string; updated_at: string };
+export type ConversationMessage = { id: string; role: "system" | "user" | "assistant" | "tool"; content: string; model_key?: string | null; run_id?: string | null; token_input: number; token_output: number; metadata?: Record<string, unknown>; created_at: string };
+export type WorkspaceWallet = { available: boolean; wallet: null | { id: string; currency: string; balance: number; status: string; updated_at: string }; transactions: Array<{ id: string; entry_type: string; amount: number; balance_after: number; description?: string | null; created_at: string }> };
 export type VerificationMethodKey = "gps" | "mikrotik_hotspot" | "radius" | "gateway" | "isp_api";
 export type VerificationMethod = { method_key: VerificationMethodKey; display_name: string; adapter_key: string; enabled: boolean; adapter_ready: boolean; requires_secret: boolean; setup_requirements: Record<string,unknown> };
 
