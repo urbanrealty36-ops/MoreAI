@@ -24,6 +24,23 @@ export type ConversationMessage = { id: string; role: "system" | "user" | "assis
 export type WorkspaceWallet = { available: boolean; wallet: null | { id: string; currency: string; balance: number; status: string; updated_at: string }; transactions: Array<{ id: string; entry_type: string; amount: number; balance_after: number; description?: string | null; created_at: string }> };
 export type VerificationMethodKey = "gps" | "mikrotik_hotspot" | "radius" | "gateway" | "isp_api";
 export type GatewayContextInput = { network_id:string; gateway_id:string; session_id:string; client_mac:string; client_ip:string; username:string; hotspot_server:string; timestamp:number; nonce:string; signature:string };
+export type GatewayContextVerificationResult = {
+  verified: true;
+  method: "mikrotik_hotspot";
+  network_id: string;
+  partner_id: string;
+  location_id: string | null;
+  gateway_session_id: string;
+  client_mac: string;
+  verified_at: number;
+  partner_entitlement_activated: false;
+  message: string;
+};
+export type AccessVerificationInput = {
+  network_id: string;
+  access_code?: string | null;
+  gateway_session_id?: string | null;
+};
 export type VerificationMethod = { method_key: VerificationMethodKey; display_name: string; adapter_key: string; enabled: boolean; adapter_ready: boolean; requires_secret: boolean; setup_requirements: Record<string,unknown> };
 
 export class ApiRequestError extends Error {
@@ -125,8 +142,8 @@ export function createApiClient(options: ApiClientOptions) {
     },
     network: {
       context: () => get<Record<string, unknown>>("/api/v1/network/portal-context"),
-      verify: (input: unknown, key: string) => post<Record<string, unknown>>("/api/v1/network/access/verify", input, key),
-      verifyGatewayContext: (input: GatewayContextInput) => post<Record<string, unknown>>("/api/v1/network/gateway/mikrotik/context/verify", input),
+      verify: (input: AccessVerificationInput, key: string) => post<Record<string, unknown>>("/api/v1/network/access/verify", input, key),
+      verifyGatewayContext: (input: GatewayContextInput) => post<GatewayContextVerificationResult>("/api/v1/network/gateway/mikrotik/context/verify", input),
       session: () => get<Record<string, unknown>>("/api/v1/network/access/session"),
       refreshSession: () => post<Record<string, unknown>>("/api/v1/network/access/session/refresh"),
       endSession: () => post<Record<string, unknown>>("/api/v1/network/access/session/end"),
