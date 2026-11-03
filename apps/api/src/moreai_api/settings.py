@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     supabase_url: str | None = None
     supabase_publishable_key: str | None = None
     supabase_secret_key: str | None = None
+    workspace_artifacts_bucket: str | None = None
     supabase_jwt_secret: str | None = None
     database_url: str | None = None
     llm_provider_api_key: str | None = None
