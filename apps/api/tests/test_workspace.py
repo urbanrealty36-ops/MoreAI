@@ -128,14 +128,16 @@ def test_workspace_file_listing_uses_real_artifact_schema(monkeypatch):
         assert table == "artifacts"
         assert "storage_path" in query
         assert "file_name" not in query
-        return [{
-            "id": "artifact-1",
-            "storage_path": "users/private/report.pdf",
-            "mime_type": "application/pdf",
-            "size_bytes": 1024,
-            "checksum_sha256": "a" * 64,
-            "created_at": "2026-11-03T00:00:00Z",
-        }]
+        return [
+            {
+                "id": "artifact-1",
+                "storage_path": "users/private/report.pdf",
+                "mime_type": "application/pdf",
+                "size_bytes": 1024,
+                "checksum_sha256": "a" * 64,
+                "created_at": "2026-11-03T00:00:00Z",
+            }
+        ]
 
     monkeypatch.setattr(workspace, "select_rows", rows)
     response = client.get("/api/v1/workspace/files")
@@ -151,7 +153,9 @@ def test_workspace_file_download_is_owner_scoped_and_short_lived(monkeypatch):
             return None
 
         def json(self):
-            return {"signedURL": "/storage/v1/object/sign/workspace/users/private/report.pdf?token=opaque"}
+            return {
+                "signedURL": "/storage/v1/object/sign/workspace/users/private/report.pdf?token=opaque"
+            }
 
     class FakeAsyncClient:
         async def __aenter__(self):

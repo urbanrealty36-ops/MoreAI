@@ -265,8 +265,7 @@ async def create_workspace_file_download(artifact_id: UUID, claims: Claims):
     user_id = _user_id(claims)
     rows = await select_rows(
         "artifacts",
-        "select=id,storage_path"
-        f"&id=eq.{artifact_id}&user_id=eq.{user_id}&limit=1",
+        f"select=id,storage_path&id=eq.{artifact_id}&user_id=eq.{user_id}&limit=1",
     )
     if not rows:
         raise HTTPException(status_code=404, detail={"code": "ARTIFACT_NOT_FOUND"})
