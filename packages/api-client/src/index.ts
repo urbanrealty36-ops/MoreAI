@@ -68,6 +68,7 @@ export function createApiClient(options: ApiClientOptions) {
       messages: (id: string) => get<Collection<ConversationMessage>>(`/api/v1/workspace/conversations/${id}/messages`),
       sendMessage: (id: string, input: {content: string; model?: string; max_output_tokens?: number}, key: string) => post<{user_message: ConversationMessage; assistant_message: ConversationMessage; replayed: boolean}>(`/api/v1/workspace/conversations/${id}/messages`, input, key),
       files: () => get<Collection<Record<string, unknown>>>("/api/v1/workspace/files"),
+      fileDownload: (id:string) => get<{url:string;expires_in:number;file_name:string}>(`/api/v1/workspace/files/${id}/download`),
       wallet: () => get<WorkspaceWallet>("/api/v1/workspace/wallet"),
       entitlements: () => get<Collection<Record<string, unknown>>>("/api/v1/workspace/entitlements"),
       memory: () => get<Record<string, unknown>>("/api/v1/workspace/memory"),
