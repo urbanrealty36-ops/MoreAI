@@ -109,6 +109,7 @@ export function createApiClient(options: ApiClientOptions) {
       disableRouting: (id:string) => request<{policy:Record<string,unknown>}>(`/api/v1/admin/llm-routing/${id}`,{method:"DELETE"}),
       models: () => get<Collection<unknown>>("/api/v1/admin/models"),
       audit: () => get<Collection<unknown>>("/api/v1/admin/audit"),
+      setRolePermission: (roleKey:string,permissionKey:string,enabled:boolean) => request<{role_key:string;permission_key:string;enabled:boolean}>(`/api/v1/admin/roles/${roleKey}/permissions/${permissionKey}`,{method:"PUT",body:JSON.stringify({enabled})}),
       roleAssignments: () => get<Collection<{id:string;user_id:string;role_id:string;assigned_by:string;expires_at?:string|null;created_at:string;role?:{key:string;description?:string}}>>("/api/v1/admin/role-assignments"),
       assignRole: (input:{target_user_id:string;role_key:"super_admin"|"platform_admin"|"finance_admin"|"partner_manager"|"security_admin"|"support_admin"|"read_only_analyst";expires_at?:string|null}) => post<Record<string,unknown>>("/api/v1/admin/role-assignments",input),
       revokeRole: (id:string,input:{reason?:string}) => request<{assignment_id:string;revoked:boolean}>(`/api/v1/admin/role-assignments/${id}`,{method:"DELETE",body:JSON.stringify(input)}),
