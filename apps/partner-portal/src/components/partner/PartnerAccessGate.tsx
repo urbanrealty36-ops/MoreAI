@@ -5,7 +5,7 @@ import { Building2, ShieldCheck, Clock, AlertCircle } from 'lucide-react';
 import { getPortalApi } from '../../lib/client';
 import { PartnerOperations } from './PartnerOperations';
 
-type Status = 'loading' | 'not_submitted' | 'pending' | 'active' | 'rejected' | 'suspended' | 'error';
+type Status = 'loading' | 'not_submitted' | 'pending' | 'active' | 'rejected' | 'suspended' | 'closed' | 'error';
 
 export function PartnerAccessGate() {
   const [status, setStatus] = useState<Status>('loading');
@@ -57,7 +57,7 @@ export function PartnerAccessGate() {
         <button disabled={busy} className="w-full rounded-xl border-2 border-[#171717] bg-[#C9F2D5] py-2.5 text-xs font-black disabled:opacity-50">{busy?'Mengirim pengajuan…':'Ajukan Kemitraan'}</button>
       </form>}
       {status === 'pending' && <div className="mt-4 rounded-xl border-2 border-[#171717] bg-[#FBE7B2] p-3"><div className="flex items-center gap-2"><Clock className="h-5 w-5"/><strong className="text-sm">Menunggu persetujuan</strong></div><p className="mt-2 text-xs">Pengajuan {partnerName} sudah tersimpan. Partner Portal operasional dibuka setelah Super Admin menyetujui pengajuan.</p></div>}
-      {(status === 'rejected' || status === 'suspended' || (status === 'active' && membershipStatus !== 'active')) && <div className="mt-4 rounded-xl border-2 border-[#171717] bg-[#F9D8E5] p-3"><div className="flex items-center gap-2"><AlertCircle className="h-5 w-5"/><strong className="text-sm">Akses mitra belum aktif</strong></div><p className="mt-2 text-xs">Organisasi: {partnerName || '—'} · Status organisasi: {status} · Status keanggotaan: {membershipStatus || '—'}. Hubungi tim MoreAI untuk tindak lanjut.</p></div>}
+      {(status === 'rejected' || status === 'suspended' || status === 'closed' || (status === 'active' && membershipStatus !== 'active')) && <div className="mt-4 rounded-xl border-2 border-[#171717] bg-[#F9D8E5] p-3"><div className="flex items-center gap-2"><AlertCircle className="h-5 w-5"/><strong className="text-sm">Akses mitra belum aktif</strong></div><p className="mt-2 text-xs">Organisasi: {partnerName || '—'} · Status organisasi: {status} · Status keanggotaan: {membershipStatus || '—'}. Hubungi tim MoreAI untuk tindak lanjut.</p></div>}
       {status === 'error' && <div className="mt-4 rounded-xl border-2 border-amber-700 bg-amber-50 p-3 text-xs text-amber-950">{error}</div>}
       {error && status !== 'error' && <p className="mt-3 text-xs text-red-700">{error}</p>}
       <div className="mt-4 flex items-start gap-2 border-t pt-3 text-[10px] text-gray-500"><ShieldCheck className="h-4 w-4 shrink-0"/><p>Persetujuan dan audit dilakukan server-side. Pengguna tidak dapat mengaktifkan organisasi sendiri.</p></div>
