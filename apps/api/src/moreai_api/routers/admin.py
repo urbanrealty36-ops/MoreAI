@@ -129,6 +129,69 @@ async def admin_network_policies(claims: UserClaims):
 
 
 
+@router.get("/permission-matrix")
+async def admin_permission_matrix(claims: UserClaims):
+    await _require_permission(claims, "platform.roles.read")
+    roles = await select_rows(
+        "roles",
+        "select=id,key,scope,description,system_role&order=scope,key",
+    )
+    permissions = await select_rows(
+        "permissions",
+        "select=id,key,description&order=key",
+    )
+    assignments = await select_rows(
+        "role_permissions",
+        "select=role_id,permission_id",
+    )
+    permission_keys = {item["id"]: item["key"] for item in permissions}
+    by_role: dict[str, list[str]] = {}
+    for item in assignments:
+        key = permission_keys.get(item["permission_id"])
+        if key:
+            by_role.setdefault(item["role_id"], []).append(key)
+    return {
+        "roles": [
+            {**role, "permissions": sorted(by_role.get(role["id"], []))}
+            for role in roles
+        ],
+        "permissions": permissions,
+    }
+
+
+@router.get("/llm-routing")
+async def admin_llm_routing(claims: UserClaims):
+    await _require_permission(claims, "platform.models.read")
+    policies = await select_rows(
+        "llm_routing_policies",
+        "select=id,scope_type,scope_id,task_type,model_id,priority,fallback_model_id,enabled&order=scope_type,task_type,priority",
+    )
+    models = await select_rows(
+        "llm_models",
+        "select=id,key,display_name,enabled,input_cost_per_million,output_cost_per_million&order=key",
+    )
+    by_id = {item["id"]: item for item in models}
+    return {
+        "items": [
+            {
+                **policy,
+                "model": by_id.get(policy["model_id"]),
+                "fallback_model": by_id.get(policy.get("fallback_model_id")),
+            }
+            for policy in policies
+        ]
+    }
+
+
+@router.get("/partners")
+async def admin_partners(claims: UserClaims, status_filter: Literal["pending", "active", "suspended", "rejected", "closed"] | None = None):
+    await _require_permission(claims, "partner.organization.read")
+    query = "select=id,legal_name,display_name,status,created_by,created_at,updated_at&order=created_at.desc&limit=100"
+    if status_filter:
+        query += f"&status=eq.{status_filter}"
+    return {"items": await select_rows("partner_organizations", query)}
+
+
 class VerificationMethodAvailability(BaseModel):
     model_config = ConfigDict(extra="forbid")
     enabled: bool
