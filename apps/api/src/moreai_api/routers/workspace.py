@@ -187,6 +187,17 @@ async def send_message(
     )
     existing_user = next((item for item in existing if item.get("role") == "user"), None)
     existing_assistant = next((item for item in existing if item.get("role") == "assistant"), None)
+    if existing_user:
+        existing_metadata = (
+            existing_user.get("metadata")
+            if isinstance(existing_user.get("metadata"), dict)
+            else {}
+        )
+        if existing_metadata.get("request_hash") != request_hash:
+            raise HTTPException(
+                status_code=409,
+                detail={"code": "IDEMPOTENCY_KEY_REUSED"},
+            )
     if existing_user and existing_assistant:
         response_body = {
             "user_message": existing_user,
@@ -228,7 +239,7 @@ async def send_message(
                     "user_id": user_id,
                     "role": "user",
                     "content": payload.content,
-                    "metadata": {"request_key": request_key},
+                    "metadata": {"request_key": request_key, "request_hash": request_hash},
                 },
             )
         )
@@ -279,6 +290,7 @@ async def send_message(
                 "token_output": generated.usage["output_tokens"],
                 "metadata": {
                     "request_key": request_key,
+                    "request_hash": request_hash,
                     "provider": generated.provider,
                     "request_id": generated.request_id,
                 },
@@ -391,7 +403,7 @@ async def create_workspace_file_download(artifact_id: UUID, claims: Claims):
     if not isinstance(signed_url, str) or not signed_url:
         raise HTTPException(status_code=503, detail={"code": "STORAGE_SIGNING_UNAVAILABLE"})
     if signed_url.startswith("/"):
-        signed_url = f"{base_url}{signed_url}"
+        signed_url = f"{base_url}/storage/v1{signed_url}"
     separator = "&" if "?" in signed_url else "?"
     signed_url = f"{signed_url}{separator}download="
     return {
