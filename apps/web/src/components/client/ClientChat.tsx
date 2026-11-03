@@ -105,10 +105,10 @@ export const ClientChat: React.FC<ClientChatProps> = ({
       }
 
       const userMsg: Message = {
-        id: `user-${Date.now()}`,
+        id: `user-${crypto.randomUUID()}`,
         sender: 'user',
         text: textToSend,
-        timestamp: '10:26',
+        timestamp: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
       };
 
       setMessages((prev) => [...prev, userMsg]);
@@ -134,10 +134,10 @@ export const ClientChat: React.FC<ClientChatProps> = ({
         const botResponse = data.assistant_message.content;
 
         const assistantMsg: Message = {
-          id: `ai-${Date.now()}`,
+          id: data.assistant_message.id,
           sender: 'assistant',
           text: botResponse,
-          timestamp: '10:27',
+          timestamp: new Date(data.assistant_message.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
           hasAgentWorkflow: false,
         };
 
