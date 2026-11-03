@@ -283,7 +283,7 @@ async def update_llm_provider(
 ):
     await _require_permission(claims, "platform.models.manage")
     rows = await select_rows(
-        "llm_providers", f"select=id,key& id=eq.{provider_id}&limit=1".replace("& ", "&")
+        "llm_providers", f"select=id,key&id=eq.{provider_id}&limit=1"
     )
     if not rows:
         raise HTTPException(status_code=404, detail={"code": "LLM_PROVIDER_NOT_FOUND"})
@@ -402,7 +402,7 @@ async def disable_llm_model(model_id: UUID, claims: UserClaims, request: Request
     await _require_permission(claims, "platform.models.manage")
     rows = await select_rows(
         "llm_models",
-        f"select=id,provider_id,key,display_name,input_cost_per_million,output_cost_per_million,max_input_tokens,max_output_tokens,capabilities& id=eq.{model_id}&limit=1".replace("& ", "&"),
+        f"select=id,provider_id,key,display_name,input_cost_per_million,output_cost_per_million,max_input_tokens,max_output_tokens,capabilities&id=eq.{model_id}&limit=1",
     )
     if not rows:
         raise HTTPException(status_code=404, detail={"code": "LLM_MODEL_NOT_FOUND"})
@@ -428,7 +428,7 @@ async def disable_llm_route(policy_id: UUID, claims: UserClaims, request: Reques
     await _require_permission(claims, "platform.models.manage")
     rows = await select_rows(
         "llm_routing_policies",
-        f"select=id,task_type,model_id,fallback_model_id,priority& id=eq.{policy_id}&scope_type=eq.platform&scope_id=is.null&limit=1".replace("& ", "&"),
+        f"select=id,task_type,model_id,fallback_model_id,priority&id=eq.{policy_id}&scope_type=eq.platform&scope_id=is.null&limit=1",
     )
     if not rows:
         raise HTTPException(status_code=404, detail={"code": "LLM_ROUTE_NOT_FOUND"})
