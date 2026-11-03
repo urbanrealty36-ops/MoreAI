@@ -26,7 +26,6 @@ const fileKind = (file: WorkspaceFile) => {
   if (mime.includes('json') || mime.includes('python') || mime.includes('javascript') || mime.includes('text/plain')) return 'code';
   return 'doc';
 };
-const fileName = (path: string) => path.split('/').filter(Boolean).pop() || path;
 
 export const ClientFilesModal: React.FC<ClientFilesModalProps> = ({ onClose, onOpenInChat }) => {
   const [files, setFiles] = useState<WorkspaceFile[]>([]);
@@ -83,7 +82,7 @@ export const ClientFilesModal: React.FC<ClientFilesModalProps> = ({ onClose, onO
         {error && <p className="rounded-xl border border-amber-600 bg-amber-50 p-3 text-xs text-amber-900">{error}</p>}
         {!loading && !error && <div className="flex-1 overflow-y-auto space-y-2 pr-1">
           {filtered.map((file) => { const Icon = iconFor(file); return <div key={file.id} className="p-3 rounded-2xl bg-white dark:bg-[#232522] border-2 border-[#171717] neo-shadow-sm flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 min-w-0"><div className="w-9 h-9 rounded-xl bg-[#D9D5FF] border border-[#171717] flex items-center justify-center shrink-0"><Icon className="w-5 h-5 text-[#171717]" /></div><div className="min-w-0"><h3 className="text-xs font-black truncate">{fileName(file.storage_path)}</h3><p className="text-[10px] text-gray-500 truncate">{formatSize(file.size_bytes)} · {file.mime_type || 'Tipe tidak tercatat'}</p><span className="text-[9px] text-gray-400">{new Date(file.created_at).toLocaleString('id-ID')}</span></div></div>
+            <div className="flex items-center gap-2.5 min-w-0"><div className="w-9 h-9 rounded-xl bg-[#D9D5FF] border border-[#171717] flex items-center justify-center shrink-0"><Icon className="w-5 h-5 text-[#171717]" /></div><div className="min-w-0"><h3 className="text-xs font-black truncate">{file.file_name}</h3><p className="text-[10px] text-gray-500 truncate">{formatSize(file.size_bytes)} · {file.mime_type || 'Tipe tidak tercatat'}</p><span className="text-[9px] text-gray-400">{new Date(file.created_at).toLocaleString('id-ID')}</span></div></div>
             <div className="flex gap-1 shrink-0"><button onClick={() => setSelected(file)} className="rounded-lg border border-[#171717] px-2 py-1 text-[10px] font-bold">Detail</button><button onClick={() => onOpenInChat(fileName(file.storage_path))} className="rounded-lg border border-[#171717] bg-[#C9F2D5] px-2 py-1 text-[10px] font-bold">Chat</button></div>
           </div>; })}
           {filtered.length===0 && <p className="py-8 text-center text-xs text-gray-500">Belum ada artefak yang tersimpan.</p>}
