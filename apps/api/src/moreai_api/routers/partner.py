@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import Annotated, Any, Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 
 from moreai_api.auth import require_authenticated_user
@@ -12,6 +12,12 @@ from moreai_api.db import insert_rows, select_rows, rpc, update_rows
 
 router = APIRouter(prefix="/partner", tags=["partner-portal"])
 UserClaims = Annotated[dict, Depends(require_authenticated_user)]
+
+
+class PartnerApplicationCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    legal_name: str = Field(min_length=2, max_length=160)
+    display_name: str = Field(min_length=2, max_length=120)
 
 
 class VerificationMethodSelection(BaseModel):
@@ -52,6 +58,45 @@ async def _partner_rows(table: str, fields: str, partner_id: str) -> list[dict[s
     return await select_rows(
         table, f"select={fields}&partner_id=eq.{partner_id}&order=created_at.desc"
     )
+
+
+@router.get("/onboarding")
+async def partner_onboarding_status(claims: UserClaims):
+    user_id = str(UUID(str(claims.get("sub", ""))))
+    memberships = await select_rows(
+        "partner_members",
+        f"select=id,partner_id,role_key,status,location_id&user_id=eq.{user_id}&order=created_at.desc&limit=2",
+    )
+    if not memberships:
+        return {"status": "not_submitted", "partner": None, "membership": None}
+    if len(memberships) > 1:
+        raise HTTPException(status_code=409, detail={"code": "PARTNER_CONTEXT_AMBIGUOUS"})
+    rows = await select_rows(
+        "partner_organizations",
+        f"select=id,legal_name,display_name,status,created_at,updated_at&id=eq.{memberships[0]['partner_id']}&limit=1",
+    )
+    if not rows:
+        raise HTTPException(status_code=404, detail={"code": "PARTNER_NOT_FOUND"})
+    return {"status": rows[0]["status"], "partner": rows[0], "membership": memberships[0]}
+
+
+@router.post("/onboarding", status_code=201)
+async def submit_partner_application(
+    payload: PartnerApplicationCreate,
+    claims: UserClaims,
+    request: Request,
+):
+    user_id = str(UUID(str(claims.get("sub", ""))))
+    result = await rpc(
+        "moreai_submit_partner_application",
+        {
+            "p_user_id": user_id,
+            "p_legal_name": payload.legal_name,
+            "p_display_name": payload.display_name,
+            "p_correlation_id": request.headers.get("X-Correlation-ID"),
+        },
+    )
+    return {"application": result}
 
 
 @router.get("/me")
