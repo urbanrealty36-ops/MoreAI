@@ -250,3 +250,277 @@ async def partner_analytics(claims: UserClaims):
         "active_campaigns": sum(x["status"] == "active" for x in campaigns),
         "as_of": datetime.now(timezone.utc).isoformat(),
     }
+
+
+# Partner operational mutations. All writes are scoped to the authenticated membership.
+class BranchCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str = Field(min_length=1, max_length=120)
+    address: dict[str, Any] = Field(default_factory=dict)
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+    timezone: str = Field(default="Asia/Jakarta", min_length=1, max_length=64)
+
+
+class BranchUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str | None = Field(default=None, min_length=1, max_length=120)
+    address: dict[str, Any] | None = None
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+    timezone: str | None = Field(default=None, min_length=1, max_length=64)
+    status: Literal["active", "inactive", "suspended"] | None = None
+
+
+class NetworkCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    location_id: UUID
+    name: str = Field(min_length=1, max_length=120)
+    ssid_label: str | None = Field(default=None, max_length=120)
+    gateway_type: str = Field(min_length=1, max_length=64)
+    provider_id: UUID | None = None
+    gateway_network_ref: str | None = Field(default=None, max_length=160)
+
+
+class NetworkUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str | None = Field(default=None, min_length=1, max_length=120)
+    ssid_label: str | None = Field(default=None, max_length=120)
+    gateway_network_ref: str | None = Field(default=None, max_length=160)
+    status: Literal["pending", "active", "inactive", "suspended"] | None = None
+
+
+class CampaignCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str = Field(min_length=1, max_length=160)
+    location_id: UUID | None = None
+    starts_at: datetime | None = None
+    ends_at: datetime | None = None
+    budget: float | None = Field(default=None, ge=0)
+    config: dict[str, Any] = Field(default_factory=dict)
+
+
+class CampaignUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str | None = Field(default=None, min_length=1, max_length=160)
+    location_id: UUID | None = None
+    starts_at: datetime | None = None
+    ends_at: datetime | None = None
+    budget: float | None = Field(default=None, ge=0)
+    config: dict[str, Any] | None = None
+    status: Literal["draft", "paused", "cancelled"] | None = None
+
+
+class RewardCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    campaign_id: UUID
+    reward_type: Literal["credit", "discount", "access", "voucher", "benefit"]
+    name: str = Field(min_length=1, max_length=160)
+    quantity_limit: int | None = Field(default=None, ge=0)
+    reward_value: float | None = Field(default=None, ge=0)
+    config: dict[str, Any] = Field(default_factory=dict)
+
+
+class RewardUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    name: str | None = Field(default=None, min_length=1, max_length=160)
+    quantity_limit: int | None = Field(default=None, ge=0)
+    reward_value: float | None = Field(default=None, ge=0)
+    config: dict[str, Any] | None = None
+
+
+async def _require_partner_roles(
+    memberships: list[dict[str, Any]], roles: set[str]
+) -> None:
+    if not any(item.get("role_key") in roles for item in memberships):
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "PARTNER_OPERATION_FORBIDDEN", "message": "Your partner role cannot perform this operation."},
+        )
+
+
+async def _ensure_location_scope(
+    memberships: list[dict[str, Any]], partner_id: str, location_id: UUID
+) -> dict[str, Any]:
+    allowed = any(
+        item.get("location_id") is None or item.get("location_id") == str(location_id)
+        for item in memberships
+    )
+    if not allowed:
+        raise HTTPException(status_code=404, detail="Branch not found")
+    rows = await select_rows(
+        "partner_locations",
+        f"select=id,partner_id,name,status&id=eq.{location_id}&partner_id=eq.{partner_id}",
+    )
+    if not rows:
+        raise HTTPException(status_code=404, detail="Branch not found")
+    return rows[0]
+
+
+async def _audit_partner_mutation(
+    claims: dict[str, Any], partner_id: str, action: str, resource_type: str, resource_id: str
+) -> None:
+    actor = str(UUID(str(claims.get("sub", ""))))
+    await insert_rows(
+        "admin_audit_logs",
+        {
+            "actor_user_id": actor,
+            "action": action,
+            "resource_type": resource_type,
+            "resource_id": resource_id,
+            "scope_type": "partner",
+            "scope_id": partner_id,
+            "outcome": "success",
+            "metadata": {},
+        },
+    )
+
+
+@router.post("/branches", status_code=201)
+async def create_branch(claims: UserClaims, payload: BranchCreate):
+    membership, memberships = await _membership(claims)
+    await _require_partner_roles(memberships, {"partner_owner", "partner_admin"})
+    created = await insert_rows(
+        "partner_locations",
+        {"partner_id": membership["partner_id"], **payload.model_dump()},
+    )
+    if not created:
+        raise HTTPException(status_code=502, detail="Branch could not be created")
+    await _audit_partner_mutation(claims, membership["partner_id"], "partner.branch.created", "partner_location", created[0]["id"])
+    return {"item": created[0]}
+
+
+@router.patch("/branches/{branch_id}")
+async def update_branch(claims: UserClaims, branch_id: UUID, payload: BranchUpdate):
+    membership, memberships = await _membership(claims)
+    await _require_partner_roles(memberships, {"partner_owner", "partner_admin"})
+    await _ensure_location_scope(memberships, membership["partner_id"], branch_id)
+    changes = payload.model_dump(exclude_unset=True)
+    if not changes:
+        raise HTTPException(status_code=422, detail="At least one field is required")
+    changes["updated_at"] = datetime.now(timezone.utc).isoformat()
+    rows = await update_rows("partner_locations", f"id=eq.{branch_id}&partner_id=eq.{membership['partner_id']}", changes)
+    if not rows:
+        raise HTTPException(status_code=404, detail="Branch not found")
+    await _audit_partner_mutation(claims, membership["partner_id"], "partner.branch.updated", "partner_location", str(branch_id))
+    return {"item": rows[0]}
+
+
+@router.post("/networks", status_code=201)
+async def create_network(claims: UserClaims, payload: NetworkCreate):
+    membership, memberships = await _membership(claims)
+    await _require_partner_roles(memberships, {"partner_owner", "partner_admin", "location_manager"})
+    await _ensure_location_scope(memberships, membership["partner_id"], payload.location_id)
+    created = await insert_rows(
+        "partner_networks",
+        {"partner_id": membership["partner_id"], **payload.model_dump(mode="json")},
+    )
+    if not created:
+        raise HTTPException(status_code=502, detail="Network could not be created")
+    await _audit_partner_mutation(claims, membership["partner_id"], "partner.network.created", "partner_network", created[0]["id"])
+    return {"item": created[0]}
+
+
+@router.patch("/networks/{network_id}")
+async def update_network(claims: UserClaims, network_id: UUID, payload: NetworkUpdate):
+    membership, memberships = await _membership(claims)
+    await _require_partner_roles(memberships, {"partner_owner", "partner_admin", "location_manager"})
+    networks = await list_networks(claims)
+    network = next((item for item in networks["items"] if item["id"] == str(network_id)), None)
+    if not network:
+        raise HTTPException(status_code=404, detail="Network not found")
+    if any(item.get("role_key") == "location_manager" for item in memberships):
+        await _ensure_location_scope(memberships, membership["partner_id"], UUID(network["location_id"]))
+    changes = payload.model_dump(exclude_unset=True)
+    if not changes:
+        raise HTTPException(status_code=422, detail="At least one field is required")
+    changes["updated_at"] = datetime.now(timezone.utc).isoformat()
+    rows = await update_rows("partner_networks", f"id=eq.{network_id}&partner_id=eq.{membership['partner_id']}", changes)
+    if not rows:
+        raise HTTPException(status_code=404, detail="Network not found")
+    await _audit_partner_mutation(claims, membership["partner_id"], "partner.network.updated", "partner_network", str(network_id))
+    return {"item": rows[0]}
+
+
+@router.post("/campaigns", status_code=201)
+async def create_campaign(claims: UserClaims, payload: CampaignCreate):
+    membership, memberships = await _membership(claims)
+    await _require_partner_roles(memberships, {"partner_owner", "partner_admin"})
+    data = payload.model_dump(mode="json")
+    if payload.location_id:
+        await _ensure_location_scope(memberships, membership["partner_id"], payload.location_id)
+    if payload.starts_at and payload.ends_at and payload.ends_at <= payload.starts_at:
+        raise HTTPException(status_code=422, detail="Campaign end must be after start")
+    created = await insert_rows(
+        "partner_campaigns",
+        {"partner_id": membership["partner_id"], "created_by": str(UUID(str(claims["sub"]))), **data},
+    )
+    if not created:
+        raise HTTPException(status_code=502, detail="Campaign could not be created")
+    await _audit_partner_mutation(claims, membership["partner_id"], "partner.campaign.created", "partner_campaign", created[0]["id"])
+    return {"item": created[0]}
+
+
+@router.patch("/campaigns/{campaign_id}")
+async def update_campaign(claims: UserClaims, campaign_id: UUID, payload: CampaignUpdate):
+    membership, memberships = await _membership(claims)
+    await _require_partner_roles(memberships, {"partner_owner", "partner_admin"})
+    current = await select_rows("partner_campaigns", f"select=id,status,location_id,starts_at,ends_at&partner_id=eq.{membership['partner_id']}&id=eq.{campaign_id}")
+    if not current:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    changes = payload.model_dump(exclude_unset=True, mode="json")
+    if "location_id" in changes and changes["location_id"]:
+        await _ensure_location_scope(memberships, membership["partner_id"], UUID(changes["location_id"]))
+    starts = changes.get("starts_at", current[0].get("starts_at"))
+    ends = changes.get("ends_at", current[0].get("ends_at"))
+    if starts and ends and datetime.fromisoformat(ends.replace("Z", "+00:00")) <= datetime.fromisoformat(starts.replace("Z", "+00:00")):
+        raise HTTPException(status_code=422, detail="Campaign end must be after start")
+    if current[0]["status"] != "draft" and any(key in changes for key in {"name", "location_id", "starts_at", "ends_at", "budget", "config"}):
+        raise HTTPException(status_code=409, detail="Only draft campaigns can change configuration")
+    if not changes:
+        raise HTTPException(status_code=422, detail="At least one field is required")
+    changes["updated_at"] = datetime.now(timezone.utc).isoformat()
+    rows = await update_rows("partner_campaigns", f"id=eq.{campaign_id}&partner_id=eq.{membership['partner_id']}", changes)
+    if not rows:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    await _audit_partner_mutation(claims, membership["partner_id"], "partner.campaign.updated", "partner_campaign", str(campaign_id))
+    return {"item": rows[0]}
+
+
+@router.post("/rewards", status_code=201)
+async def create_reward(claims: UserClaims, payload: RewardCreate):
+    membership, memberships = await _membership(claims)
+    await _require_partner_roles(memberships, {"partner_owner", "partner_admin"})
+    campaign = await select_rows("partner_campaigns", f"select=id,status&partner_id=eq.{membership['partner_id']}&id=eq.{payload.campaign_id}")
+    if not campaign:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    if campaign[0]["status"] != "draft":
+        raise HTTPException(status_code=409, detail="Rewards can only be added to draft campaigns")
+    created = await insert_rows("campaign_rewards", payload.model_dump(mode="json"))
+    if not created:
+        raise HTTPException(status_code=502, detail="Reward could not be created")
+    await _audit_partner_mutation(claims, membership["partner_id"], "partner.reward.created", "campaign_reward", created[0]["id"])
+    return {"item": created[0]}
+
+
+@router.patch("/rewards/{reward_id}")
+async def update_reward(claims: UserClaims, reward_id: UUID, payload: RewardUpdate):
+    membership, memberships = await _membership(claims)
+    await _require_partner_roles(memberships, {"partner_owner", "partner_admin"})
+    rewards = await select_rows(
+        "campaign_rewards",
+        f"select=id,campaign_id,quantity_claimed,quantity_limit&campaign_id=in.({','.join(x['id'] for x in await _partner_rows('partner_campaigns', 'id', membership['partner_id']))})&id=eq.{reward_id}",
+    )
+    if not rewards:
+        raise HTTPException(status_code=404, detail="Reward not found")
+    changes = payload.model_dump(exclude_unset=True, mode="json")
+    if not changes:
+        raise HTTPException(status_code=422, detail="At least one field is required")
+    if "quantity_limit" in changes and changes["quantity_limit"] is not None and changes["quantity_limit"] < rewards[0]["quantity_claimed"]:
+        raise HTTPException(status_code=409, detail="Quantity limit cannot be lower than claims already issued")
+    changes["updated_at"] = datetime.now(timezone.utc).isoformat()
+    rows = await update_rows("campaign_rewards", f"id=eq.{reward_id}", changes)
+    if not rows:
+        raise HTTPException(status_code=404, detail="Reward not found")
+    await _audit_partner_mutation(claims, membership["partner_id"], "partner.reward.updated", "campaign_reward", str(reward_id))
+    return {"item": rows[0]}
