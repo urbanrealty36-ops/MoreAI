@@ -186,6 +186,52 @@ async def get_run(run_id: UUID, claims: Claims):
     return {"run": rows[0]}
 
 
+@router.get("/runs/{run_id}/events")
+async def list_run_events(run_id: UUID, claims: Claims, limit: int = 100):
+    user_id = str(UUID(str(claims.get("sub", ""))))
+    owned = await select_rows(
+        "agent_runs",
+        f"select=id&user_id=eq.{user_id}&id=eq.{run_id}&limit=1",
+    )
+    if not owned:
+        raise HTTPException(status_code=404, detail={"code": "RUN_NOT_FOUND"})
+    rows = await select_rows(
+        "agent_run_events",
+        "select=id,event_type,sequence,created_at,payload"
+        f"&run_id=eq.{run_id}&order=sequence.asc&limit={max(1, min(limit, 200))}",
+    )
+    safe_payload_keys = {"step", "step_key", "status", "message", "code", "attempt", "tool_key", "duration_ms"}
+    items = []
+    for row in rows:
+        payload = row.get("payload") if isinstance(row.get("payload"), dict) else {}
+        items.append({
+            "id": row["id"],
+            "event_type": row["event_type"],
+            "sequence": row["sequence"],
+            "created_at": row["created_at"],
+            "payload": {key: payload[key] for key in safe_payload_keys if key in payload},
+        })
+    return {"items": items}
+
+
+@router.get("/runs/{run_id}/steps")
+async def list_run_steps(run_id: UUID, claims: Claims, limit: int = 100):
+    user_id = str(UUID(str(claims.get("sub", ""))))
+    owned = await select_rows(
+        "agent_runs",
+        f"select=id&user_id=eq.{user_id}&id=eq.{run_id}&limit=1",
+    )
+    if not owned:
+        raise HTTPException(status_code=404, detail={"code": "RUN_NOT_FOUND"})
+    return {
+        "items": await select_rows(
+            "agent_run_steps",
+            "select=id,sequence,step_key,status,started_at,finished_at,created_at"
+            f"&run_id=eq.{run_id}&order=sequence.asc&limit={max(1, min(limit, 200))}",
+        )
+    }
+
+
 @router.post("/runs/{run_id}/cancel")
 async def cancel_run(run_id: UUID, claims: Claims):
     user_id = str(UUID(str(claims.get("sub", ""))))
