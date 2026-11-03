@@ -1,294 +1,93 @@
 'use client';
 
-import React, { useState } from 'react';
-import {
-  FileText,
-  Download,
-  Eye,
-  FileSpreadsheet,
-  FileCode,
-  Image as ImageIcon,
-  Search,
-  X,
-  Sparkles,
-  ExternalLink,
-  Copy,
-  Check,
-  Calendar,
-  HardDrive,
-} from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { FileText, FileSpreadsheet, FileCode, Image as ImageIcon, Search, X, Calendar, HardDrive } from 'lucide-react';
+import { getMoreAIApi } from '../../lib/api';
 
 interface ClientFilesModalProps {
   onClose: () => void;
   onOpenInChat: (filename: string) => void;
 }
 
-export const ClientFilesModal: React.FC<ClientFilesModalProps> = ({
-  onClose,
-  onOpenInChat,
-}) => {
+type WorkspaceFile = {
+  id: string;
+  storage_path: string;
+  mime_type?: string | null;
+  size_bytes?: number | null;
+  created_at: string;
+  metadata?: Record<string, unknown>;
+};
+
+const fileKind = (file: WorkspaceFile) => {
+  const mime = file.mime_type || '';
+  if (mime.includes('pdf')) return 'pdf';
+  if (mime.includes('spreadsheet') || mime.includes('excel')) return 'sheet';
+  if (mime.includes('json') || mime.includes('python') || mime.includes('javascript') || mime.includes('text/plain')) return 'code';
+  return 'doc';
+};
+const fileName = (path: string) => path.split('/').filter(Boolean).pop() || path;
+
+export const ClientFilesModal: React.FC<ClientFilesModalProps> = ({ onClose, onOpenInChat }) => {
+  const [files, setFiles] = useState<WorkspaceFile[]>([]);
   const [filterType, setFilterType] = useState<'semua' | 'pdf' | 'doc' | 'code' | 'sheet'>('semua');
   const [search, setSearch] = useState('');
-  const [previewFile, setPreviewFile] = useState<any | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selected, setSelected] = useState<WorkspaceFile | null>(null);
 
-  const files = [
-    {
-      id: 'f-1',
-      name: 'Rencana_Konten_Kafe_30_Hari.md',
-      type: 'doc',
-      size: '24.5 KB',
-      createdAt: 'Hari ini, 10:25',
-      author: 'Content Creator Agent (MoreAI F.01)',
-      icon: FileText,
-      badgeColor: 'bg-[#D9D5FF]',
-      content: `# Rencana Konten Kafe & Co-Working (30 Hari)
-**Klien:** Cafe MoreAI Kemang
-**Target Audiens:** Mahasiswa, remote workers, dan komunitas lokal.
+  useEffect(() => {
+    let live = true;
+    getMoreAIApi().workspace.files()
+      .then((result) => { if (live) setFiles(result.items as WorkspaceFile[]); })
+      .catch((reason) => { if (live) setError(reason instanceof Error ? reason.message : 'Berkas tidak dapat dimuat'); })
+      .finally(() => { if (live) setLoading(false); });
+    return () => { live = false; };
+  }, []);
 
----
-### Minggu 1: Signature Beans & Craftsmanship
-- **Hari 1 (Reels):** Behind the scenes: Proses roasting biji kopi specialty Aceh Gayo.
-- **Hari 2 (Carousel):** Panduan memesan kopi sesuai preferensi rasa (Acidity vs Bitterness).
-- **Hari 3 (Story):** Polling rasa favorit: Aren Latte vs Oat Milk Cappuccino.
+  const filtered = useMemo(() => files.filter((file) => {
+    const name = fileName(file.storage_path).toLowerCase();
+    const kind = fileKind(file);
+    return (filterType === 'semua' || kind === filterType) && name.includes(search.toLowerCase());
+  }), [files, filterType, search]);
 
-### Minggu 2: Co-Working Friendly & Fast Wi-Fi
-- **Hari 8 (Reels):** Review meja kerja kafe, colokan di tiap sudut, dan Free Wi-Fi 5.000 AI Credit.
-- **Hari 9 (Post):** Promo bundle kopi + pastry jam 14.00 - 17.00 WIB.`,
-    },
-    {
-      id: 'f-2',
-      name: 'Analisis_Kompetitor_Kafe_Kemang_2026.pdf',
-      type: 'pdf',
-      size: '1.2 MB',
-      createdAt: 'Kemarin, 16:40',
-      author: 'Research Agent (MoreAI F.01 Pro)',
-      icon: FileText,
-      badgeColor: 'bg-[#F9D8E5]',
-      content: `# Laporan Riset Pasar Kafe Specialty Jakarta Selatan 2026
-**Ringkasan Eksekutif:**
-Ditemukan 42 kafe di radius 3 km dari Kemang. Hanya 18% yang menyediakan fasilitas colokan dan internet stabil untuk remote workers.
-
-**Peluang Utama:**
-1. Menyediakan loyalty berbasis Free AI Credit terintegrasi Wi-Fi.
-2. Menu artisan manual brew dengan origin beans rotasi mingguan.
-3. Jam operasional pagi hari (07.00 WIB) untuk breakfast seekers.`,
-    },
-    {
-      id: 'f-3',
-      name: 'Proyeksi_Keuangan_dan_ROI_Cabang.xlsx',
-      type: 'sheet',
-      size: '88.2 KB',
-      createdAt: 'Kemarin, 14:15',
-      author: 'Data Analyst Agent',
-      icon: FileSpreadsheet,
-      badgeColor: 'bg-[#C9F2D5]',
-      content: `KOLOM 1: Bulan | KOLOM 2: Proyeksi Pengunjung | KOLOM 3: Gross Revenue | KOLOM 4: Net Margin
--------------------------------------------------------------------------------------------------
-Bulan 1       | 3.200 Orang               | Rp 96.000.000        | Rp 28.800.000 (30%)
-Bulan 2       | 3.850 Orang               | Rp 115.500.000       | Rp 38.115.000 (33%)
-Bulan 3       | 4.600 Orang               | Rp 138.000.000       | Rp 48.300.000 (35%)
-Bulan 4       | 5.200 Orang               | Rp 156.000.000       | Rp 56.160.000 (36%)
-Estimasi BEP: Tercapai pada Bulan ke-7 Operasional.`,
-    },
-    {
-      id: 'f-4',
-      name: 'cleaner_transaksi_kasir.py',
-      type: 'code',
-      size: '4.8 KB',
-      createdAt: '12 Jan 2026',
-      author: 'Code & Automation Agent',
-      icon: FileCode,
-      badgeColor: 'bg-[#FBE7B2]',
-      content: `import pandas as pd
-
-def clean_sales_receipts(csv_path):
-    df = pd.read_csv(csv_path)
-    # Hapus transaksi batal
-    df = df[df['status'] == 'BERHASIL']
-    # Konversi nominal ke integer
-    df['total_bayar'] = df['total_bayar'].str.replace('Rp', '').str.replace('.', '').astype(int)
-    print(f"Total Transaksi Bersih: {len(df)}")
-    return df
-
-if __name__ == '__main__':
-    clean_sales_receipts('raw_pos_data.csv')`,
-    },
-  ];
-
-  const filteredFiles = files.filter((f) => {
-    const matchType = filterType === 'semua' || f.type === filterType;
-    const matchQuery =
-      f.name.toLowerCase().includes(search.toLowerCase()) ||
-      f.author.toLowerCase().includes(search.toLowerCase());
-    return matchType && matchQuery;
-  });
-
-  const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+  const iconFor = (file: WorkspaceFile) => {
+    const kind = fileKind(file);
+    if (kind === 'sheet') return FileSpreadsheet;
+    if (kind === 'code') return FileCode;
+    if (file.mime_type?.startsWith('image/')) return ImageIcon;
+    return FileText;
+  };
+  const formatSize = (bytes?: number | null) => {
+    if (bytes == null) return 'Ukuran tidak tercatat';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3">
       <div className="w-full max-w-lg bg-[#F7F4EC] dark:bg-[#1E201D] border-3 border-[#171717] rounded-3xl p-4 sm:p-5 neo-shadow-xl max-h-[90vh] flex flex-col">
-        {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b-2 border-gray-200 dark:border-gray-800 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-[#D9D5FF] border-2 border-[#171717] neo-shadow-sm flex items-center justify-center">
-              <HardDrive className="w-5 h-5 text-indigo-700" />
-            </div>
-            <div>
-              <h2 className="text-base font-black text-[#171717] dark:text-[#F7F4EC]">
-                Berkas & Artefak Workspace
-              </h2>
-              <p className="text-[11px] text-gray-500">
-                Dokumen, dataset, & script hasil eksekusi AI Agent
-              </p>
-            </div>
+            <div className="w-10 h-10 rounded-2xl bg-[#D9D5FF] border-2 border-[#171717] neo-shadow-sm flex items-center justify-center"><HardDrive className="w-5 h-5 text-indigo-700" /></div>
+            <div><h2 className="text-base font-black text-[#171717] dark:text-[#F7F4EC]">Berkas & Artefak Workspace</h2><p className="text-[11px] text-gray-500">Metadata berkas tersimpan dari FastAPI</p></div>
           </div>
-
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-xl bg-white dark:bg-gray-800 border-2 border-[#171717] flex items-center justify-center text-gray-600 hover:text-black"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          <button onClick={onClose} aria-label="Tutup berkas" className="w-8 h-8 rounded-xl bg-white dark:bg-gray-800 border-2 border-[#171717] flex items-center justify-center"><X className="w-4 h-4" /></button>
         </div>
-
-        {/* Filter & Search Bar */}
         <div className="py-3 space-y-2 shrink-0">
-          <div className="neo-card p-1.5 bg-white dark:bg-[#232522] flex items-center gap-2 border-2 border-[#171717]">
-            <Search className="w-4 h-4 text-gray-400 ml-2 shrink-0" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Cari nama berkas atau agent pembuat..."
-              className="w-full text-xs font-semibold px-1 py-0.5 bg-transparent border-none outline-none text-[#171717] dark:text-[#F7F4EC]"
-            />
-          </div>
-
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-            {(['semua', 'doc', 'pdf', 'sheet', 'code'] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => setFilterType(t)}
-                className={`px-2.5 py-1 text-[11px] font-black rounded-lg border border-[#171717] uppercase transition shrink-0 ${
-                  filterType === t
-                    ? 'bg-[#171717] text-white'
-                    : 'bg-white dark:bg-[#232522] text-gray-700 dark:text-gray-300'
-                }`}
-              >
-                {t === 'semua' ? 'Semua Berkas' : t}
-              </button>
-            ))}
-          </div>
+          <div className="neo-card p-1.5 bg-white dark:bg-[#232522] flex items-center gap-2 border-2 border-[#171717]"><Search className="w-4 h-4 text-gray-400 ml-2 shrink-0" /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Cari nama berkas..." className="w-full text-xs font-semibold px-1 py-0.5 bg-transparent border-none outline-none" /></div>
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">{(['semua','doc','pdf','sheet','code'] as const).map((kind) => <button key={kind} onClick={() => setFilterType(kind)} className={`px-2.5 py-1 text-[11px] font-black rounded-lg border border-[#171717] uppercase shrink-0 ${filterType===kind?'bg-[#171717] text-white':'bg-white dark:bg-[#232522]'}`}>{kind==='semua'?'Semua Berkas':kind}</button>)}</div>
         </div>
-
-        {/* File List */}
-        <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-          {filteredFiles.map((file) => {
-            const Icon = file.icon;
-
-            return (
-              <div
-                key={file.id}
-                className="p-3 rounded-2xl bg-white dark:bg-[#232522] border-2 border-[#171717] neo-shadow-sm flex items-center justify-between gap-3 hover:translate-x-0.5 transition"
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div
-                    className={`w-9 h-9 rounded-xl ${file.badgeColor} border border-[#171717] flex items-center justify-center shrink-0`}
-                  >
-                    <Icon className="w-5 h-5 text-[#171717]" />
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="text-xs font-black text-[#171717] dark:text-[#F7F4EC] truncate">
-                      {file.name}
-                    </h3>
-                    <p className="text-[10px] text-gray-500 truncate">
-                      {file.size} · {file.author}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    onClick={() => setPreviewFile(file)}
-                    className="p-1.5 rounded-lg border border-[#171717] bg-[#D8ECFF] hover:bg-[#c6e4ff] text-[#171717]"
-                    title="Pratinjau Berkas"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      onOpenInChat(file.name);
-                      onClose();
-                    }}
-                    className="p-1.5 rounded-lg border border-[#171717] bg-[#C9F2D5] hover:bg-[#b0efbe] text-[#171717]"
-                    title="Buka di Chat AI"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Detailed File Preview Drawer */}
-        {previewFile && (
-          <div className="fixed inset-0 z-60 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3">
-            <div className="w-full max-w-lg bg-[#F7F4EC] dark:bg-[#1E201D] border-3 border-[#171717] rounded-3xl p-4 neo-shadow-xl max-h-[85vh] flex flex-col">
-              <div className="flex items-start justify-between pb-2.5 border-b-2 border-gray-200 dark:border-gray-800 shrink-0">
-                <div>
-                  <h3 className="text-sm font-black text-[#171717] dark:text-[#F7F4EC]">
-                    {previewFile.name}
-                  </h3>
-                  <span className="text-[10px] text-gray-500 font-bold">
-                    Dibuat oleh: {previewFile.author}
-                  </span>
-                </div>
-                <button
-                  onClick={() => setPreviewFile(null)}
-                  className="w-7 h-7 rounded-xl bg-white dark:bg-gray-800 border-2 border-[#171717] flex items-center justify-center"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto py-3">
-                <pre className="text-xs font-mono bg-white dark:bg-[#232522] p-3 rounded-2xl border-2 border-[#171717] whitespace-pre-wrap leading-relaxed text-[#171717] dark:text-[#F7F4EC]">
-                  {previewFile.content}
-                </pre>
-              </div>
-
-              <div className="pt-2 border-t-2 border-gray-200 dark:border-gray-800 flex items-center justify-between gap-2 shrink-0">
-                <button
-                  onClick={() => handleCopy(previewFile.content)}
-                  className="neo-btn bg-white dark:bg-[#232522] text-[#171717] dark:text-[#F7F4EC] px-3 py-1.5 text-xs font-black flex items-center gap-1.5"
-                >
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>{copied ? 'Tersalin' : 'Salin Konten'}</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    onOpenInChat(previewFile.name);
-                    setPreviewFile(null);
-                    onClose();
-                  }}
-                  className="neo-btn bg-[#C9F2D5] text-[#171717] px-3 py-1.5 text-xs font-black flex items-center gap-1.5"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Buka di Chat AI</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {loading && <p className="py-8 text-center text-xs text-gray-500">Memuat metadata berkas…</p>}
+        {error && <p className="rounded-xl border border-amber-600 bg-amber-50 p-3 text-xs text-amber-900">{error}</p>}
+        {!loading && !error && <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+          {filtered.map((file) => { const Icon = iconFor(file); return <div key={file.id} className="p-3 rounded-2xl bg-white dark:bg-[#232522] border-2 border-[#171717] neo-shadow-sm flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5 min-w-0"><div className="w-9 h-9 rounded-xl bg-[#D9D5FF] border border-[#171717] flex items-center justify-center shrink-0"><Icon className="w-5 h-5 text-[#171717]" /></div><div className="min-w-0"><h3 className="text-xs font-black truncate">{fileName(file.storage_path)}</h3><p className="text-[10px] text-gray-500 truncate">{formatSize(file.size_bytes)} · {file.mime_type || 'Tipe tidak tercatat'}</p><span className="text-[9px] text-gray-400">{new Date(file.created_at).toLocaleString('id-ID')}</span></div></div>
+            <div className="flex gap-1 shrink-0"><button onClick={() => setSelected(file)} className="rounded-lg border border-[#171717] px-2 py-1 text-[10px] font-bold">Detail</button><button onClick={() => onOpenInChat(fileName(file.storage_path))} className="rounded-lg border border-[#171717] bg-[#C9F2D5] px-2 py-1 text-[10px] font-bold">Chat</button></div>
+          </div>; })}
+          {filtered.length===0 && <p className="py-8 text-center text-xs text-gray-500">Belum ada artefak yang tersimpan.</p>}
+        </div>}
+        {selected && <div className="mt-3 rounded-xl border-2 border-[#171717] bg-white dark:bg-[#232522] p-3 text-xs"><div className="flex justify-between gap-2"><strong className="break-all">{fileName(selected.storage_path)}</strong><button onClick={() => setSelected(null)} aria-label="Tutup detail"><X className="w-4 h-4" /></button></div><p className="mt-2 break-all text-gray-500">Path: {selected.storage_path}</p><p className="mt-1 text-gray-500">Checksum: {String(selected.metadata?.checksum_sha256 ?? 'Tidak tersedia')}</p><p className="mt-2 text-[10px] text-gray-500">Unduhan memerlukan signed URL Storage; endpoint tersebut belum dikonfigurasi dan tidak dibuatkan URL palsu.</p></div>}
       </div>
     </div>
   );
