@@ -215,3 +215,15 @@ Remaining limitations: role-assignment CRUD still needs its own transactional au
 - Added audited LLM provider/model/routing create/update/disable endpoints. Provider API keys remain server environment values and are never sent to the client. Model and routing entries are disabled by default; enabling is guarded by provider/model readiness.
 - Added Super Admin UI forms for provider registration, model registry creation, and general platform route creation, with explicit enable controls.
 - Applied and versioned migrations `20261103102141_atomic_platform_role_assignment_and_revocation` and `20261103102304_serialize_super_admin_role_revocation`.
+
+
+## 2026-11-03 — Workspace File Access, Chat Idempotency, and Permission Matrix
+
+- Aligned artifact listing with the actual `public.artifacts` schema: `storage_path` is canonical; display filename is derived server-side. The earlier `file_name/storage_bucket/storage_key` assumptions were removed.
+- Added owner-scoped short-lived Storage signed download endpoint using server-only `SUPABASE_SECRET_KEY`, configured `WORKSPACE_ARTIFACTS_BUCKET`, 5-minute expiry, and download disposition. The live Supabase project currently has no Storage buckets; downloads correctly return `STORAGE_SIGNING_UNAVAILABLE` until a private workspace bucket is provisioned and configured. No public bucket or mock artifact was created.
+- Added atomic chat idempotency claim/finalize RPCs using the existing `idempotency_keys` table. Duplicate requests return the cached persisted response, conflicting payload reuse is rejected, concurrent in-flight duplicates return 409, and failed/stale requests can be retried. Completed responses are retained for 24 hours; processing claims have a 5-minute lease.
+- Added Super Admin role-permission matrix mutation endpoint and UI controls. Mutations are atomic and audited. The `super_admin` role is immutable; `platform.roles.assign` and `platform.security.manage` cannot be delegated to other roles.
+- Added API tests for artifact schema mapping, signed download behavior, chat replay/conflict/in-flight semantics, and role-permission mutation.
+- Added migrations `20261103122500_workspace_chat_idempotency`, `20261103124000_extend_completed_chat_idempotency_retention`, and `20261103124500_atomic_admin_role_permission_matrix`.
+- Verified chat idempotency RPC behavior in a rolled-back SQL transaction; service_role has execute privilege and authenticated users do not.
+
