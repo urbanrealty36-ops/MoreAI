@@ -87,7 +87,7 @@ export const ClientFilesModal: React.FC<ClientFilesModalProps> = ({ onClose, onO
           </div>; })}
           {filtered.length===0 && <p className="py-8 text-center text-xs text-gray-500">Belum ada artefak yang tersimpan.</p>}
         </div>}
-        {selected && <div className="mt-3 rounded-xl border-2 border-[#171717] bg-white dark:bg-[#232522] p-3 text-xs"><div className="flex justify-between gap-2"><strong className="break-all">{fileName(selected.storage_path)}</strong><button onClick={() => setSelected(null)} aria-label="Tutup detail"><X className="w-4 h-4" /></button></div><p className="mt-2 break-all text-gray-500">Path: {selected.storage_path}</p><p className="mt-1 text-gray-500">Checksum: {String(selected.metadata?.checksum_sha256 ?? 'Tidak tersedia')}</p><p className="mt-2 text-[10px] text-gray-500">Unduhan memerlukan signed URL Storage; endpoint tersebut belum dikonfigurasi dan tidak dibuatkan URL palsu.</p></div>}
+        {selected && <div className="mt-3 rounded-xl border-2 border-[#171717] bg-white dark:bg-[#232522] p-3 text-xs"><div className="flex justify-between gap-2"><strong className="break-all">{fileName(selected.storage_path)}</strong><button onClick={() => setSelected(null)} aria-label="Tutup detail"><X className="w-4 h-4" /></button></div><p className="mt-2 break-all text-gray-500">Path: {selected.storage_path}</p><p className="mt-1 text-gray-500">Checksum: {String(selected.checksum_sha256 ?? 'Tidak tersedia')}</p><p className="mt-2 text-[10px] text-gray-500">Unduhan memerlukan signed URL Storage; endpoint tersebut belum dikonfigurasi dan tidak dibuatkan URL palsu.</p></div>}
       </div>
     </div>
   );
