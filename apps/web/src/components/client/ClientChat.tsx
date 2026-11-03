@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { MascotIcon } from '../shared/MascotIcon';
 import { ManusAgentWorkflowView } from '../manus/ManusAgentWorkflowView';
+import { getMoreAIApi } from '../../lib/api';
 
 interface Message {
   id: string;
@@ -55,6 +56,32 @@ export const ClientChat: React.FC<ClientChatProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [messages, setMessages] = useState<Message[]>([]);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      try {
+        const api = getMoreAIApi();
+        const response = await api.workspace.conversations();
+        let active = response.items.find((item) => item.status === 'active');
+        if (!active) active = (await api.workspace.createConversation({ title: 'Percakapan baru' })).conversation;
+        if (!live) return;
+        setConversationId(active.id);
+        const history = await api.workspace.messages(active.id);
+        if (!live) return;
+        setMessages(history.items.map((item) => ({
+          id: item.id,
+          sender: item.role === 'user' ? 'user' : 'assistant',
+          text: item.content,
+          timestamp: new Date(item.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+        })));
+      } catch (error) {
+        if (live) console.error('MoreAI conversation history unavailable', error);
+      }
+    })();
+    return () => { live = false; };
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -89,31 +116,22 @@ export const ClientChat: React.FC<ClientChatProps> = ({
       setIsLoading(true);
 
       try {
-        const apiBaseUrl = process.env.NEXT_PUBLIC_MOREAI_API_URL;
-        if (!apiBaseUrl) {
-          throw new Error('Layanan belum dikonfigurasi. Silakan hubungi administrator.');
+        const api = getMoreAIApi();
+        let activeConversationId = conversationId;
+        if (!activeConversationId) {
+          const created = await api.workspace.createConversation({ title: textToSend.slice(0, 80) });
+          activeConversationId = created.conversation.id;
+          setConversationId(activeConversationId);
         }
-        const { createBrowserClient } = await import('@supabase/ssr');
-        const { createApiClient } = await import('@moreai/api-client');
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-        if (!supabaseUrl || !publishableKey) {
-          throw new Error('Autentikasi MoreAI belum dikonfigurasi.');
-        }
-        const supabase = createBrowserClient(supabaseUrl, publishableKey);
-        const api = createApiClient({
-          baseUrl: apiBaseUrl,
-          getAccessToken: async () => {
-            const { data, error } = await supabase.auth.getSession();
-            if (error) throw new Error('Sesi akun tidak dapat dibaca.');
-            return data.session?.access_token ?? null;
-          },
-        });
-        const data = await api.llm.generate(
-          { prompt: textToSend, model: selectedModel, max_output_tokens: 2048 },
+        const data = await api.workspace.sendMessage(
+          activeConversationId,
+          { content: textToSend, model: selectedModel || undefined, max_output_tokens: 2048 },
           `chat:${userMsg.id}`,
         );
-        const botResponse = data.text;
+        setMessages((prev) => prev.map((item) => item.id === userMsg.id
+          ? { ...item, id: data.user_message.id, timestamp: new Date(data.user_message.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) }
+          : item));
+        const botResponse = data.assistant_message.content;
 
         const assistantMsg: Message = {
           id: `ai-${Date.now()}`,
@@ -136,7 +154,7 @@ export const ClientChat: React.FC<ClientChatProps> = ({
         setIsLoading(false);
       }
     },
-    [isLoading, selectedModel, selectedAgent]
+    [isLoading, selectedModel, selectedAgent, conversationId]
   );
 
   // If initialPrompt was passed from home quick actions, send it
