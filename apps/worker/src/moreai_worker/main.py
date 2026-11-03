@@ -53,6 +53,25 @@ class WorkerConfig:
         )
 
 
+class OpenManusToolRegistry:
+    def __init__(self) -> None:
+        self._factories: dict[str, Any] = {}
+
+    def register(self, key: str, factory: Any) -> None:
+        if not key or key in self._factories:
+            raise ValueError("Tool key must be unique and non-empty")
+        self._factories[key] = factory
+
+    def build(self, collection_factory: Any, enabled_tools: list[str]) -> Any:
+        requested = [item.strip() for item in enabled_tools if item.strip()]
+        if not requested:
+            raise RuntimeError("No OpenManus tools are enabled")
+        unavailable = sorted(set(requested) - self._factories.keys())
+        if unavailable:
+            raise RuntimeError(f"OpenManus tools are not registered or sandboxed: {', '.join(unavailable)}")
+        return collection_factory(*(self._factories[key]() for key in requested))
+
+
 class Store:
     def __init__(self, config: WorkerConfig):
         self.config = config
@@ -100,6 +119,56 @@ class Store:
                 "p_state": state,
             },
         )
+
+    async def start_step(self, run_id: str, sequence: int, step_key: str, input_data: dict[str, Any]) -> None:
+        response = await self.client.get(
+            "agent_run_steps",
+            params={"select": "id", "run_id": f"eq.{run_id}", "sequence": f"eq.{sequence}", "limit": "1"},
+        )
+        response.raise_for_status()
+        rows = response.json()
+        payload = {
+            "step_key": step_key,
+            "status": "running",
+            "input": input_data,
+            "output": None,
+            "error": None,
+            "started_at": datetime.now(timezone.utc).isoformat(),
+            "finished_at": None,
+        }
+        if rows:
+            updated = await self.client.patch(
+                "agent_run_steps", params={"id": f"eq.{rows[0]['id']}"}, json=payload
+            )
+            updated.raise_for_status()
+        else:
+            created = await self.client.post(
+                "agent_run_steps",
+                json={"run_id": run_id, "sequence": sequence, **payload},
+            )
+            created.raise_for_status()
+
+    async def finish_step(
+        self,
+        run_id: str,
+        sequence: int,
+        status: str,
+        output: dict[str, Any] | None = None,
+        error: dict[str, Any] | None = None,
+    ) -> None:
+        if status not in {"succeeded", "failed", "cancelled"}:
+            raise ValueError("Invalid agent step status")
+        response = await self.client.patch(
+            "agent_run_steps",
+            params={"run_id": f"eq.{run_id}", "sequence": f"eq.{sequence}"},
+            json={
+                "status": status,
+                "output": output,
+                "error": error,
+                "finished_at": datetime.now(timezone.utc).isoformat(),
+            },
+        )
+        response.raise_for_status()
 
     async def latest_checkpoint(self, run_id: str) -> dict[str, Any] | None:
         response = await self.client.get(
@@ -234,9 +303,12 @@ class OpenManusExecutor:
         except ImportError as exc:
             raise RuntimeError("OpenManus runtime dependencies are missing") from exc
 
+        registry = OpenManusToolRegistry()
+        registry.register("terminate", Terminate)
+        enabled_tools = os.getenv("OPENMANUS_ENABLED_TOOLS", "terminate").split(",")
         agent = Manus(max_steps=max(1, min(int(data.get("max_steps", 8)), 20)))
-        agent.available_tools = ToolCollection(Terminate())
-        agent.tool_choices = "none"
+        agent.available_tools = registry.build(ToolCollection, enabled_tools)
+        agent.tool_choices = "auto"
         agent.llm = GatewayLLM(
             self.config,
             str(run["user_id"]),
@@ -308,6 +380,18 @@ class Worker:
                     "worker_id": self.worker_id,
                 },
             )
+            await self.store.start_step(
+                run_id,
+                1,
+                "openmanus.plan_execute",
+                {"attempt": run.get("attempt", 1), "engine": "openmanus"},
+            )
+            await self.store.checkpoint(
+                run_id,
+                self.worker_id,
+                "runtime.started",
+                {"step_key": "openmanus.plan_execute"},
+            )
             execution = asyncio.create_task(
                 self.executor.execute(
                     {**run, "lease_owner": self.worker_id},
@@ -323,6 +407,9 @@ class Worker:
             if cancel_wait in done and cancel.is_set():
                 execution.cancel()
                 await asyncio.gather(execution, return_exceptions=True)
+                await self.store.finish_step(
+                    run_id, 1, "cancelled", error={"code": "CANCEL_REQUESTED"}
+                )
                 await self.store.finish(
                     run_id,
                     self.worker_id,
@@ -335,6 +422,22 @@ class Worker:
             await asyncio.gather(cancel_wait, return_exceptions=True)
             output = await execution
             if not lost.is_set():
+                text_output = output.get("text") if isinstance(output, dict) else None
+                await self.store.finish_step(
+                    run_id,
+                    1,
+                    "succeeded",
+                    output={
+                        "engine": output.get("engine", "openmanus"),
+                        "text_length": len(text_output) if isinstance(text_output, str) else 0,
+                    },
+                )
+                await self.store.checkpoint(
+                    run_id,
+                    self.worker_id,
+                    "runtime.completed",
+                    {"step_key": "openmanus.plan_execute"},
+                )
                 await self.store.finish(
                     run_id,
                     self.worker_id,
@@ -343,6 +446,9 @@ class Worker:
                 )
         except asyncio.CancelledError:
             if not lost.is_set():
+                await self.store.finish_step(
+                    run_id, 1, "cancelled", error={"code": "WORKER_SHUTDOWN"}
+                )
                 await self.store.finish(
                     run_id,
                     self.worker_id,
@@ -353,6 +459,12 @@ class Worker:
         except Exception as exc:
             LOG.exception("Run %s failed", run_id)
             if not lost.is_set():
+                await self.store.finish_step(
+                    run_id,
+                    1,
+                    "failed",
+                    error={"code": "EXECUTION_FAILED", "message": str(exc)[:200]},
+                )
                 await self.store.finish(
                     run_id,
                     self.worker_id,
