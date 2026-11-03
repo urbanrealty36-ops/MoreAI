@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { getMoreAIApi } from '../../lib/api';
 import {
   History,
   Search,
@@ -21,48 +22,36 @@ export const ClientHistory: React.FC<ClientHistoryProps> = ({ onOpenSession }) =
   const [activeTab, setActiveTab] = useState<'semua' | 'chat' | 'tugas' | 'proyek'>('semua');
   const [search, setSearch] = useState('');
 
-  const [historyItems, setHistoryItems] = useState([
-    {
-      id: 'h-1',
-      title: 'Rencana Konten Kafe (30 Hari)',
-      category: 'chat',
-      date: 'Hari ini, 10:24',
-      starred: true,
-      preview: 'Kalender editorial 4 minggu untuk Instagram dan TikTok.',
-    },
-    {
-      id: 'h-2',
-      title: 'Analisis Data Penjualan Q3',
-      category: 'tugas',
-      date: 'Kemarin, 15:30',
-      starred: false,
-      preview: 'Data Analyst Agent: Visualisasi tren omset dan menu kopi terlaris.',
-    },
-    {
-      id: 'h-3',
-      title: 'Ide Kampanye Promosi Weekend',
-      category: 'chat',
-      date: '12 Jan, 09:12',
-      starred: true,
-      preview: 'Konsep bundling cold brew dan croissant promo akhir pekan.',
-    },
-    {
-      id: 'h-4',
-      title: 'Riset Kompetitor Coffee Shop',
-      category: 'tugas',
-      date: '11 Jan, 21:05',
-      starred: false,
-      preview: 'Research Agent: Perbandingan harga dan USP 5 kafe di Kemang.',
-    },
-    {
-      id: 'h-5',
-      title: 'Ekspor Proposal Kemitraan WiFi',
-      category: 'proyek',
-      date: '10 Jan, 14:20',
-      starred: false,
-      preview: 'Dokumen perjanjian kemitraan venue MoreAI Network.',
-    },
-  ]);
+  const [historyItems, setHistoryItems] = useState<Array<{
+    id: string; title: string; category: 'chat' | 'tugas' | 'proyek'; date: string;
+    starred: boolean; preview: string;
+  }>>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      try {
+        const api = getMoreAIApi();
+        const [conversations, runs] = await Promise.all([api.workspace.conversations(), api.agents.list()]);
+        if (!live) return;
+        const chatItems = conversations.items.map((item) => ({
+          id: item.id, title: item.title || 'Percakapan tanpa judul', category: 'chat' as const,
+          date: new Date(item.updated_at).toLocaleString('id-ID'), starred: false,
+          preview: `Status percakapan: ${item.status}`,
+        }));
+        const taskItems = runs.items.map((item) => ({
+          id: item.id, title: `Agent Run · ${item.id.slice(0, 8)}`, category: 'tugas' as const,
+          date: new Date(item.created_at).toLocaleString('id-ID'), starred: false,
+          preview: `Status: ${item.status} · Percobaan ${item.attempt}/${item.max_attempts}`,
+        }));
+        setHistoryItems([...chatItems, ...taskItems].sort((a, b) => b.date.localeCompare(a.date)));
+      } catch (error) {
+        if (live) setLoadError(error instanceof Error ? error.message : 'Riwayat tidak dapat dimuat');
+      }
+    })();
+    return () => { live = false; };
+  }, []);
 
   const toggleStar = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -130,6 +119,7 @@ export const ClientHistory: React.FC<ClientHistoryProps> = ({ onOpenSession }) =
         ))}
       </div>
 
+      {loadError && <p className="rounded-xl border border-amber-600 bg-amber-50 p-3 text-xs text-amber-900">{loadError}</p>}
       {/* History Items */}
       <div className="space-y-2">
         {filtered.map((item) => (
