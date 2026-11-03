@@ -207,22 +207,28 @@ async def select_network_verification_method(
     }
 
 
+async def _visible_campaigns(membership: dict[str, Any], memberships: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    campaigns = await _partner_rows(
+        "partner_campaigns",
+        "id,partner_id,location_id,name,status,starts_at,ends_at,budget,config,created_at",
+        membership["partner_id"],
+    )
+    allowed = {item.get("location_id") for item in memberships if item.get("location_id")}
+    if not any(item.get("location_id") is None for item in memberships):
+        campaigns = [item for item in campaigns if item.get("location_id") in allowed]
+    return campaigns
+
+
 @router.get("/campaigns")
 async def list_campaigns(claims: UserClaims):
-    membership, _ = await _membership(claims)
-    return {
-        "items": await _partner_rows(
-            "partner_campaigns",
-            "id,partner_id,location_id,name,status,starts_at,ends_at,budget,config,created_at",
-            membership["partner_id"],
-        )
-    }
+    membership, memberships = await _membership(claims)
+    return {"items": await _visible_campaigns(membership, memberships)}
 
 
 @router.get("/rewards")
 async def list_rewards(claims: UserClaims):
-    membership, _ = await _membership(claims)
-    campaigns = await _partner_rows("partner_campaigns", "id", membership["partner_id"])
+    membership, memberships = await _membership(claims)
+    campaigns = await _visible_campaigns(membership, memberships)
     ids = [x["id"] for x in campaigns]
     if not ids:
         return {"items": []}
@@ -238,14 +244,14 @@ async def list_rewards(claims: UserClaims):
 
 @router.get("/analytics")
 async def partner_analytics(claims: UserClaims):
-    membership, _ = await _membership(claims)
-    branches = await _partner_rows("partner_locations", "id", membership["partner_id"])
-    networks = await _partner_rows("partner_networks", "id,status", membership["partner_id"])
-    campaigns = await _partner_rows("partner_campaigns", "id,status", membership["partner_id"])
+    membership, memberships = await _membership(claims)
+    branches = await list_branches(claims)
+    networks = await list_networks(claims)
+    campaigns = await _visible_campaigns(membership, memberships)
     return {
-        "branches": len(branches),
-        "networks": len(networks),
-        "active_networks": sum(x["status"] == "active" for x in networks),
+        "branches": len(branches["items"]),
+        "networks": len(networks["items"]),
+        "active_networks": sum(x["status"] == "active" for x in networks["items"]),
         "campaigns": len(campaigns),
         "active_campaigns": sum(x["status"] == "active" for x in campaigns),
         "as_of": datetime.now(timezone.utc).isoformat(),
@@ -287,7 +293,6 @@ class NetworkUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=120)
     ssid_label: str | None = Field(default=None, max_length=120)
     gateway_network_ref: str | None = Field(default=None, max_length=160)
-    status: Literal["pending", "active", "inactive", "suspended"] | None = None
 
 
 class CampaignCreate(BaseModel):
