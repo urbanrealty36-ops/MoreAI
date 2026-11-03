@@ -11,7 +11,7 @@ interface ClientFilesModalProps {
 
 type WorkspaceFile = {
   id: string;
-  storage_path: string;
+  file_name: string;
   mime_type?: string | null;
   size_bytes?: number | null;
   checksum_sha256?: string | null;
@@ -46,7 +46,7 @@ export const ClientFilesModal: React.FC<ClientFilesModalProps> = ({ onClose, onO
   }, []);
 
   const filtered = useMemo(() => files.filter((file) => {
-    const name = fileName(file.storage_path).toLowerCase();
+    const name = file.file_name.toLowerCase();
     const kind = fileKind(file);
     return (filterType === 'semua' || kind === filterType) && name.includes(search.toLowerCase());
   }), [files, filterType, search]);
@@ -88,7 +88,7 @@ export const ClientFilesModal: React.FC<ClientFilesModalProps> = ({ onClose, onO
           </div>; })}
           {filtered.length===0 && <p className="py-8 text-center text-xs text-gray-500">Belum ada artefak yang tersimpan.</p>}
         </div>}
-        {selected && <div className="mt-3 rounded-xl border-2 border-[#171717] bg-white dark:bg-[#232522] p-3 text-xs"><div className="flex justify-between gap-2"><strong className="break-all">{fileName(selected.storage_path)}</strong><button onClick={() => setSelected(null)} aria-label="Tutup detail"><X className="w-4 h-4" /></button></div><p className="mt-2 break-all text-gray-500">Path: {selected.storage_path}</p><p className="mt-1 text-gray-500">Checksum: {String(selected.checksum_sha256 ?? 'Tidak tersedia')}</p><p className="mt-2 text-[10px] text-gray-500">Unduhan memerlukan signed URL Storage; endpoint tersebut belum dikonfigurasi dan tidak dibuatkan URL palsu.</p></div>}
+        {selected && <div className="mt-3 rounded-xl border-2 border-[#171717] bg-white dark:bg-[#232522] p-3 text-xs"><div className="flex justify-between gap-2"><strong className="break-all">{selected.file_name}</strong><button onClick={() => setSelected(null)} aria-label="Tutup detail"><X className="w-4 h-4" /></button></div><p className="mt-2 break-all text-gray-500">File: {selected.file_name}</p><p className="mt-1 text-gray-500">Checksum: {String(selected.checksum_sha256 ?? 'Tidak tersedia')}</p><button onClick={async()=>{try{setError(null);const result=await getMoreAIApi().workspace.fileDownload(selected.id);window.open(result.url,"_blank","noopener,noreferrer");}catch(reason){setError(reason instanceof Error?reason.message:"Unduhan tidak tersedia");}}} className="mt-3 rounded-lg border-2 border-[#171717] bg-[#C9F2D5] px-3 py-2 font-bold">Download file (URL aman 5 menit)</button></div>}
       </div>
     </div>
   );
