@@ -7,7 +7,7 @@ concurrency:
   group: moreai-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 permissions:
-  contents: write
+  contents: read
   security-events: write
   actions: read
   pull-requests: read
@@ -29,18 +29,6 @@ jobs:
       - run: pnpm install --lockfile-only --ignore-scripts --frozen-lockfile
       - run: uv lock --check
       - run: uv sync --all-packages --all-extras --locked
-      - name: One-time Phase 02 Python formatting
-        if: github.event_name == 'push' && github.ref == 'refs/heads/phase-02-partner-api-operations' && !contains(github.event.head_commit.message, '[skip format]')
-        run: uv run ruff format apps
-      - name: Commit formatter output
-        if: github.event_name == 'push' && github.ref == 'refs/heads/phase-02-partner-api-operations' && !contains(github.event.head_commit.message, '[skip format]')
-        run: |
-          if [ -z "$(git status --porcelain apps)" ]; then exit 0; fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add apps
-          git commit -m "style: format Phase 02 implementation [skip format]"
-          git push origin HEAD:phase-02-partner-api-operations
       - run: uv run ruff format --check apps
   source-provenance:
     needs: lockfiles
