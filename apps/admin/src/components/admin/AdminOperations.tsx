@@ -12,6 +12,7 @@ type Data = {
   permissionMatrix?: { roles: any[]; permissions: any[] } | null;
   llmRouting: any[];
   partners: any[];
+  roleAssignments: any[];
   verificationMethods: any[];
   networkPolicies: any[];
   error?: string;
@@ -36,7 +37,10 @@ export function AdminOperations() {
   const [routeModelId, setRouteModelId] = useState("");
   const [fallbackModelId, setFallbackModelId] = useState("");
   const [routePriority, setRoutePriority] = useState("100");
-  const [busy, setBusy] = useState<string | null>(null);\n  const [targetUserId, setTargetUserId] = useState("");\n  const [roleKey, setRoleKey] = useState<"platform_admin"|"finance_admin"|"partner_manager"|"security_admin"|"support_admin"|"read_only_analyst"|"super_admin">("platform_admin");\n  const [roleExpiresAt, setRoleExpiresAt] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
+  const [targetUserId, setTargetUserId] = useState("");
+  const [roleKey, setRoleKey] = useState<"platform_admin"|"finance_admin"|"partner_manager"|"security_admin"|"support_admin"|"read_only_analyst"|"super_admin">("platform_admin");
+  const [roleExpiresAt, setRoleExpiresAt] = useState("");
 
   const refresh = useCallback(async () => {
     const api = getPortalApi();
