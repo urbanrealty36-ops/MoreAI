@@ -36,3 +36,11 @@ The current live schema does not contain dedicated memory persistence/embedding 
 ## Consequences
 
 Some requested controls intentionally remain unavailable until the schema and policy dependencies are implemented. This is preferable to exposing fake data, partial transactions, unsafe QR redemption, or false access-success states.
+
+
+## Additional implementation evidence — 2026-11-03
+
+- Platform role-permission changes now use `moreai_admin_set_role_permission`, an invoker-security RPC callable only by `service_role`. It requires an active Super Admin holding both `platform.roles.assign` and `platform.security.manage`, writes the RBAC mutation and audit record in one transaction, prevents editing the `super_admin` role, and prevents delegating those two escalation permissions.
+- Workspace chat now uses atomic idempotency claims and response finalization. In-flight duplicate requests are rejected, completed responses replay from the idempotency table, and request-key reuse with a different payload is rejected.
+- Artifact listing now follows the actual `artifacts.storage_path` schema. Signed downloads are owner-scoped and 5-minute, but remain unavailable because the connected Supabase project currently has no Storage bucket; configure a private bucket and `WORKSPACE_ARTIFACTS_BUCKET` before enabling downloads.
+
