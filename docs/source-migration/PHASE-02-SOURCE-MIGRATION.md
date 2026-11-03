@@ -203,7 +203,7 @@ Next implementation order: close transactional audit RPC + partner onboarding; t
 - Corrected the Super Admin role permission mapping to include `partner.organization.read` and `partner.organization.manage`, so the approval queue and review actions are available to the intended platform role.
 - Applied and versioned migrations `20261103101050`, `20261103101208`, `20261103101333`, and `20261103101453` in the existing Supabase project and repository.
 
-Remaining limitations: role-assignment CRUD still needs its own transactional audit RPC; QR/access-code issuance/redemption requires its dedicated hashed-code schema and explicit expiry/use policy; memory/subscription schema remains absent; access-session lifecycle remains fail-closed.
+Remaining limitations: no platform role assignment exists in the live database, so the initial Super Admin must be explicitly bootstrapped to the owner-confirmed Auth user; QR/access-code issuance/redemption requires its dedicated hashed-code schema and explicit expiry/use policy; memory/subscription schema remains absent; access-session lifecycle remains fail-closed.
 
 
 ## 2026-11-03 — Super Admin Role Assignment and LLM Control Plane
@@ -227,3 +227,17 @@ Remaining limitations: role-assignment CRUD still needs its own transactional au
 - Added migrations `20261103122500_workspace_chat_idempotency`, `20261103124000_extend_completed_chat_idempotency_retention`, and `20261103124500_atomic_admin_role_permission_matrix`.
 - Verified chat idempotency RPC behavior in a rolled-back SQL transaction; service_role has execute privilege and authenticated users do not.
 
+
+
+## 2026-11-03 — Security and migration reconciliation
+
+- Converted partner application submit/review, LLM provider/model/routing, and platform role assignment/revocation RPCs to `SECURITY INVOKER`. `service_role` retains execute/table privileges; `authenticated` has no execute permission. Verified all seven functions report `prosecdef=false`.
+- Added migration `20261103123820_use_invoker_security_for_admin_rpcs`.
+- Reconciled local migration filenames with the actual Supabase migration history:
+  - `20261103122523_workspace_chat_idempotency`
+  - `20261103122556_extend_completed_chat_idempotency_retention`
+  - `20261103122824_atomic_admin_role_permission_matrix`
+- Tightened chat idempotency: persisted message metadata now includes the request hash, preventing a key reused with a different payload from replaying a prior response after the idempotency record expires.
+- Corrected Supabase Storage signed URL resolution to prepend the Storage service path returned by the REST signing endpoint. Download remains disabled until a private bucket is provisioned.
+- Typed the Captive Portal gateway verification request and response contracts in the shared API client.
+- Confirmed there are currently no platform role assignments; the first Super Admin assignment requires explicit owner identity bootstrap.
