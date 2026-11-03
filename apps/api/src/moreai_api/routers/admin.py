@@ -513,7 +513,7 @@ async def admin_llm_routing(claims: UserClaims):
     )
     models = await select_rows(
         "llm_models",
-        "select=id,key,display_name,enabled,input_cost_per_million,output_cost_per_million&order=key",
+        "select=id,provider_id,key,display_name,enabled,input_cost_per_million,output_cost_per_million,provider:llm_providers(key,display_name,enabled)&order=key",
     )
     by_id = {item["id"]: item for item in models}
     return {
