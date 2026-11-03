@@ -179,3 +179,14 @@ Implementation on `phase-02-partner-api-operations` (PR #8):
 - CI status is not yet confirmed by the connected GitHub status interface. No lint/typecheck/build/test result is claimed in this report.
 
 Next implementation order: close transactional audit RPC + partner onboarding; then memory/subscription/QR schema; then Captive Portal session and entitlement lifecycle; then complete admin CRUD and sandboxed tool registry. Do not begin Phase 03 until Phase 02 acceptance gates pass.
+
+
+## 2026-11-03 — OpenManus Runtime and UI Source Data Hardening
+
+- Added a fail-closed OpenManus tool registry. Only the built-in `terminate` tool is registered; enabling browser, Python, search, or file tools via environment configuration fails fast until isolated adapters are implemented and sandboxed.
+- OpenManus tool choice now uses the explicit allowlist instead of disabling all tool calls.
+- Added durable `agent_run_steps` lifecycle for the OpenManus plan/execute unit, including start, success, failure, and cancellation state. The worker reuses the same logical step across retry attempts.
+- Added runtime start/completion checkpoints. Worker execution is cancelled when its lease is lost, avoiding stale workers continuing external work after losing ownership.
+- Agent monitor event projection now includes the safe checkpoint key, while sensitive event payload fields remain filtered.
+- Replaced sample Customer Workspace history, file catalog, wallet ledger, memory, and subscription values with actual API reads or explicit unavailable states.
+- Captive Portal no longer includes simulated venue selectors, fabricated sponsor credit, or timer-based success. It only submits the signed context supplied by the gateway and reports the exact fail-closed result.
