@@ -75,6 +75,8 @@ export function createApiClient(options: ApiClientOptions) {
     },
     partner: {
       me: () => get<PartnerSummary>("/api/v1/partner/me"),
+      onboardingStatus: () => get<{status:string;partner:Record<string,unknown>|null;membership:Record<string,unknown>|null}>("/api/v1/partner/onboarding"),
+      submitApplication: (input:{legal_name:string;display_name:string}) => post<{application:{partner:Record<string,unknown>;membership:Record<string,unknown>;replayed:boolean}}>("/api/v1/partner/onboarding",input),
       branches: () => get<Collection<unknown>>("/api/v1/partner/branches"),
       networks: () => get<Collection<unknown>>("/api/v1/partner/networks"),
       campaigns: () => get<Collection<unknown>>("/api/v1/partner/campaigns"),
@@ -97,6 +99,7 @@ export function createApiClient(options: ApiClientOptions) {
       models: () => get<Collection<unknown>>("/api/v1/admin/models"),
       audit: () => get<Collection<unknown>>("/api/v1/admin/audit"),
       partners: (status?: "pending" | "active" | "suspended" | "rejected" | "closed") => get<Collection<Record<string, unknown>>>(`/api/v1/admin/partners${status ? `?status_filter=${status}` : ""}`),
+      reviewPartner: (id:string,input:{decision:"approve"|"reject"|"suspend";reason?:string}) => post<{partner:Record<string,unknown>;replayed:boolean}>(`/api/v1/admin/partners/${id}/review`,input),
       permissionMatrix: () => get<{roles: Array<{id:string;key:string;scope:string;description?:string;system_role:boolean;permissions:string[]}>;permissions:Array<{id:string;key:string;description?:string}>}>("/api/v1/admin/permission-matrix"),
       llmRouting: () => get<Collection<Record<string, unknown>>>("/api/v1/admin/llm-routing"),
       verificationMethods: () => get<Collection<VerificationMethod>>("/api/v1/admin/network-verification-methods"),
