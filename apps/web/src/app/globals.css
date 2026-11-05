@@ -58,7 +58,7 @@
 
 .dark .neo-card {
   border-color: var(--moreai-color-card-border);
-  box-shadow: 3.5px 3.5px 0 var(--moreai-color-shadow);
+  box-shadow: var(--moreai-shadow-card);
   background-color: var(--moreai-color-surface);
 }
 
@@ -78,7 +78,7 @@
 
 .dark .neo-btn {
   border-color: var(--moreai-color-border);
-  box-shadow: 3px 3px 0 var(--moreai-color-shadow);
+  box-shadow: var(--moreai-shadow-button);
 }
 
 .dark .neo-btn:active {
