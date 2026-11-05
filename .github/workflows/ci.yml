@@ -29,6 +29,7 @@ jobs:
       - run: pnpm install --lockfile-only --ignore-scripts --frozen-lockfile
       - run: uv lock --check
       - run: uv sync --all-packages --all-extras --locked
+      - run: uv run ruff format --diff apps
       - run: uv run ruff format --check apps
   source-provenance:
     needs: lockfiles
