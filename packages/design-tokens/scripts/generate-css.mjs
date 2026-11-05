@@ -36,6 +36,7 @@ export function generateCss(tokens) {
     `  --moreai-color-sky: ${c.accent.sky};`,
     `  --moreai-color-peach: ${c.accent.peach};`,
     `  --moreai-color-success: ${c.semantic.success.foreground};`,
+    `  --moreai-color-success-contrast: ${c.semantic.success.contrastForeground};`,
     `  --moreai-surface-success: ${c.semantic.success.background};`,
     `  --moreai-color-warning: ${c.semantic.warning.foreground};`,
     `  --moreai-surface-warning: ${c.semantic.warning.background};`,

@@ -29,19 +29,19 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
   onToggleDark,
 }) => {
   return (
-    <header className="sticky top-0 z-30 bg-[#F7F4EC] dark:bg-[#1E201D] border-b-2 border-[#171717] dark:border-[#4A4A46] px-4 py-2.5 flex items-center justify-between gap-2">
+    <header className="sticky top-0 z-30 bg-[#F7F4EC] dark:bg-[#1E201D] border-b-2 border-[#171717] dark:border-[#4A4A46] px-3 md:px-4 py-2.5 flex items-center justify-between gap-1 md:gap-2">
       {/* Brand & Greeting */}
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-2 md:gap-2.5">
         <div className="p-0.5 rounded-xl bg-white dark:bg-[#2A2C28] border-2 border-[#171717] dark:border-[#555] neo-shadow-sm flex items-center justify-center">
           <MascotIcon size={32} mood={partnerActive ? 'excited' : 'happy'} />
         </div>
         <div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 max-[380px]:gap-0.5">
             <span className="font-black text-base tracking-tight text-[#171717] dark:text-[#F7F4EC]">
               More<span className="text-emerald-600 dark:text-emerald-400">AI</span>
             </span>
           </div>
-          <p className="text-[11px] font-semibold text-gray-600 dark:text-gray-300 leading-none">
+          <p className="max-[380px]:hidden text-[11px] font-semibold text-gray-600 dark:text-gray-300 leading-none">
             Halo, Budi! ✨
           </p>
         </div>
@@ -52,7 +52,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
         {/* Partner Wi-Fi status pill */}
         <button
           onClick={onOpenPartnerAccess}
-          className={`neo-btn px-2.5 py-1 text-[11px] font-bold flex items-center gap-1 transition ${
+          className={`neo-btn px-1 md:px-2.5 py-1 text-[11px] font-bold flex items-center gap-1 transition ${
             partnerActive
               ? 'bg-[#C9F2D5] text-[#171717] hover:bg-[#b0f0c0]'
               : 'bg-[#D8ECFF] text-[#171717] hover:bg-[#c2e2ff]'
@@ -71,7 +71,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
         {/* AI Credit Pill */}
         <button
           onClick={onOpenWallet}
-          className="neo-btn bg-[#FBE7B2] hover:bg-[#f8dc94] text-[#171717] px-2.5 py-1 text-[11px] font-extrabold flex items-center gap-1"
+          className="neo-btn bg-[#FBE7B2] hover:bg-[#f8dc94] text-[#171717] px-1 md:px-2.5 py-1 text-[11px] font-extrabold flex items-center gap-1"
           title="Lihat AI Credit & Wallet"
         >
           <Zap className="w-3.5 h-3.5 text-amber-700 fill-amber-700" />
@@ -97,7 +97,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
         {/* Notification Bell */}
         <button
           onClick={onOpenNotifications}
-          className="relative w-8 h-8 rounded-xl bg-white dark:bg-[#2A2C28] border-2 border-[#171717] dark:border-[#555] neo-shadow-sm flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+          className="relative ml-1.5 max-[380px]:ml-0 md:ml-0 w-8 h-8 rounded-xl bg-white dark:bg-[#2A2C28] border-2 border-[#171717] dark:border-[#555] neo-shadow-sm flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition"
           aria-label="Notifikasi"
           title="Notifikasi"
         >

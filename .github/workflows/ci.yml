@@ -59,6 +59,8 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+      - name: Verify generated design token CSS
+        run: pnpm --filter @moreai/design-tokens tokens:check
       - run: pnpm build
   python-quality:
     needs: source-provenance
@@ -118,6 +120,8 @@ jobs:
       - run: uv sync --all-packages --all-extras --locked
       - name: Download and verify pinned shared font assets
         run: pnpm --filter @moreai/mobile fonts:download
+      - name: Verify Expo Metro runtime dependency cohort
+        run: node scripts/check-metro-runtime.mjs pnpm-lock.yaml
       - name: Start FastAPI and client apps
         run: |
           uv run --package moreai-api uvicorn moreai_api.main:app --host 127.0.0.1 --port 8000 >/tmp/moreai-api.log 2>&1 &
@@ -145,10 +149,10 @@ jobs:
           done
       - name: Validate Expo app configuration
         run: pnpm --filter @moreai/mobile exec expo config --json >/tmp/moreai-mobile-config.json
-      - name: Select Expo-compatible Node runtime
+      - name: Use repository Node runtime for Expo Metro
         uses: actions/setup-node@v4
         with:
-          node-version: 20.19.5
+          node-version: 22
       - name: Download and verify pinned native font assets
         run: pnpm --filter @moreai/mobile fonts:download
       - name: Bundle Android app through Expo Metro

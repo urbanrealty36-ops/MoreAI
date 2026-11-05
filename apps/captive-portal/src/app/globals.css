@@ -97,9 +97,11 @@
 }
 
 /* Keyboard-visible focus. The ink outline is visible on light and dark surfaces. */
-:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
-  outline: 3px solid var(--moreai-color-info);
-  outline-offset: 2px;
+html body :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible,
+html body :is(a, button, input, select, textarea, summary, [tabindex]):focus {
+  outline: 3px solid #245E9A !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 3px #245E9A !important;
 }
 
 /* Preserve content and disable non-essential motion when requested by the OS. */
@@ -113,3 +115,67 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* WCAG 2.2 AA contrast for small semantic and secondary text. */
+.text-emerald-600 {
+  color: var(--moreai-color-success-contrast);
+}
+
+.dark .text-emerald-600 {
+  color: var(--moreai-color-text);
+}
+
+.text-gray-500 {
+  color: var(--moreai-color-muted);
+}
+
+.dark .text-gray-500 {
+  color: var(--moreai-color-muted);
+}
+
+/* Preserve the reference component geometry while providing a real 44x44px
+   pointer target. The transparent pseudo-element is part of the button hitbox. */
+@media (max-width: 767px) {
+  :where(button, a[href], [role="button"], summary) {
+    position: relative;
+  }
+
+  :where(button, a[href], [role="button"], summary)::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, var(--moreai-target-mobile-min, 44px));
+    height: max(100%, var(--moreai-target-mobile-min, 44px));
+    transform: translate(-50%, -50%);
+    border-radius: inherit;
+    background: transparent;
+    pointer-events: auto;
+    z-index: 0;
+  }
+
+  :where(button, a[href], [role="button"], summary) > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    min-height: var(--moreai-input-height-min, 44px);
+  }
+}
+
+
+/* Phase 03 acceptance remediation: preserve the 44px mobile target baseline. */
+@media (max-width: 767px) {
+  :is(button, a[href], [role="button"], summary) {
+    min-height: max(44px, var(--moreai-target-mobile-min, 44px));
+  }
+}
+/* Small muted labels on the warm neutral surface meet WCAG AA. */
+.text-gray-400 { color: #66645E !important; }
+
+
+/* Muted labels switch ink with the active theme. */
+.dark .text-gray-400 { color: #D1D5DB !important; }

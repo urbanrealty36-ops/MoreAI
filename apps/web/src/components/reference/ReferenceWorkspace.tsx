@@ -108,7 +108,7 @@ export default function Home() {
       <nav className="bg-white dark:bg-[#1E201D] border-b-2 border-[#171717] dark:border-[#4A4A46] px-3 py-2 z-40 shrink-0">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
           {/* Surface View Switcher */}
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+          <div className="min-w-0 max-w-full flex-1 flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-2 pb-2 -my-1.5">
             {/* 1. Web Client PWA */}
             <button
               onClick={() => setCurrentSurface('client')}

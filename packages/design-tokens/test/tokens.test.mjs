@@ -56,6 +56,7 @@ test("CSS variables publish canonical token values", () => {
   assert.ok(tokenCss.includes("--moreai-color-ink: #171717"));
   assert.ok(tokenCss.includes("--moreai-color-canvas: #F7F4EC"));
   assert.ok(tokenCss.includes("--moreai-color-mint: #C9F2D5"));
+  assert.ok(tokenCss.includes("--moreai-color-success-contrast: #14532D"));
   assert.ok(tokenCss.includes("--moreai-shadow-md: 3.5px 3.5px 0 #171717"));
   assert.ok(tokenCss.includes("--moreai-shadow-button: 3px 3px 0 #171717"));
   assert.ok(tokenCss.includes("--moreai-font-size-display-xl: 48px"));
@@ -75,6 +76,17 @@ test("semantic foreground/background pairs meet WCAG AA normal-text contrast", (
   }
   assert.ok(contrastRatio(tokens.colors.core.ink, tokens.colors.core.canvas) >= 4.5);
   assert.ok(contrastRatio(tokens.colors.dark.text, tokens.colors.dark.background) >= 4.5);
+});
+
+test("high-contrast success text remains readable on mint and neutral surfaces", () => {
+  const foreground = tokens.colors.semantic.success.contrastForeground;
+  assert.ok(foreground, "high-contrast success foreground token is required");
+  for (const [name, surface] of Object.entries(tokens.colors.accent)) {
+    assert.ok(contrastRatio(foreground, surface) >= 4.5, `success contrast foreground on ${name} is below 4.5:1`);
+  }
+  for (const surface of [tokens.colors.core.white, tokens.colors.core.canvas]) {
+    assert.ok(contrastRatio(foreground, surface) >= 4.5);
+  }
 });
 
 test("dark ink remains readable on every pastel accent surface", () => {

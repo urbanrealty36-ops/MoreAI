@@ -97,9 +97,11 @@
 }
 
 /* Keyboard-visible focus. The ink outline is visible on light and dark surfaces. */
-:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
-  outline: 3px solid var(--moreai-color-info);
-  outline-offset: 2px;
+html body :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible,
+html body :is(a, button, input, select, textarea, summary, [tabindex]):focus {
+  outline: 3px solid #245E9A !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 0 3px #245E9A !important;
 }
 
 /* Preserve content and disable non-essential motion when requested by the OS. */
@@ -112,4 +114,97 @@
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* WCAG 2.2 AA contrast for small semantic and secondary text. */
+.text-emerald-600 {
+  color: var(--moreai-color-success-contrast);
+}
+
+.dark .text-emerald-600 {
+  color: var(--moreai-color-text);
+}
+
+.text-gray-500 {
+  color: var(--moreai-color-muted);
+}
+
+.dark .text-gray-500 {
+  color: var(--moreai-color-muted);
+}
+
+/* Preserve the reference component geometry while providing a real 44x44px
+   pointer target. The transparent pseudo-element is part of the button hitbox. */
+@media (max-width: 767px) {
+  :where(button, a[href], [role="button"], summary) {
+    position: relative;
+  }
+
+  :where(button, a[href], [role="button"], summary)::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, var(--moreai-target-mobile-min, 44px));
+    height: max(100%, var(--moreai-target-mobile-min, 44px));
+    transform: translate(-50%, -50%);
+    border-radius: inherit;
+    background: transparent;
+    pointer-events: auto;
+    z-index: 0;
+  }
+
+  :where(button, a[href], [role="button"], summary) > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    min-height: var(--moreai-input-height-min, 44px);
+  }
+}
+
+
+
+/* Phase 03 dark-surface contrast corrections for partner KPI cards. */
+.dark header {
+  background-color: var(--moreai-color-surface) !important;
+}
+.dark header .text-gray-500 { color: var(--moreai-color-text) !important; }
+.dark .bg-gray-50 { color: var(--moreai-color-text); }
+.dark .bg-gray-50 .text-lg,
+.dark .bg-gray-50 .text-base,
+.dark .bg-gray-50 .text-sm { color: var(--moreai-color-text) !important; }
+.dark [class~="bg-[#C9F2D5]/40"],
+.dark [class~="bg-[#FBE7B2]/40"] { color: #FFFFFF !important; }
+.dark [class~="bg-[#C9F2D5]/40"] *,
+.dark [class~="bg-[#FBE7B2]/40"] * { color: #FFFFFF !important; }
+.dark .text-emerald-800 { color: #A7F3D0 !important; }
+.dark .text-amber-900 { color: #FDE68A !important; }
+.dark .w-full > div > p:first-child { color: var(--moreai-color-text) !important; }
+
+
+/* Ensure inherited dark text never remains on dark KPI surfaces. */
+.dark .bg-gray-50 :is(p, span, strong, small, .text-lg, .text-base, .text-sm) {
+  color: var(--moreai-color-text) !important;
+}
+.dark [class~="bg-[#C9F2D5]/40"] :is(p, span, strong, small),
+.dark [class~="bg-[#FBE7B2]/40"] :is(p, span, strong, small) {
+  color: #FFFFFF !important;
+}
+.dark .text-gray-700 { color: #F7F4EC !important; }
+
+/* Pair dark ink with retained light status accents in dark mode. */
+.dark header h1,
+.dark .mb-2 > h3 { color: #F7F4EC !important; }
+.dark .my-3 { color: #7B3306 !important; }
+.dark .text-emerald-700 { color: #A7F3D0 !important; }
+.dark [class~="bg-[#C9F2D5]"] { color: #14532D !important; }
+
+
+/* Higher-specificity foreground for the mint status chips in dark cards. */
+.dark .bg-gray-50 [class~="bg-[#C9F2D5]"] {
+  color: #14532D !important;
 }

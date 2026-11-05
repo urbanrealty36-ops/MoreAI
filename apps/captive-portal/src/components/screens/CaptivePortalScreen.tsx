@@ -110,7 +110,7 @@ export const CaptivePortalScreen: React.FC<CaptivePortalScreenProps> = ({
         </div>
 
         {/* Venue Selector Switcher (Multi-tenant test toggle) */}
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar mb-3">
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar -mt-2.5 mb-0.5 pt-2.5 pb-2.5 md:mt-0 md:mb-3 md:py-0">
           <span className="text-[10px] font-black text-gray-500 shrink-0">Simulasi Venue:</span>
           {(['kemang', 'bogor', 'kampus'] as const).map((v) => (
             <button
@@ -371,16 +371,18 @@ export const CaptivePortalScreen: React.FC<CaptivePortalScreenProps> = ({
             )}
 
             {/* Terms and Consent Checkbox (PRD Section 17.4 #3) */}
-            <div className="mt-3 flex items-start gap-2 px-1">
-              <input
-                type="checkbox"
-                id="terms"
-                checked={agreeTerms}
-                onChange={(e) => setAgreeTerms(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded border-2 border-[#171717] text-emerald-600 focus:ring-0"
-              />
-              <label htmlFor="terms" className="text-[10px] text-gray-600 dark:text-gray-300 font-medium leading-tight">
-                Saya menyetujui <span className="font-bold underline text-[#171717] dark:text-white">Syarat & Ketentuan Jaringan Tamu</span> dan Kebijakan Privasi MoreAI serta venue {currentVenue.name}.
+            <div className="mt-3">
+              <label htmlFor="terms" className="flex min-h-[44px] items-start gap-2 px-1 text-[10px] text-gray-600 dark:text-gray-300 font-medium leading-tight">
+                <input
+                  type="checkbox"
+                  id="terms"
+                  checked={agreeTerms}
+                  onChange={(e) => setAgreeTerms(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 shrink-0 rounded border-2 border-[#171717] text-emerald-600 focus:ring-0"
+                />
+                <span className="flex-1">
+                  Saya menyetujui <span className="font-bold underline text-[#171717] dark:text-white">Syarat & Ketentuan Jaringan Tamu</span> dan Kebijakan Privasi MoreAI serta venue {currentVenue.name}.
+                </span>
               </label>
             </div>
 

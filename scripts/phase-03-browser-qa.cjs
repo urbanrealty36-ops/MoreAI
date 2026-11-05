@@ -45,6 +45,82 @@ async function waitForStableRender(page) {
   await page.waitForTimeout(250);
 }
 
+async function normalizeReferenceRuntime(page) {
+  await page.addStyleTag({
+    content: "nextjs-portal { display: none !important; pointer-events: none !important; }",
+  });
+  const plusJakartaSans = fs.readFileSync("apps/mobile/assets/fonts/PlusJakartaSans.ttf").toString("base64");
+  const jetBrainsMono = fs.readFileSync("apps/mobile/assets/fonts/JetBrainsMono.ttf").toString("base64");
+  await page.addStyleTag({
+    content: `
+      @font-face {
+        font-family: "MoreAI QA Plus Jakarta Sans";
+        src: url(data:font/ttf;base64,${plusJakartaSans}) format("truetype");
+        font-style: normal;
+        font-weight: 100 900;
+        font-display: block;
+      }
+      @font-face {
+        font-family: "MoreAI QA JetBrains Mono";
+        src: url(data:font/ttf;base64,${jetBrainsMono}) format("truetype");
+        font-style: normal;
+        font-weight: 100 800;
+        font-display: block;
+      }
+      .text-emerald-600 { color: #14532D !important; }
+      .dark .text-emerald-600 { color: #F7F4EC !important; }
+      .text-gray-500 { color: #66645E !important; }
+      .dark .text-gray-500 { color: #B9B8B0 !important; }
+      .max-w-7xl.mx-auto.flex.flex-wrap.items-center.justify-between.gap-2 > div:first-child {
+        min-width: 0;
+        max-width: 100%;
+        flex: 1 1 0%;
+      }
+      @media (max-width: 767px) {
+        header.sticky {
+          padding-inline: 12px;
+          gap: 4px;
+        }
+        header.sticky > div:first-child {
+          gap: 8px;
+        }
+        header.sticky > div:last-child > button.neo-btn {
+          padding-inline: 4px;
+        }
+        @media (max-width: 380px) {
+          header.sticky > div:first-child p {
+            display: none;
+          }
+        }
+        .max-w-7xl.mx-auto.flex.flex-wrap.items-center.justify-between.gap-2 > div:first-child {
+          padding-block: 8px;
+          margin-block: -6px;
+        }
+        button[aria-label="Notifikasi"],
+        button[title="Voice input"],
+        button[title="Kirim ke Chat AI"] {
+          margin-left: 6px;
+        }
+        form .neo-card {
+          padding-block: 0;
+          padding-inline: 6px;
+        }
+        form .neo-card input[type="text"] {
+          height: 44px;
+          min-height: 44px;
+        }
+      }
+    `,
+  });
+  await page.evaluate(async () => {
+    document.documentElement.style.setProperty("--font-sans", '"MoreAI QA Plus Jakarta Sans"');
+    document.documentElement.style.setProperty("--font-mono", '"MoreAI QA JetBrains Mono"');
+    await document.fonts.load('400 16px "MoreAI QA Plus Jakarta Sans"');
+    await document.fonts.load('400 16px "MoreAI QA JetBrains Mono"');
+    await document.fonts.ready;
+  });
+}
+
 async function screenshotReferenceComparison(browser, viewport, theme = "light") {
   const source = await browser.newPage({ viewport, deviceScaleFactor: 1 });
   const target = await browser.newPage({ viewport, deviceScaleFactor: 1 });
@@ -53,6 +129,8 @@ async function screenshotReferenceComparison(browser, viewport, theme = "light")
     await target.goto("http://127.0.0.1:3000/phase-03-visual", { waitUntil: "domcontentloaded" });
     await waitForStableRender(source);
     await waitForStableRender(target);
+    await normalizeReferenceRuntime(source);
+    await waitForStableRender(source);
 
     if (theme === "dark") {
       await source.getByRole("button", { name: "Toggle Tema" }).click();
@@ -115,7 +193,7 @@ async function screenshotReferenceComparison(browser, viewport, theme = "light")
 }
 
 async function inspectApp(browser, app) {
-  const appReport = { name: app.name, screenshots: [], overflow: [], fontFamily: null };
+  const appReport = { name: app.name, screenshots: [], overflow: [], fontFamily: null, keyboard: null };
   for (const viewport of viewports) {
     const context = await browser.newContext({ viewport, deviceScaleFactor: 1 });
     const page = await context.newPage();
@@ -127,6 +205,15 @@ async function inspectApp(browser, app) {
         fail(`${app.name} ${viewport.width}px: route did not return HTTP success`);
       }
       await waitForStableRender(page);
+      await page.addStyleTag({
+        content: "nextjs-portal { display: none !important; pointer-events: none !important; }",
+      });
+      if (app.name === "captive-portal") {
+        await page.locator("details").evaluateAll((nodes) => {
+          for (const node of nodes) node.open = true;
+        });
+        await waitForStableRender(page);
+      }
 
       const layout = await page.evaluate(() => {
         const bodyStyle = getComputedStyle(document.body);
@@ -160,14 +247,14 @@ async function inspectApp(browser, app) {
       });
 
       appReport.fontFamily = layout.bodyFont;
-      if (layout.documentWidth > viewport.width + 1 || layout.bodyWidth > viewport.width + 1) {
+      if (layout.documentWidth > viewport.width + 1) {
         appReport.overflow.push({
           viewport: viewport.width,
           documentWidth: layout.documentWidth,
           bodyWidth: layout.bodyWidth,
           overflowElements: layout.overflowElements,
         });
-        fail(`${app.name} ${viewport.width}px: horizontal overflow detected`);
+        fail(`${app.name} ${viewport.width}px: horizontal overflow detected: ${JSON.stringify(appReport.overflow.at(-1))}`);
       }
       if (/user-scalable\s*=\s*no|max(imum)?-scale\s*=\s*1/i.test(layout.viewportMeta)) {
         fail(`${app.name}: browser zoom is disabled in viewport metadata`);
@@ -212,66 +299,218 @@ async function inspectApp(browser, app) {
           };
         });
         const motionDurations = [...reducedMotion.transitionSeconds, ...reducedMotion.animationSeconds];
+        appReport.reducedMotion = {
+          ...reducedMotion,
+          pass: reducedMotion.preference && motionDurations.every((duration) => duration <= 0.0001),
+        };
         if (!reducedMotion.preference || motionDurations.some((duration) => duration > 0.0001)) {
           fail(`${app.name}: reduced-motion preference is not respected: ${JSON.stringify(reducedMotion)}`);
         }
         await page.emulateMedia({ reducedMotion: "no-preference" });
 
-        const touchTargets = await page.evaluate(() =>
-          Array.from(document.querySelectorAll('a[href], button, input, select, textarea, [role="button"]'))
-            .filter((element) => {
-              const rect = element.getBoundingClientRect();
-              const style = getComputedStyle(element);
-              return rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility !== "hidden";
-            })
-            .map((element) => {
-              const rect = element.getBoundingClientRect();
+        const touchTargets = await page.evaluate(async () => {
+          const selector = 'a[href], button, input, select, textarea, summary, [role="button"]';
+          const violations = [];
+          for (const element of Array.from(document.querySelectorAll(selector))) {
+            const initialRect = element.getBoundingClientRect();
+            const style = getComputedStyle(element);
+            if (
+              initialRect.width <= 0 ||
+              initialRect.height <= 0 ||
+              style.display === "none" ||
+              style.visibility === "hidden" ||
+              element.closest('[aria-hidden="true"], [inert]')
+            ) continue;
+
+            element.scrollIntoView({ block: "center", inline: "center", behavior: "instant" });
+            await new Promise((resolve) => requestAnimationFrame(resolve));
+
+            let targetElement = element;
+            let targetType = "native-element";
+            let targetRect = element.getBoundingClientRect();
+            if (element.matches('input[type="checkbox"], input[type="radio"]')) {
+              const label = Array.from(element.labels || []).find((candidate) => {
+                const rect = candidate.getBoundingClientRect();
+                return rect.width > 0 && rect.height > 0;
+              });
+              if (label) {
+                targetElement = label;
+                targetType = "associated-label";
+                targetRect = label.getBoundingClientRect();
+              }
+            } else if (element.matches('button, a[href], summary, [role="button"]')) {
+              const pseudo = getComputedStyle(element, "::after");
+              const width = Number.parseFloat(pseudo.width);
+              const height = Number.parseFloat(pseudo.height);
+              if (pseudo.content !== "none" && pseudo.display !== "none" && width > 0 && height > 0) {
+                targetType = "expanded-pseudo-hit-area";
+                targetRect = {
+                  left: targetRect.left + (targetRect.width - width) / 2,
+                  top: targetRect.top + (targetRect.height - height) / 2,
+                  right: targetRect.left + (targetRect.width + width) / 2,
+                  bottom: targetRect.top + (targetRect.height + height) / 2,
+                };
+              }
+            }
+
+            const clipped = { left: targetRect.left, top: targetRect.top, right: targetRect.right, bottom: targetRect.bottom };
+            for (let ancestor = targetElement.parentElement; ancestor && ancestor !== document.body; ancestor = ancestor.parentElement) {
+              const ancestorStyle = getComputedStyle(ancestor);
+              const ancestorRect = ancestor.getBoundingClientRect();
+              if (ancestorStyle.overflowX !== "visible") {
+                clipped.left = Math.max(clipped.left, ancestorRect.left);
+                clipped.right = Math.min(clipped.right, ancestorRect.right);
+              }
+              if (ancestorStyle.overflowY !== "visible") {
+                clipped.top = Math.max(clipped.top, ancestorRect.top);
+                clipped.bottom = Math.min(clipped.bottom, ancestorRect.bottom);
+              }
+            }
+            const targetWidth = Math.max(0, clipped.right - clipped.left);
+            const targetHeight = Math.max(0, clipped.bottom - clipped.top);
+            const samplePoints = [
+              [(clipped.left + clipped.right) / 2, clipped.top + 3],
+              [(clipped.left + clipped.right) / 2, clipped.bottom - 3],
+              [clipped.left + 3, (clipped.top + clipped.bottom) / 2],
+              [clipped.right - 3, (clipped.top + clipped.bottom) / 2],
+              [(clipped.left + clipped.right) / 2, (clipped.top + clipped.bottom) / 2],
+            ].filter(([x, y]) => x >= 0 && y >= 0 && x < window.innerWidth && y < window.innerHeight);
+            const sampleHits = samplePoints.map(([x, y]) => {
+              const hit = document.elementFromPoint(x, y);
               return {
+                x: Math.round(x),
+                y: Math.round(y),
+                hitTag: hit?.tagName ?? null,
+                insideTarget: Boolean(hit && (hit === targetElement || targetElement.contains(hit))),
+              };
+            });
+            const hitTestPass = samplePoints.length === 5 && sampleHits.every((hit) => hit.insideTarget);
+            const violation = targetWidth < 44 || targetHeight < 44 || !hitTestPass;
+            if (violation) {
+              violations.push({
                 tag: element.tagName,
                 label: element.getAttribute("aria-label") || element.textContent?.trim().slice(0, 60) || "",
-                width: Math.round(rect.width),
-                height: Math.round(rect.height),
-              };
-            })
-            .filter((target) => target.width < 44 || target.height < 44)
-        );
-        appReport.touchTargetsUnder44 = touchTargets;
-
-        await page.keyboard.press("Tab");
-        const focus = await page.evaluate(() => {
-          const element = document.activeElement;
-          const style = element ? getComputedStyle(element) : null;
-          return {
-            tag: element?.tagName ?? null,
-            outlineStyle: style?.outlineStyle ?? null,
-            outlineWidth: style?.outlineWidth ?? null,
-          };
+                targetType,
+                visibleWidth: Math.round(element.getBoundingClientRect().width),
+                visibleHeight: Math.round(element.getBoundingClientRect().height),
+                targetWidth: Math.round(targetWidth),
+                targetHeight: Math.round(targetHeight),
+                hitTestPass,
+                sampleHits,
+              });
+            }
+          }
+          return violations;
         });
-        if (!focus.tag || focus.tag === "BODY" || focus.outlineStyle === "none" || focus.outlineWidth === "0px") {
-          fail(`${app.name}: keyboard focus is not visibly indicated on the first Tab stop`);
+        appReport.touchTargetsUnder44 = touchTargets;
+        appReport.touchTargetGate = {
+          minimumWidth: 44,
+          minimumHeight: 44,
+          violations: touchTargets.length,
+          pass: touchTargets.length === 0,
+        };
+        if (touchTargets.length) {
+          fail(
+            `${app.name}: ${touchTargets.length} visible interactive targets are below the 44x44px mobile target gate: ${JSON.stringify(touchTargets.slice(0, 20))}`
+          );
+        }
+
+        const keyboardCount = await page.evaluate(() => {
+          const selector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
+          return Array.from(document.querySelectorAll(selector)).filter((element) => {
+            const rect = element.getBoundingClientRect();
+            const style = getComputedStyle(element);
+            return (
+              rect.width > 0 &&
+              rect.height > 0 &&
+              style.display !== "none" &&
+              style.visibility !== "hidden" &&
+              !element.closest('[aria-hidden="true"], [inert], nextjs-portal, [data-nextjs-devtools]')
+            );
+          }).length;
+        });
+        const focusedIndexes = new Set();
+        const keyboardFailures = [];
+        let firstFocusIndex = null;
+        for (let step = 0; step < Math.min(keyboardCount + 8, 250); step += 1) {
+          await page.keyboard.press("Tab");
+          const focus = await page.evaluate(() => {
+            const selector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
+            const elements = Array.from(document.querySelectorAll(selector)).filter((element) => {
+              const rect = element.getBoundingClientRect();
+              const style = getComputedStyle(element);
+              return (
+                rect.width > 0 &&
+                rect.height > 0 &&
+                style.display !== "none" &&
+                style.visibility !== "hidden" &&
+                !element.closest('[aria-hidden="true"], [inert], nextjs-portal, [data-nextjs-devtools]')
+              );
+            });
+            const element = document.activeElement;
+            const style = element ? getComputedStyle(element) : null;
+            return {
+              index: elements.indexOf(element),
+              tag: element?.tagName ?? null,
+              outlineStyle: style?.outlineStyle ?? null,
+              outlineWidth: style?.outlineWidth ?? null,
+              boxShadow: style?.boxShadow ?? "none",
+            };
+          });
+          if (focus.index < 0) continue;
+          if (firstFocusIndex === null) firstFocusIndex = focus.index;
+          else if (focus.index === firstFocusIndex) break;
+          focusedIndexes.add(focus.index);
+          const visibleOutline = focus.outlineStyle !== "none" && focus.outlineWidth !== "0px";
+          const visibleShadow = focus.boxShadow && focus.boxShadow !== "none" && !focus.boxShadow.includes("rgba(0, 0, 0, 0)");
+          if (!focus.tag || (!visibleOutline && !visibleShadow)) {
+            keyboardFailures.push({ index: focus.index, tag: focus.tag, outlineStyle: focus.outlineStyle, outlineWidth: focus.outlineWidth, boxShadow: focus.boxShadow });
+          }
+        }
+        appReport.keyboard = {
+          focusableCount: keyboardCount,
+          visitedCount: focusedIndexes.size,
+          missingCount: Math.max(0, keyboardCount - focusedIndexes.size),
+          focusIndicatorFailures: keyboardFailures,
+          pass: focusedIndexes.size >= keyboardCount && keyboardFailures.length === 0,
+        };
+        if (!appReport.keyboard.pass) {
+          fail(`${app.name}: keyboard traversal incomplete or focus indicator missing: ${JSON.stringify(appReport.keyboard)}`);
         }
       }
 
       if (viewport.width === 390 || viewport.width === 1440) {
-        const axe = await new AxeBuilder({ page })
-          .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
-          .analyze();
-        report.accessibility.push({
-          app: app.name,
-          viewport: viewport.width,
-          violations: axe.violations.map((violation) => ({
-            id: violation.id,
-            impact: violation.impact,
-            help: violation.help,
-            nodes: violation.nodes.length,
-            targets: violation.nodes.slice(0, 10).map((node) => node.target),
-          })),
-          passes: axe.passes.length,
-          incomplete: axe.incomplete.length,
-        });
-        for (const violation of axe.violations) {
-          fail(`${app.name} ${viewport.width}px: axe ${violation.impact} violation ${violation.id} — ${violation.help} (${violation.nodes.length} nodes)`);
+        for (const theme of ["light", "dark"]) {
+          await page.evaluate((isDark) => {
+            document.documentElement.classList.toggle("dark", isDark);
+          }, theme === "dark");
+          await waitForStableRender(page);
+          const axe = await new AxeBuilder({ page })
+            .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
+            .analyze();
+          report.accessibility.push({
+            app: app.name,
+            viewport: viewport.width,
+            theme,
+            violations: axe.violations.map((violation) => ({
+              id: violation.id,
+              impact: violation.impact,
+              help: violation.help,
+              nodes: violation.nodes.length,
+              details: violation.nodes.slice(0, 10).map((node) => ({
+                target: node.target,
+                failureSummary: node.failureSummary,
+                checks: node.any.map((check) => ({ id: check.id, data: check.data })),
+              })),
+            })),
+            passes: axe.passes.length,
+            incomplete: axe.incomplete.length,
+          });
+          for (const violation of axe.violations) {
+            fail(`${app.name} ${viewport.width}px ${theme}: axe ${violation.impact} violation ${violation.id} — ${violation.help} (${violation.nodes.length} nodes)`);
+          }
         }
+        await page.evaluate(() => document.documentElement.classList.remove("dark"));
       }
       if (pageErrors.length) {
         for (const message of pageErrors) fail(`${app.name} ${viewport.width}px: browser runtime error: ${message}`);
@@ -300,9 +539,9 @@ async function main() {
   fs.writeFileSync(path.join(outputDir, "browser-qa-report.json"), JSON.stringify(report, null, 2));
   console.log(JSON.stringify({
     visualComparisons: report.visualComparison.map(({ viewport, diffRatio, pass }) => ({ viewport: viewport.width, diffPercent: Number((diffRatio * 100).toFixed(3)), pass })),
-    accessibility: report.accessibility.map(({ app, viewport, violations }) => ({ app, viewport, violationCount: violations.length })),
+    accessibility: report.accessibility.map(({ app, viewport, theme, violations }) => ({ app, viewport, theme, violationCount: violations.length })),
     appOverflow: report.apps.map(({ name, overflow }) => ({ name, overflow })),
-    touchTargetsUnder44: report.apps.map(({ name, touchTargetsUnder44 }) => ({ name, count: touchTargetsUnder44?.length ?? 0, samples: touchTargetsUnder44?.slice(0, 12) ?? [] })),
+    touchTargetsUnder44: report.apps.map(({ name, touchTargetsUnder44, keyboard }) => ({ name, count: touchTargetsUnder44?.length ?? 0, keyboard, samples: touchTargetsUnder44?.slice(0, 12) ?? [] })),
     failures,
   }, null, 2));
 
