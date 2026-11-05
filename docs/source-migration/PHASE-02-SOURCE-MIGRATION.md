@@ -1,6 +1,6 @@
 # Phase 02 — Source Migration
 
-**Status:** PASSED — complete source migration and scoped integration verified by final CI run `42013366622` on commit `4eb0632069c1071faa454a05e2814c1d20cbfa29`.  
+**Status:** PASSED — complete source migration and scoped integration verified by final CI run `42013960662` on final branch head `f8c20c6ad61214451f6a67910727fa46ab860d80`.  
 **Scope authority:** Official Phase Implementation Plan + owner scope clarification recorded in ADR-0005.  
 **Implementation branch:** `phase-02-source-migration-final`  
 **No production deployment, staging environment, live network/device test, or production database mutation was performed.**
@@ -85,7 +85,7 @@ The detailed row-level map is `docs/source-migration/source-target-map-v2.csv`. 
 | Dependency and secret checks | Lockfile, pnpm audit, pip audit, CodeQL, Gitleaks and documented exact-fingerprint exceptions | PASS |
 | No later-phase domain expansion | ADR-0005 scope boundary; later-domain changes excluded from this scoped branch | PASS |
 
-**Final CI status:** PASS. Run `42013366622` completed successfully on commit `4eb0632069c1071faa454a05e2814c1d20cbfa29`. All jobs passed: lockfile validation, source provenance, Python quality/tests, Web lint/typecheck/tests/build, CodeQL, pnpm audit, pip audit, Gitleaks with documented fingerprint-only exceptions, and runtime smoke. No staging or production deployment was performed.
+**Final CI status:** PASS. Run `42013960662` completed successfully on final branch head `f8c20c6ad61214451f6a67910727fa46ab860d80`. All jobs passed: lockfile validation, source provenance, Python quality/tests, Web lint/typecheck/tests/build, CodeQL, pnpm audit, pip audit, Gitleaks with documented fingerprint-only exceptions, and runtime smoke. No staging or production deployment was performed.
 
 ## 8. Explicit exclusions and deferred work
 
@@ -106,7 +106,7 @@ These are not Phase 02 blockers under the current owner-approved scope boundary.
 ## 9. Gate decision
 
 **SOURCE MIGRATION IMPLEMENTATION: COMPLETE.**  
-**PHASE 02 ACCEPTANCE: PASSED on CI run `42013366622`.**
+**PHASE 02 ACCEPTANCE: PASSED on final-head CI run `42013960662`.**
 
 The next official phase after acceptance is **Phase 03 — Design System & UI Foundations**. Do not begin it before the final Phase 02 CI and review gates pass.
 
@@ -121,4 +121,5 @@ The next official phase after acceptance is **Phase 03 — Design System & UI Fo
 - Formatting and restored Phase 01 workspace dependency lock: `5f80fc241ccd88b74fac86783ffa9ac1b2a22249`.
 - Fail-closed preview API adapter and bounded engine adapter: `fe1c4fe90113e2af81b361fc184ba494ea6047fa`.
 - Secret-scan review and exact-fingerprint exceptions for expired upstream demo JWT/Git SHA false positives: `e544e9155df3b54071c309f987198e49f823662b`.
+- Final Phase 02 report/context CI run on current branch head: `42013960662`.
 - Final integration mapping and non-operational UI/API boundary: `065684fd278acd397cf19c25202e861d7174ff41`.
