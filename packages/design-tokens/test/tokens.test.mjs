@@ -2,7 +2,6 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-const root = new URL("../../../", import.meta.url);
 const tokens = JSON.parse(readFileSync(new URL("../tokens.json", import.meta.url), "utf8"));
 const tokenCss = readFileSync(new URL("../src/tokens.css", import.meta.url), "utf8");
 const sourceCss = readFileSync(new URL("../../../vendor/reference-ui/app/globals.css", import.meta.url), "utf8");

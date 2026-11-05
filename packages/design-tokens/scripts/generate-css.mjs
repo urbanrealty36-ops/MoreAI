@@ -6,7 +6,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const tokenPath = path.join(root, "tokens.json");
 const outputPath = path.join(root, "src/tokens.css");
 
-const kebab = (value) => value.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+const kebab = (value) => value.replace(/([a-z])([0-9])/g, "$1-$2").replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
 
 export function generateCss(tokens) {
   const c = tokens.colors;
