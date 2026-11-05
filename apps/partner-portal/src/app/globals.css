@@ -202,3 +202,9 @@ html body :is(a, button, input, select, textarea, summary, [tabindex]):focus {
 .dark .my-3 { color: #7B3306 !important; }
 .dark .text-emerald-700 { color: #A7F3D0 !important; }
 .dark [class~="bg-[#C9F2D5]"] { color: #14532D !important; }
+
+
+/* Higher-specificity foreground for the mint status chips in dark cards. */
+.dark .bg-gray-50 [class~="bg-[#C9F2D5]"] {
+  color: #14532D !important;
+}
