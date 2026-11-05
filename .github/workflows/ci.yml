@@ -150,7 +150,7 @@ jobs:
       - name: Download and verify pinned native font assets
         run: pnpm --filter @moreai/mobile fonts:download
       - name: Bundle Android app through Expo Metro
-        run: pnpm --filter @moreai/mobile exec expo export --platform android --output-dir /tmp/moreai-mobile-export-android
+        run: EXPO_DEBUG=1 NODE_OPTIONS=--trace-uncaught pnpm --filter @moreai/mobile exec expo export --platform android --output-dir /tmp/moreai-mobile-export-android
       - name: Bundle iOS app through Expo Metro
         run: pnpm --filter @moreai/mobile exec expo export --platform ios --output-dir /tmp/moreai-mobile-export-ios
 
