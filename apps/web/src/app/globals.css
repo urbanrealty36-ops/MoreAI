@@ -97,9 +97,11 @@
 }
 
 /* Keyboard-visible focus. The ink outline is visible on light and dark surfaces. */
-html body :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+html body :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible,
+html body :is(a, button, input, select, textarea, summary, [tabindex]):focus {
   outline: 3px solid #245E9A !important;
   outline-offset: 3px !important;
+  box-shadow: 0 0 0 3px #245E9A !important;
 }
 
 /* Preserve content and disable non-essential motion when requested by the OS. */
@@ -182,10 +184,11 @@ html body :is(a, button, input, select, textarea, summary, [tabindex]):focus-vis
 .dark header .text-gray-500 {
   color: var(--moreai-color-text) !important;
 }
-.dark h2 > span { color: #4B5563 !important; }
-.dark [class~="bg-[#F7F4EC]"] .text-gray-500 { color: #66645E !important; }
 
-/* Dark-mode labels on intentionally light source panels retain dark ink. */
-.dark [class~="bg-[#F7F4EC]"] :is(.text-gray-500, .text-gray-600, h2 > span) {
-  color: #4B5563 !important;
-}
+/* Dark mode keeps muted labels readable on dark app surfaces. */
+.dark .text-gray-600 { color: #D1D5DB !important; }
+.dark .text-gray-500 { color: #B9B8B0 !important; }
+.dark .neo-card .text-lg { color: #F7F4EC !important; }
+.dark .neo-card[class~="bg-[#FBE7B2]"] .text-lg { color: #171717 !important; }
+.dark .neo-card[class~="bg-[#D8ECFF]"] .text-lg { color: #171717 !important; }
+
