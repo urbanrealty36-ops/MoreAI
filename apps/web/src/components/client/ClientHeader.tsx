@@ -36,7 +36,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
           <MascotIcon size={32} mood={partnerActive ? 'excited' : 'happy'} />
         </div>
         <div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 max-[380px]:gap-0.5">
             <span className="font-black text-base tracking-tight text-[#171717] dark:text-[#F7F4EC]">
               More<span className="text-emerald-600 dark:text-emerald-400">AI</span>
             </span>
@@ -97,7 +97,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
         {/* Notification Bell */}
         <button
           onClick={onOpenNotifications}
-          className="relative ml-1.5 md:ml-0 w-8 h-8 rounded-xl bg-white dark:bg-[#2A2C28] border-2 border-[#171717] dark:border-[#555] neo-shadow-sm flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+          className="relative ml-1.5 max-[380px]:ml-0 md:ml-0 w-8 h-8 rounded-xl bg-white dark:bg-[#2A2C28] border-2 border-[#171717] dark:border-[#555] neo-shadow-sm flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition"
           aria-label="Notifikasi"
           title="Notifikasi"
         >
