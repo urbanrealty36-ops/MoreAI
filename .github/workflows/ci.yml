@@ -116,6 +116,8 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - run: pnpm install --frozen-lockfile
       - run: uv sync --all-packages --all-extras --locked
+      - name: Download and verify pinned shared font assets
+        run: pnpm --filter @moreai/mobile fonts:download
       - name: Start FastAPI and client apps
         run: |
           uv run --package moreai-api uvicorn moreai_api.main:app --host 127.0.0.1 --port 8000 >/tmp/moreai-api.log 2>&1 &
@@ -168,6 +170,8 @@ jobs:
         with:
           node-version: 22
       - run: pnpm install --frozen-lockfile
+      - name: Download and verify pinned shared font assets
+        run: pnpm --filter @moreai/mobile fonts:download
       - name: Prepare immutable source reference runtime
         run: |
           ln -s ../../apps/web/node_modules vendor/reference-ui/node_modules
