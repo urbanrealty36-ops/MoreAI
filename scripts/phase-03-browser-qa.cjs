@@ -117,7 +117,8 @@ async function screenshotReferenceComparison(browser, viewport, theme = "light")
 async function inspectApp(browser, app) {
   const appReport = { name: app.name, screenshots: [], overflow: [], fontFamily: null };
   for (const viewport of viewports) {
-    const page = await browser.newPage({ viewport, deviceScaleFactor: 1 });
+    const context = await browser.newContext({ viewport, deviceScaleFactor: 1 });
+    const page = await context.newPage();
     const pageErrors = [];
     page.on("pageerror", (error) => pageErrors.push(error.message));
     try {
@@ -134,6 +135,24 @@ async function inspectApp(browser, app) {
           viewportWidth: window.innerWidth,
           documentWidth: document.documentElement.scrollWidth,
           bodyWidth: document.body.scrollWidth,
+          overflowElements: Array.from(document.querySelectorAll("body *"))
+            .map((element) => {
+              const rect = element.getBoundingClientRect();
+              const style = getComputedStyle(element);
+              return {
+                tag: element.tagName,
+                id: element.id,
+                className: typeof element.className === "string" ? element.className.slice(0, 160) : "",
+                width: Math.round(rect.width),
+                left: Math.round(rect.left),
+                right: Math.round(rect.right),
+                scrollWidth: element.scrollWidth,
+                overflowX: style.overflowX,
+              };
+            })
+            .filter((element) => element.right > window.innerWidth + 1 || element.left < -1 || element.scrollWidth > element.width + 2)
+            .sort((a, b) => b.right - a.right)
+            .slice(0, 20),
           bodyFont: bodyStyle.fontFamily,
           viewportMeta,
           title: document.title,
@@ -146,6 +165,7 @@ async function inspectApp(browser, app) {
           viewport: viewport.width,
           documentWidth: layout.documentWidth,
           bodyWidth: layout.bodyWidth,
+          overflowElements: layout.overflowElements,
         });
         fail(`${app.name} ${viewport.width}px: horizontal overflow detected`);
       }
@@ -257,7 +277,7 @@ async function inspectApp(browser, app) {
         for (const message of pageErrors) fail(`${app.name} ${viewport.width}px: browser runtime error: ${message}`);
       }
     } finally {
-      await page.close();
+      await context.close();
     }
   }
   report.apps.push(appReport);
