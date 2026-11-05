@@ -22,14 +22,12 @@ const styles = StyleSheet.create({
   },
   title: {
     color: nativeTheme.colors.ink,
-    fontFamily: nativeTheme.typography.fontFamily.sans,
     fontSize: nativeTheme.typography.size.heading2,
     fontWeight: "800",
   },
   description: {
     marginTop: nativeTheme.spacing.sm,
     color: nativeTheme.colors.muted,
-    fontFamily: nativeTheme.typography.fontFamily.sans,
     fontSize: nativeTheme.typography.size.bodySmall,
     textAlign: "center",
   },
