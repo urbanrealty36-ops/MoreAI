@@ -110,7 +110,7 @@ export const CaptivePortalScreen: React.FC<CaptivePortalScreenProps> = ({
         </div>
 
         {/* Venue Selector Switcher (Multi-tenant test toggle) */}
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar mb-3 pt-2.5 pb-2.5 -my-2.5 md:my-0 md:py-0">
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar -mt-2.5 mb-0.5 pt-2.5 pb-2.5 md:mt-0 md:mb-3 md:py-0">
           <span className="text-[10px] font-black text-gray-500 shrink-0">Simulasi Venue:</span>
           {(['kemang', 'bogor', 'kampus'] as const).map((v) => (
             <button
