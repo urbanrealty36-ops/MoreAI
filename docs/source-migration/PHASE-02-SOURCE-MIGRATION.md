@@ -120,4 +120,5 @@ The next official phase after acceptance is **Phase 03 — Design System & UI Fo
 - Final source mapping and dependency deferral note: `9e13bfee8e0db78ad1e6dcd1e223eaf185bc8467`.
 - Formatting and restored Phase 01 workspace dependency lock: `5f80fc241ccd88b74fac86783ffa9ac1b2a22249`.
 - Fail-closed preview API adapter and bounded engine adapter: `fe1c4fe90113e2af81b361fc184ba494ea6047fa`.
+- Secret-scan review and exact-fingerprint exceptions for expired upstream demo JWT/Git SHA false positives: `e544e9155df3b54071c309f987198e49f823662b`.
 - Final integration mapping and non-operational UI/API boundary: `065684fd278acd397cf19c25202e861d7174ff41`.
