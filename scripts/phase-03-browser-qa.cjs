@@ -151,7 +151,7 @@ async function screenshotReferenceComparison(browser, viewport, theme = "light")
 }
 
 async function inspectApp(browser, app) {
-  const appReport = { name: app.name, screenshots: [], overflow: [], fontFamily: null };
+  const appReport = { name: app.name, screenshots: [], overflow: [], fontFamily: null, keyboard: null };
   for (const viewport of viewports) {
     const context = await browser.newContext({ viewport, deviceScaleFactor: 1 });
     const page = await context.newPage();
@@ -353,18 +353,64 @@ async function inspectApp(browser, app) {
           );
         }
 
-        await page.keyboard.press("Tab");
-        const focus = await page.evaluate(() => {
-          const element = document.activeElement;
-          const style = element ? getComputedStyle(element) : null;
-          return {
-            tag: element?.tagName ?? null,
-            outlineStyle: style?.outlineStyle ?? null,
-            outlineWidth: style?.outlineWidth ?? null,
-          };
+        const keyboardCount = await page.evaluate(() => {
+          const selector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
+          return Array.from(document.querySelectorAll(selector)).filter((element) => {
+            const rect = element.getBoundingClientRect();
+            const style = getComputedStyle(element);
+            return (
+              rect.width > 0 &&
+              rect.height > 0 &&
+              style.display !== "none" &&
+              style.visibility !== "hidden" &&
+              !element.closest('[aria-hidden="true"], [inert], nextjs-portal, [data-nextjs-devtools]')
+            );
+          }).length;
         });
-        if (!focus.tag || focus.tag === "BODY" || focus.outlineStyle === "none" || focus.outlineWidth === "0px") {
-          fail(`${app.name}: keyboard focus is not visibly indicated on the first Tab stop`);
+        const focusedIndexes = new Set();
+        const keyboardFailures = [];
+        let firstFocusIndex = null;
+        for (let step = 0; step < Math.min(keyboardCount + 8, 250); step += 1) {
+          await page.keyboard.press("Tab");
+          const focus = await page.evaluate(() => {
+            const selector = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
+            const elements = Array.from(document.querySelectorAll(selector)).filter((element) => {
+              const rect = element.getBoundingClientRect();
+              const style = getComputedStyle(element);
+              return (
+                rect.width > 0 &&
+                rect.height > 0 &&
+                style.display !== "none" &&
+                style.visibility !== "hidden" &&
+                !element.closest('[aria-hidden="true"], [inert], nextjs-portal, [data-nextjs-devtools]')
+              );
+            });
+            const element = document.activeElement;
+            const style = element ? getComputedStyle(element) : null;
+            return {
+              index: elements.indexOf(element),
+              tag: element?.tagName ?? null,
+              outlineStyle: style?.outlineStyle ?? null,
+              outlineWidth: style?.outlineWidth ?? null,
+            };
+          });
+          if (focus.index < 0) continue;
+          if (firstFocusIndex === null) firstFocusIndex = focus.index;
+          else if (focus.index === firstFocusIndex) break;
+          focusedIndexes.add(focus.index);
+          if (!focus.tag || focus.outlineStyle === "none" || focus.outlineWidth === "0px") {
+            keyboardFailures.push({ index: focus.index, tag: focus.tag, outlineStyle: focus.outlineStyle, outlineWidth: focus.outlineWidth });
+          }
+        }
+        appReport.keyboard = {
+          focusableCount: keyboardCount,
+          visitedCount: focusedIndexes.size,
+          missingCount: Math.max(0, keyboardCount - focusedIndexes.size),
+          focusIndicatorFailures: keyboardFailures,
+          pass: focusedIndexes.size >= keyboardCount && keyboardFailures.length === 0,
+        };
+        if (!appReport.keyboard.pass) {
+          fail(`${app.name}: keyboard traversal incomplete or focus indicator missing: ${JSON.stringify(appReport.keyboard)}`);
         }
       }
 
@@ -428,9 +474,9 @@ async function main() {
   fs.writeFileSync(path.join(outputDir, "browser-qa-report.json"), JSON.stringify(report, null, 2));
   console.log(JSON.stringify({
     visualComparisons: report.visualComparison.map(({ viewport, diffRatio, pass }) => ({ viewport: viewport.width, diffPercent: Number((diffRatio * 100).toFixed(3)), pass })),
-    accessibility: report.accessibility.map(({ app, viewport, violations }) => ({ app, viewport, violationCount: violations.length })),
+    accessibility: report.accessibility.map(({ app, viewport, theme, violations }) => ({ app, viewport, theme, violationCount: violations.length })),
     appOverflow: report.apps.map(({ name, overflow }) => ({ name, overflow })),
-    touchTargetsUnder44: report.apps.map(({ name, touchTargetsUnder44 }) => ({ name, count: touchTargetsUnder44?.length ?? 0, samples: touchTargetsUnder44?.slice(0, 12) ?? [] })),
+    touchTargetsUnder44: report.apps.map(({ name, touchTargetsUnder44, keyboard }) => ({ name, count: touchTargetsUnder44?.length ?? 0, keyboard, samples: touchTargetsUnder44?.slice(0, 12) ?? [] })),
     failures,
   }, null, 2));
 
