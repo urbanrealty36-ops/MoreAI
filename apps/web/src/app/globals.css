@@ -98,8 +98,8 @@
 
 /* Keyboard-visible focus. The ink outline is visible on light and dark surfaces. */
 :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
-  outline: 3px solid var(--moreai-color-info);
-  outline-offset: 2px;
+  outline: 3px solid var(--moreai-color-info) !important;
+  outline-offset: 2px !important;
 }
 
 /* Preserve content and disable non-essential motion when requested by the OS. */
