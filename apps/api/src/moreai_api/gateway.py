@@ -54,7 +54,9 @@ def canonical_gateway_payload(payload: dict[str, Any]) -> bytes:
     ).encode("utf-8")
 
 
-def verify_gateway_signature(payload: dict[str, Any], signature: str, secret: str) -> bool:
+def verify_gateway_signature(
+    payload: dict[str, Any], signature: str, secret: str
+) -> bool:
     if len(secret.encode("utf-8")) < 32:
         return False
     expected = hmac.new(
