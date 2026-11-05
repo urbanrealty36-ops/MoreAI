@@ -1,15 +1,9 @@
 @import "tailwindcss";
 @import "../../../../packages/design-tokens/src/tokens.css";
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap");
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
-  :root {
-    --font-sans: var(--moreai-font-sans);
-    --font-mono: var(--moreai-font-mono);
-  }
-
   body {
     font-family: var(--font-sans);
     color: var(--moreai-color-ink);
@@ -23,7 +17,7 @@
   }
 }
 
-/* Source-compatible Neo-Brutalist utilities backed by shared tokens. */
+/* Original reference utilities, with values sourced from shared tokens. */
 .neo-border {
   border: var(--moreai-border-standard) solid var(--moreai-color-ink);
 }
@@ -102,12 +96,13 @@
   padding-top: env(safe-area-inset-top, 0.5rem);
 }
 
-/* Keyboard-visible focus and user-requested reduced-motion support. */
-:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+/* Keyboard-visible focus. The ink outline is visible on light and dark surfaces. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
   outline: 3px solid var(--moreai-color-info);
   outline-offset: 2px;
 }
 
+/* Preserve content and disable non-essential motion when requested by the OS. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
