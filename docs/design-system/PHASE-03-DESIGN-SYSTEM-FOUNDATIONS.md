@@ -21,6 +21,8 @@
 - `packages/design-tokens/test/tokens.test.mjs` validates the palette, layout scales, source-specific shadow measurements and CSS variable contract.
 - Web, Admin, Partner Portal and Captive Portal global styles import the shared CSS tokens and consume the shared values for foundational typography, color, border, radius and shadow utilities.
 - Native foundation imports the same TypeScript token source for layout, color and type-scale values. Native custom font assets were not found in the pinned UI source; no web CSS font stack is incorrectly passed to React Native.
+- All four web surfaces include visible keyboard focus styling and a `prefers-reduced-motion` baseline.
+- Token tests calculate WCAG AA contrast for semantic foreground/background pairs and core light/dark text surfaces.
 
 ## 3. Source fidelity decisions
 
@@ -45,12 +47,13 @@ Existing source UI components and layouts are not replaced. This phase establish
 | Shared token source created | PASS | `packages/design-tokens/tokens.json` |
 | Web/native token exports | PASS — source added | `packages/design-tokens/src/index.ts` |
 | CSS generation/check | PENDING CI | `generate-css.mjs --check` wired into package build |
-| Token contract tests | PENDING CI | `test/tokens.test.mjs` |
+| Token contract and static contrast tests | PENDING CI | `test/tokens.test.mjs` |
 | Web/Admin/Partner/Captive styles wired | PASS — source added | Four app `globals.css` files |
 | Native token baseline wired | PASS — source added | `apps/mobile/app/index.tsx` |
 | Lint/typecheck/build | PENDING CI | Must be verified on resulting main head |
 | Screenshot comparison at 360/390/768/1024/1440 | NOT RUN | Requires browser screenshot runner; no evidence claimed |
-| WCAG 2.2 AA and reduced-motion audit | NOT RUN | Must be completed before Phase 03 acceptance |
+| Static semantic contrast and reduced-motion CSS baseline | PASS — source added | Token tests and four global styles; CI pending |
+| Full WCAG 2.2 AA audit (keyboard, screen reader, text scaling, focus order) | NOT RUN | Must be completed before Phase 03 acceptance |
 | Native font asset parity | OPEN | No native font files were present in the pinned UI snapshot |
 
 ## 6. Remaining Phase 03 acceptance work
