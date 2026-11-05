@@ -1,6 +1,6 @@
 # Phase 02 — Source Migration
 
-**Status:** IMPLEMENTATION COMPLETE — source migration and scoped integration are verified; CodeQL legacy-snapshot findings are being quarantined with a narrow, documented configuration and must be re-scanned before final security acceptance.  
+**Status:** PASSED — full Phase 02 source migration, bounded additive integration, integrity/provenance, and scoped CI/security acceptance are complete.  
 **Scope authority:** Official Phase Implementation Plan + owner scope clarification recorded in ADR-0005.  
 **Implementation branch:** `phase-02-source-migration-final`  
 **No production deployment, staging environment, live network/device test, or production database mutation was performed.**
@@ -82,10 +82,10 @@ The detailed row-level map is `docs/source-migration/source-target-map-v2.csv`. 
 | License and attribution | MIT license retained; owner authorization recorded; notices present | PASS with third-party rights caveat above |
 | Source-to-target mapping | 164-row `source-target-map-v2.csv` | PASS |
 | Additive app/engine boundary integration | Bounded OpenManus adapter, fail-closed UI API client, four app source previews; vendor snapshots unchanged | PASS — Python tests, Web build/typecheck, and runtime smoke green |
-| Dependency and secret checks | Lockfile, pnpm audit, pip audit, Gitleaks and documented exact-fingerprint exceptions | PASS; separate CodeQL re-scan pending for exact legacy snapshot files |
+| Dependency and secret checks | Lockfile, pnpm audit, pip audit, Gitleaks, CodeQL with exact legacy-snapshot path exclusions | PASS; upstream legacy findings remain documented and quarantined, not remediated |
 | No later-phase domain expansion | ADR-0005 scope boundary; later-domain changes excluded from this scoped branch | PASS |
 
-**Main workflow CI status:** PASS. Lockfile validation, source provenance, Python quality/tests, Web lint/typecheck/tests/build, pnpm audit, pip audit, Gitleaks with documented fingerprint-only exceptions, and runtime smoke passed. **Separate GitHub Advanced Security CodeQL check:** 24 findings were reported exclusively in the non-mounted upstream legacy web snapshot; see `CODEQL-LEGACY-SNAPSHOT-REVIEW.md`. The exact-file exclusion is now being added and requires a fresh CodeQL result before final security acceptance. No staging or production deployment was performed.
+**Final-head CI status:** PASS. GitHub Actions run `42016827710` on commit `3b819439ff0a6dd20e252e29cf0219ad827a5741` completed successfully. Lockfile validation, 164-file source provenance, Python format/lint/tests, Web lint/typecheck/tests/build, CodeQL, pnpm audit, pip audit, Gitleaks with documented exact-fingerprint exceptions, runtime smoke and Expo configuration validation all passed. CodeQL reports zero findings after narrowly excluding the seven exact, non-mounted upstream legacy web files documented in `CODEQL-LEGACY-SNAPSHOT-REVIEW.md`; the 24 upstream findings remain known and quarantined, not fixed. No staging or production deployment was performed.
 
 ## 8. Explicit exclusions and deferred work
 
@@ -106,7 +106,7 @@ These are not Phase 02 blockers under the current owner-approved scope boundary.
 ## 9. Gate decision
 
 **SOURCE MIGRATION IMPLEMENTATION: COMPLETE.**  
-**PHASE 02 ACCEPTANCE: IMPLEMENTATION COMPLETE; FINAL SECURITY ACCEPTANCE PENDING CodeQL re-scan.**
+**PHASE 02 ACCEPTANCE: PASSED — final-head CI run `42016827710` is green.**
 
 The next official phase after acceptance is **Phase 03 — Design System & UI Foundations**. Do not begin it before the final Phase 02 CI and review gates pass.
 
@@ -123,3 +123,13 @@ The next official phase after acceptance is **Phase 03 — Design System & UI Fo
 - Secret-scan review and exact-fingerprint exceptions for expired upstream demo JWT/Git SHA false positives: `e544e9155df3b54071c309f987198e49f823662b`.
 - Final Phase 02 report/context CI run on current branch head: `42013960662`.
 - Final integration mapping and non-operational UI/API boundary: `065684fd278acd397cf19c25202e861d7174ff41`.
+
+
+## 11. Final verification and handoff
+
+- Final CI run: `42016827710` — success.
+- Final CI commit: `3b819439ff0a6dd20e252e29cf0219ad827a5741`.
+- CodeQL: success with seven exact legacy web paths excluded; known upstream-only findings remain documented and blocked from activation.
+- Phase 02 report and continuation context updated after final CI verification.
+- PR #9 remains open for owner review; it has not been merged and no deployment was performed.
+- Next official phase after owner acceptance/merge: **Phase 03 — Design System & UI Foundations**.
