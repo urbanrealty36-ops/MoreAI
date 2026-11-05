@@ -192,3 +192,13 @@ html body :is(a, button, input, select, textarea, summary, [tabindex]):focus {
 .dark .neo-card[class~="bg-[#FBE7B2]"] .text-lg { color: #171717 !important; }
 .dark .neo-card[class~="bg-[#D8ECFF]"] .text-lg { color: #171717 !important; }
 
+
+
+/* Final WCAG AA pairs for the remaining dark-theme source labels. */
+.dark .text-lg { color: #F7F4EC !important; }
+.dark [class~="bg-[#FBE7B2]"] .text-lg,
+.dark [class~="bg-[#D8ECFF]"] .text-lg { color: #171717 !important; }
+.dark h2 > span { color: #4B5563 !important; }
+.dark .justify-between.items-center > .font-semibold.text-gray-500 {
+  color: #66645E !important;
+}
