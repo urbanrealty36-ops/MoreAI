@@ -116,7 +116,7 @@
 
 /* WCAG 2.2 AA contrast for small semantic and secondary text. */
 .text-emerald-600 {
-  color: #14532D;
+  color: var(--moreai-color-success-contrast);
 }
 
 .dark .text-emerald-600 {
