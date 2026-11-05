@@ -4,7 +4,7 @@
 **Repository:** `urbanrealty36-ops/MoreAI`  
 **Active phase:** Phase 02 — Source Migration  
 **Implementation branch:** `phase-02-source-migration-final`  
-**Status:** Source migration implemented; final scoped-branch CI acceptance pending.
+**Status:** Phase 02 source migration PASSED; final scoped-branch CI run `42013366622` is green.
 
 ## Canonical project references
 - Master PRD: `docs/MoreAI_Master_PRD_v1.0_ID.md`
@@ -43,10 +43,13 @@
 ## Phase status and next work
 Phase 00 — Source & Architecture Audit: Passed.  
 Phase 01 — Monorepo Foundation: Passed.  
-Phase 02 — Source Migration: implementation complete; awaiting final scoped-branch CI and PR review.  
-Next after Phase 02 acceptance: **Phase 03 — Design System & UI Foundations**.
+Phase 02 — Source Migration: PASSED on CI run `42013366622`; implementation commit `4eb0632069c1071faa454a05e2814c1d20cbfa29`; final acceptance report commit `a671287fa92379a78e9f1e97fa56375522def1bc`.  
+Next official phase: **Phase 03 — Design System & UI Foundations**. Begin only after PR #9 receives owner review/merge.
 
-## Current implementation commit
-- Bounded source integration commit: `cd95fb61b747f0cd00f79efe486c13d1d4bec0a7`.
-- Documentation and final acceptance updates are tracked on `phase-02-source-migration-final`.
+## Current implementation commits
+- Scoped source snapshot/app integration: `949841d72b8179fc66e46e3334603038b92b6c58`.
+- Bounded OpenManus adapter and phase boundary: `cd95fb61b747f0cd00f79efe486c13d1d4bec0a7`.
+- Final CI-verified implementation: `4eb0632069c1071faa454a05e2814c1d20cbfa29`.
+- Phase 02 acceptance report: `a671287fa92379a78e9f1e97fa56375522def1bc`.
+- CI run: `42013366622` (all jobs passed).
 
