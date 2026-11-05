@@ -54,9 +54,7 @@ def canonical_gateway_payload(payload: dict[str, Any]) -> bytes:
     ).encode("utf-8")
 
 
-def verify_gateway_signature(
-    payload: dict[str, Any], signature: str, secret: str
-) -> bool:
+def verify_gateway_signature(payload: dict[str, Any], signature: str, secret: str) -> bool:
     if len(secret.encode("utf-8")) < 32:
         return False
     expected = hmac.new(
@@ -182,10 +180,6 @@ async def validate_mikrotik_credentials(bundle: dict[str, Any]) -> bool:
             response = await client.get(f"{router_url}/rest/system/resource")
             response.raise_for_status()
             data = response.json()
-        return (
-            isinstance(data, dict)
-            and bool(data.get("version"))
-            and bool(data.get("board-name"))
-        )
+        return isinstance(data, dict) and bool(data.get("version")) and bool(data.get("board-name"))
     except (httpx.HTTPError, ValueError):
         return False
