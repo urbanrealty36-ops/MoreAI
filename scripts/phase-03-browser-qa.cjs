@@ -205,6 +205,9 @@ async function inspectApp(browser, app) {
         fail(`${app.name} ${viewport.width}px: route did not return HTTP success`);
       }
       await waitForStableRender(page);
+      await page.addStyleTag({
+        content: "nextjs-portal { display: none !important; pointer-events: none !important; }",
+      });
       if (app.name === "captive-portal") {
         await page.locator("details").evaluateAll((nodes) => {
           for (const node of nodes) node.open = true;
