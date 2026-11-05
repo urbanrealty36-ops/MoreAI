@@ -97,7 +97,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
         {/* Notification Bell */}
         <button
           onClick={onOpenNotifications}
-          className="relative w-8 h-8 rounded-xl bg-white dark:bg-[#2A2C28] border-2 border-[#171717] dark:border-[#555] neo-shadow-sm flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+          className="relative ml-1.5 md:ml-0 w-8 h-8 rounded-xl bg-white dark:bg-[#2A2C28] border-2 border-[#171717] dark:border-[#555] neo-shadow-sm flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition"
           aria-label="Notifikasi"
           title="Notifikasi"
         >
