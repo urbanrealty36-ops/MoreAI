@@ -28,8 +28,8 @@
     }
   ],
   "limitations": [
-    "The UI upstream has no root LICENSE; authorization is owner-specific and does not replace third-party dependency or asset license review.",
+    "The UI upstream has no root LICENSE; owner authorization is specific to this repository and does not replace third-party dependency or asset license review.",
     "No GLB or GLTF files were present in the audited UI tree.",
-    "Source snapshots are pinned as gitlinks; active app integration and complete file-level manifests remain to be completed."
+    "OpenManusWeb and Front-End-UI-MoreAI snapshots are checked into the MoreAI monorepo as ordinary immutable vendor trees, with upstream tree SHAs and per-file blob hashes recorded in source-target-map-v2.csv."
   ]
 }
