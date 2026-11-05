@@ -59,6 +59,8 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+      - name: Verify generated design token CSS
+        run: pnpm --filter @moreai/design-tokens tokens:check
       - run: pnpm build
   python-quality:
     needs: source-provenance
