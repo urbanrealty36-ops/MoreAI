@@ -74,6 +74,21 @@ async function normalizeReferenceRuntime(page) {
         flex: 1 1 0%;
       }
       @media (max-width: 767px) {
+        header.sticky {
+          padding-inline: 12px;
+          gap: 4px;
+        }
+        header.sticky > div:first-child {
+          gap: 8px;
+        }
+        header.sticky > div:last-child > button.neo-btn {
+          padding-inline: 4px;
+        }
+        @media (max-width: 380px) {
+          header.sticky > div:first-child p {
+            display: none;
+          }
+        }
         .max-w-7xl.mx-auto.flex.flex-wrap.items-center.justify-between.gap-2 > div:first-child {
           padding-block: 8px;
           margin-block: -6px;
