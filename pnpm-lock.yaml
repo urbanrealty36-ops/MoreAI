@@ -46,9 +46,6 @@ importers:
       '@moreai/types':
         specifier: workspace:*
         version: link:../../packages/types
-      '@react-native-masked-view/masked-view':
-        specifier: 0.3.2
-        version: 0.3.2(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
       '@supabase/ssr':
         specifier: 0.7.0
         version: 0.7.0(@supabase/supabase-js@2.80.0)
@@ -129,6 +126,9 @@ importers:
       '@moreai/types':
         specifier: workspace:*
         version: link:../../packages/types
+      '@react-native-masked-view/masked-view':
+        specifier: 0.3.2
+        version: 0.3.2(react-native@0.81.5(@babel/core@7.29.7)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
       '@supabase/supabase-js':
         specifier: 2.80.0
         version: 2.80.0
@@ -3042,10 +3042,6 @@ packages:
 
   nullthrows@1.1.1:
     resolution: {integrity: sha512-2vPPEi+Z7WqML2jZYddDIfy5Dqb0r2fze2zTxNNknZaFpVHU3mFB3R+DWeJWGVx0ecvttSGlJTI+WG+8Z4cDWw==}
-
-  ob1@0.83.3:
-    resolution: {integrity: sha512-egUxXCDwoWG06NGCS5s5AdcpnumHKJlfd3HH06P3m9TEMwwScfcY35wpQxbm9oHof+dM/lVH9Rfyu1elTVelSA==}
-    engines: {node: '>=20.19.4'}
 
   ob1@0.83.8:
     resolution: {integrity: sha512-pk7el+eTOzfSKMAY4QBiiwKzegXn633JQj13y+pW5E5IdS+yV2CfDJ9Hf20K/LKy8nCrP9dAmd7XOk52OJxifA==}
@@ -7007,10 +7003,6 @@ snapshots:
       validate-npm-package-name: 5.0.1
 
   nullthrows@1.1.1: {}
-
-  ob1@0.83.3:
-    dependencies:
-      flow-enums-runtime: 0.0.6
 
   ob1@0.83.8:
     dependencies:
