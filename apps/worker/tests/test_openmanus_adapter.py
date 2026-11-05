@@ -2,13 +2,9 @@ import sys
 import types
 
 import pytest
+from pydantic import BaseModel, ConfigDict, Field
 
 from moreai_worker.openmanus_adapter import create_openmanus_agent
-
-
-class FakeManus:
-    def __init__(self, max_steps: int):
-        self.max_steps = max_steps
 
 
 class FakeToolCollection:
@@ -18,6 +14,27 @@ class FakeToolCollection:
 
 class FakeTerminate:
     pass
+
+
+class FakeBrowser:
+    def __init__(self):
+        raise AssertionError("BrowserUseTool must not be instantiated")
+
+
+class FakePython:
+    def __init__(self):
+        raise AssertionError("PythonExecute must not be instantiated")
+
+
+class FakeManus(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    max_steps: int
+    tool_choices: str = "auto"
+    llm: object | None = None
+    available_tools: FakeToolCollection = Field(
+        default_factory=lambda: FakeToolCollection(FakePython(), FakeBrowser())
+    )
 
 
 def install_openmanus_stubs(monkeypatch):
@@ -40,7 +57,7 @@ def install_openmanus_stubs(monkeypatch):
         monkeypatch.setitem(sys.modules, name, module)
 
 
-def test_adapter_disables_all_tools_except_terminate(tmp_path, monkeypatch):
+def test_adapter_overrides_upstream_default_tools(tmp_path, monkeypatch):
     install_openmanus_stubs(monkeypatch)
     agent = create_openmanus_agent(object(), source_path=tmp_path, max_steps=99)
 
