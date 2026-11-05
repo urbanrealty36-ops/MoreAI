@@ -1,8 +1,8 @@
 # MoreAI — Master Continuation Context
 
-**Updated:** 5 November 2026  
+**Updated:** 5 November 2026 — Phase 03 closeout  
 **Repository:** `urbanrealty36-ops/MoreAI`  
-**Active phase:** Phase 03 — Design System & UI Foundations (shared token foundation implemented; acceptance in progress)  
+**Active phase:** Phase 04 — Identity & Access (Phase 03 passed and PR #10 merged)  
 **Active branch:** `main`  
 **Phase 02 merge:** `407a3cbe1a9b5dbafbb14536ab0930f2271e0626` (PR #9 merged)
 
@@ -48,19 +48,25 @@
 - CodeQL exclusions are limited to seven exact non-mounted upstream legacy web files. The 24 upstream alerts remain documented and quarantined, not remediated. Any future activation requires remediation and re-review.
 - Phase 02 report: `docs/source-migration/PHASE-02-SOURCE-MIGRATION.md`.
 
-## Phase 03 implementation status
-- Phase 02 PR #9 was merged to `main`; merge commit `407a3cbe1a9b5dbafbb14536ab0930f2271e0626`.
-- Canonical tokens: `packages/design-tokens/tokens.json`.
-- Typed exports: `packages/design-tokens/src/index.ts` (web and native theme).
-- Generated CSS: `packages/design-tokens/src/tokens.css`; deterministic generator/check: `packages/design-tokens/scripts/generate-css.mjs`.
-- Token tests: `packages/design-tokens/test/tokens.test.mjs`.
-- Web/Admin/Partner/Captive global styles import shared token CSS; Native foundation consumes the shared token object.
-- Four web surfaces include keyboard focus-visible and reduced-motion CSS foundations; browser zoom remains enabled for text scaling.
-- Web fonts use the source reference's `next/font/google` families. Native fonts are downloaded at build/development startup by `apps/mobile/scripts/download-fonts.mjs`, verified by Git blob SHA/size, and bundled through Expo Metro; font binaries remain ignored generated assets.
-- CI includes Playwright light/dark pixel comparison against the immutable reference at 360/390/768/1024/1440, Axe WCAG 2.2 AA scans, responsive overflow, keyboard focus, reduced-motion and dark-token checks. Test-only route `/__visual` is gated by `MOREAI_VISUAL_QA=1`.
-- Latest acceptance status remains pending until the browser QA and Expo Metro jobs complete successfully and screenshot artifacts are inspected.
-- No Supabase migrations, FastAPI business endpoints, or production deployments were introduced.
-- Phase 03 remains In Progress until final CI, screenshot comparison at 360/390/768/1024/1440, WCAG 2.2 AA/reduced-motion checks, and native font/runtime review are evidenced.
+## Phase 03 final acceptance — PASSED
+
+- Phase 03 PR #10: `Phase 03 — close design-system acceptance gaps`; merged to `main`.
+- Merge commit: `941f7a7f285f7f754e585532b0456adbae031f96`.
+- Final acceptance CI: run #807 / ID `42067003091`, tested head `f0b9234161c3f19c376a554bd7ab30b8c18b634a`; all seven jobs passed: lockfiles, source provenance, Web quality, Python quality, security, runtime smoke and design-system browser QA.
+- Final browser QA artifact: `moreai-phase-03-browser-qa-f40729d8edc3644e93dfc9143b64b6e8d0b0becb`.
+- Shared token source: `packages/design-tokens/tokens.json`; typed web/native exports: `packages/design-tokens/src/index.ts`; generated CSS and deterministic check: `packages/design-tokens/src/tokens.css` and `packages/design-tokens/scripts/generate-css.mjs`; token tests: `packages/design-tokens/test/tokens.test.mjs`.
+- Web/Admin/Partner/Captive styles import shared CSS tokens; Native foundation consumes the shared token object. Four web surfaces include visible focus treatment and reduced-motion support; browser zoom remains enabled.
+- Web fonts preserve source reference `next/font/google` families. Native fonts are pinned by Git blob SHA/size and bundled through Expo Metro.
+- Expo SDK 54 Metro dependency cohort is aligned across 14 packages to `0.83.8`; the incompatible `image-size` path is absent from the lock graph; mobile includes `@react-native-masked-view/masked-view@0.3.2`.
+- Responsive evidence: all four web surfaces were captured at 360/390/768/1024/1440; zero viewport overflow failures.
+- Visual regression: 10 light/dark comparisons; all passed; maximum pixel-diff ratio 0.8898%, below the 1% threshold.
+- Accessibility: 16 Axe WCAG 2.2 AA scans; zero violations. Keyboard traversal: Web 33/33, Admin 18/18, Partner Portal 15/15, Captive Portal 10/10; no focus-indicator failures.
+- Touch target gate: 44×44px minimum; zero failures across all four surfaces, including browser hit-testing.
+- Reduced motion: all four surfaces report `preference=true`, transition and animation duration 0.01ms, `pass=true`.
+- Expo Metro runtime smoke: Android and iOS bundles both passed. This is an automated bundle/runtime smoke check, not a native device test.
+- Security checks passed: CodeQL, pnpm audit, Python dependency audit and Gitleaks.
+- No Supabase migrations, FastAPI business endpoints, production deployment, staging or real-world venue/device/network/payment/ISP/gateway tests were performed.
+- Full gate matrix and evidence: `docs/design-system/PHASE-03-DESIGN-SYSTEM-FOUNDATIONS.md`.
 
 ## Engineering constraints for all future work
 - Read `AGENTS.md`, Master PRD, official Phase Plan and relevant ADRs before implementation.
@@ -75,6 +81,6 @@
 - Phase 00 — Source & Architecture Audit: Passed.
 - Phase 01 — Monorepo Foundation: Passed.
 - Phase 02 — Source Migration: **Passed; PR #9 merged to `main`** (`407a3cbe1a9b5dbafbb14536ab0930f2271e0626`).
-- Phase 03 — Design System & UI Foundations: **In Progress**; shared token foundation committed directly to `main`; light/dark screenshot regression, Axe/accessibility and touch-target review, Expo Metro font bundling, and final CI evidence remain open.
-- Next official phase after Phase 03 acceptance: **Phase 04 — Identity & Access.**
+- Phase 03 — Design System & UI Foundations: **PASSED; PR #10 merged to `main`** (`941f7a7f285f7f754e585532b0456adbae031f96`). All acceptance gates have inspected CI/browser evidence.
+- Phase 04 — Identity & Access: **Active next phase.** Follow the official Phase 04 scope and acceptance gates; do not activate later domains early.
 
