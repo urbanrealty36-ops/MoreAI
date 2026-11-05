@@ -14,7 +14,7 @@ permissions:
 jobs:
   lockfiles:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,7 +32,7 @@ jobs:
       - run: uv run ruff format --check apps
   source-provenance:
     needs: lockfiles
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,7 +43,7 @@ jobs:
       - run: python scripts/verify-source-pins.py
   web-quality:
     needs: source-provenance
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -62,7 +62,7 @@ jobs:
       - run: pnpm build
   python-quality:
     needs: source-provenance
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -75,7 +75,7 @@ jobs:
       - run: uv run pytest
   security:
     needs: source-provenance
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -104,7 +104,7 @@ jobs:
 
   runtime-smoke:
     needs: [web-quality, python-quality]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -143,6 +143,10 @@ jobs:
           done
       - name: Validate Expo app configuration
         run: pnpm --filter @moreai/mobile exec expo config --json >/tmp/moreai-mobile-config.json
+      - name: Select Expo-compatible Node runtime
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.19.5
       - name: Download and verify pinned native font assets
         run: pnpm --filter @moreai/mobile fonts:download
       - name: Bundle Android app through Expo Metro
@@ -152,7 +156,7 @@ jobs:
 
   design-system-browser-qa:
     needs: [web-quality, python-quality]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
