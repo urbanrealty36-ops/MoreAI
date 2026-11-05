@@ -145,8 +145,10 @@ jobs:
         run: pnpm --filter @moreai/mobile exec expo config --json >/tmp/moreai-mobile-config.json
       - name: Download and verify pinned native font assets
         run: pnpm --filter @moreai/mobile fonts:download
-      - name: Bundle native app through Expo Metro
-        run: pnpm --filter @moreai/mobile exec expo export --platform all --output-dir /tmp/moreai-mobile-export
+      - name: Bundle Android app through Expo Metro
+        run: pnpm --filter @moreai/mobile exec expo export --platform android --output-dir /tmp/moreai-mobile-export-android
+      - name: Bundle iOS app through Expo Metro
+        run: pnpm --filter @moreai/mobile exec expo export --platform ios --output-dir /tmp/moreai-mobile-export-ios
 
   design-system-browser-qa:
     needs: [web-quality, python-quality]
@@ -187,7 +189,7 @@ jobs:
               exit 1
             fi
           done
-          curl --silent --fail http://127.0.0.1:3000/__visual >/dev/null
+          curl --silent --fail http://127.0.0.1:3000/phase-03-visual >/dev/null || { cat /tmp/moreai-reference.log /tmp/moreai-web-visual.log /tmp/moreai-admin-visual.log /tmp/moreai-partner-visual.log /tmp/moreai-captive-visual.log; exit 1; }
       - name: Install isolated browser QA dependencies
         run: npm install --prefix /tmp/moreai-browser-qa --no-save --no-package-lock playwright@1.56.1 @axe-core/playwright@4.10.2 pixelmatch@5.3.0 pngjs@7.0.0
       - name: Install Chromium

@@ -50,7 +50,7 @@ async function screenshotReferenceComparison(browser, viewport, theme = "light")
   const target = await browser.newPage({ viewport, deviceScaleFactor: 1 });
   try {
     await source.goto("http://127.0.0.1:3100", { waitUntil: "domcontentloaded" });
-    await target.goto("http://127.0.0.1:3000/__visual", { waitUntil: "domcontentloaded" });
+    await target.goto("http://127.0.0.1:3000/phase-03-visual", { waitUntil: "domcontentloaded" });
     await waitForStableRender(source);
     await waitForStableRender(target);
 
@@ -282,6 +282,7 @@ async function main() {
     visualComparisons: report.visualComparison.map(({ viewport, diffRatio, pass }) => ({ viewport: viewport.width, diffPercent: Number((diffRatio * 100).toFixed(3)), pass })),
     accessibility: report.accessibility.map(({ app, viewport, violations }) => ({ app, viewport, violationCount: violations.length })),
     appOverflow: report.apps.map(({ name, overflow }) => ({ name, overflow })),
+    touchTargetsUnder44: report.apps.map(({ name, touchTargetsUnder44 }) => ({ name, count: touchTargetsUnder44?.length ?? 0, samples: touchTargetsUnder44?.slice(0, 12) ?? [] })),
     failures,
   }, null, 2));
 

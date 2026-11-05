@@ -26,6 +26,7 @@
   --moreai-font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --moreai-font-data: Inter, system-ui, sans-serif;
   --moreai-font-mono: 'JetBrains Mono', monospace;
+  --moreai-space-base: 4px;
   --moreai-space-2xs: 2px;
   --moreai-space-xs: 4px;
   --moreai-space-sm: 8px;
@@ -37,6 +38,20 @@
   --moreai-space-4xl: 40px;
   --moreai-space-5xl: 48px;
   --moreai-space-6xl: 64px;
+  --moreai-font-size-display-xl: 48px;
+  --moreai-font-size-display-l: 36px;
+  --moreai-font-size-heading1: 28px;
+  --moreai-font-size-heading2: 22px;
+  --moreai-font-size-heading3: 18px;
+  --moreai-font-size-body: 16px;
+  --moreai-font-size-body-small: 14px;
+  --moreai-font-size-caption: 12px;
+  --moreai-font-size-micro: 11px;
+  --moreai-font-weight-regular: 400;
+  --moreai-font-weight-medium: 500;
+  --moreai-font-weight-semibold: 600;
+  --moreai-font-weight-bold: 700;
+  --moreai-font-weight-extrabold: 800;
   --moreai-radius-sm: 8px;
   --moreai-radius-md: 12px;
   --moreai-radius-lg: 16px;
@@ -54,7 +69,13 @@
   --moreai-motion-fast: 120ms;
   --moreai-motion-standard: 180ms;
   --moreai-motion-emphasis: 260ms;
-  color-scheme: light;
+  --moreai-motion-card: 150ms;
+  --moreai-button-height-desktop-min: 40px;
+  --moreai-button-height-desktop-max: 48px;
+  --moreai-button-height-compact: 36px;
+  --moreai-target-mobile-min: 44px;
+  --moreai-input-height-min: 44px;
+  --moreai-input-height-max: 48px;
 }
 .dark {
   --moreai-color-canvas: #171817;
@@ -67,5 +88,4 @@
   --moreai-color-card-border: #4A4A46;
   --moreai-shadow-card: 3.5px 3.5px 0 #000000;
   --moreai-shadow-button: 3px 3px 0 #000000;
-  color-scheme: dark;
 }

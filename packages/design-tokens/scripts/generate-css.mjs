@@ -6,6 +6,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const tokenPath = path.join(root, "tokens.json");
 const outputPath = path.join(root, "src/tokens.css");
 
+const kebab = (value) => value.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
+
 export function generateCss(tokens) {
   const c = tokens.colors;
   const s = tokens.spacing;
@@ -14,6 +16,7 @@ export function generateCss(tokens) {
   const sh = tokens.shadow;
   const m = tokens.motion;
   const t = tokens.typography;
+  const i = tokens.interaction;
   const lines = [
     "/* Generated from packages/design-tokens/tokens.json. Do not edit by hand. */",
     ":root {",
@@ -43,7 +46,9 @@ export function generateCss(tokens) {
     `  --moreai-font-sans: ${t.fontFamily.sans};`,
     `  --moreai-font-data: ${t.fontFamily.data};`,
     `  --moreai-font-mono: ${t.fontFamily.mono};`,
-    ...Object.entries(s).filter(([key]) => key !== "base").map(([key, value]) => `  --moreai-space-${key}: ${value}px;`),
+    ...Object.entries(s).map(([key, value]) => `  --moreai-space-${key}: ${value}px;`),
+    ...Object.entries(t.scale).map(([key, value]) => `  --moreai-font-size-${kebab(key)}: ${value}px;`),
+    ...Object.entries(t.weight).map(([key, value]) => `  --moreai-font-weight-${kebab(key)}: ${value};`),
     ...Object.entries(r).map(([key, value]) => `  --moreai-radius-${key}: ${value}px;`),
     `  --moreai-border-subtle: ${b.subtle}px;`,
     `  --moreai-border-standard: ${b.standard}px;`,
@@ -57,7 +62,13 @@ export function generateCss(tokens) {
     `  --moreai-motion-fast: ${m.fast}ms;`,
     `  --moreai-motion-standard: ${m.standard}ms;`,
     `  --moreai-motion-emphasis: ${m.emphasis}ms;`,
-    "  color-scheme: light;",
+    `  --moreai-motion-card: ${m.sourceCardTransition}ms;`,
+    `  --moreai-button-height-desktop-min: ${Math.min(...i.desktopButtonHeights)}px;`,
+    `  --moreai-button-height-desktop-max: ${Math.max(...i.desktopButtonHeights)}px;`,
+    `  --moreai-button-height-compact: ${i.compactButtonHeight}px;`,
+    `  --moreai-target-mobile-min: ${i.mobileTapTargetMin}px;`,
+    `  --moreai-input-height-min: ${i.inputHeightMin}px;`,
+    `  --moreai-input-height-max: ${i.inputHeightMax}px;`,
     "}",
     ".dark {",
     `  --moreai-color-canvas: ${c.dark.background};`,
@@ -70,7 +81,6 @@ export function generateCss(tokens) {
     `  --moreai-color-card-border: ${c.dark.cardBorder};`,
     `  --moreai-shadow-card: ${sh.darkCard};`,
     `  --moreai-shadow-button: ${sh.darkButton};`,
-    "  color-scheme: dark;",
     "}",
     ""
   ];

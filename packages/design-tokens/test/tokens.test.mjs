@@ -59,6 +59,12 @@ test("CSS variables publish canonical token values", () => {
   assert.ok(tokenCss.includes("--moreai-color-mint: #C9F2D5"));
   assert.ok(tokenCss.includes("--moreai-shadow-md: 3.5px 3.5px 0 #171717"));
   assert.ok(tokenCss.includes("--moreai-shadow-button: 3px 3px 0 #171717"));
+  assert.ok(tokenCss.includes("--moreai-font-size-display-xl: 48px"));
+  assert.ok(tokenCss.includes("--moreai-font-size-heading-1: 28px"));
+  assert.ok(tokenCss.includes("--moreai-font-weight-extrabold: 800"));
+  assert.ok(tokenCss.includes("--moreai-motion-card: 150ms"));
+  assert.ok(tokenCss.includes("--moreai-target-mobile-min: 44px"));
+  assert.ok(!tokenCss.includes("color-scheme:"), "source CSS must not change native control rendering");
 });
 
 test("semantic foreground/background pairs meet WCAG AA normal-text contrast", () => {

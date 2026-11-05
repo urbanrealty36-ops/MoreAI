@@ -47,7 +47,7 @@
   box-shadow: var(--moreai-shadow-card);
   border-radius: var(--moreai-radius-lg);
   background-color: var(--moreai-color-white);
-  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all var(--moreai-motion-card) cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dark .neo-card {
