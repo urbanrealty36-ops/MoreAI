@@ -89,30 +89,12 @@ export const ClientChat: React.FC<ClientChatProps> = ({
       setIsLoading(true);
 
       try {
-        const apiBaseUrl = process.env.NEXT_PUBLIC_MOREAI_API_URL;
-        if (!apiBaseUrl) {
-          throw new Error('Layanan belum dikonfigurasi. Silakan hubungi administrator.');
-        }
-        const { createBrowserClient } = await import('@supabase/ssr');
-        const { createApiClient } = await import('@moreai/api-client');
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-        if (!supabaseUrl || !publishableKey) {
-          throw new Error('Autentikasi MoreAI belum dikonfigurasi.');
-        }
-        const supabase = createBrowserClient(supabaseUrl, publishableKey);
-        const api = createApiClient({
-          baseUrl: apiBaseUrl,
-          getAccessToken: async () => {
-            const { data, error } = await supabase.auth.getSession();
-            if (error) throw new Error('Sesi akun tidak dapat dibaca.');
-            return data.session?.access_token ?? null;
-          },
-        });
-        const data = await api.llm.generate(
+        const { getMoreAIApi } = await import('@/lib/api');
+        const data = await getMoreAIApi().llm.generate(
           { prompt: textToSend, model: selectedModel, max_output_tokens: 2048 },
           `chat:${userMsg.id}`,
         );
+
         const botResponse = data.text;
 
         const assistantMsg: Message = {
