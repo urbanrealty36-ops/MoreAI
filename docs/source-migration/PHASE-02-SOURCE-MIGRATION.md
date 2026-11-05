@@ -109,3 +109,9 @@ These are not Phase 02 blockers under the current owner-approved scope boundary.
 **PHASE 02 ACCEPTANCE: PENDING final scoped-branch CI verification and review.**
 
 The next official phase after acceptance is **Phase 03 — Design System & UI Foundations**. Do not begin it before the final Phase 02 CI and review gates pass.
+
+## 10. Commit references
+
+- Initial scoped source snapshot and app integration: `949841d72b8179fc66e46e3334603038b92b6c58`.
+- Phase boundary and bounded OpenManus adapter: `cd95fb61b747f0cd00f79efe486c13d1d4bec0a7`.
+- Source-target map and continuation documentation: `7adf708cc20db3059eb31b1887a3d31ec3be294f`.
