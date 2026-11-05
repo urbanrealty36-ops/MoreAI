@@ -4,7 +4,7 @@
 **Repository:** `urbanrealty36-ops/MoreAI`  
 **Active phase:** Phase 02 — Source Migration  
 **Implementation branch:** `phase-02-source-migration-final`  
-**Status:** Phase 02 source migration PASSED; final scoped-branch CI run `42013960662` is green.
+**Status:** Phase 02 source migration implemented; main CI is green; separate GitHub Advanced Security CodeQL re-scan is pending for exact upstream legacy web files.
 
 ## Canonical project references
 - Master PRD: `docs/MoreAI_Master_PRD_v1.0_ID.md`
@@ -26,6 +26,7 @@
 - Source-to-target mapping: `docs/source-migration/source-target-map-v2.csv`.
 - Third-party notices: `THIRD_PARTY_NOTICES.md`.
 - Narrow Gitleaks exceptions: `docs/source-migration/SECRET-SCAN-EXCEPTIONS.md` and `.gitleaksignore`.
+- CodeQL legacy source review: `docs/source-migration/CODEQL-LEGACY-SNAPSHOT-REVIEW.md` and `.github/codeql/codeql-config.yml`.
 - OpenManus security boundary: `docs/source-migration/OPENMANUS-SECURITY-MAPPING.md`.
 - Scope ADR: `docs/adr/ADR-0005-phase-02-source-migration-scope-boundary.md`.
 
@@ -51,5 +52,5 @@ Next official phase: **Phase 03 — Design System & UI Foundations**. Begin only
 - Bounded OpenManus adapter and phase boundary: `cd95fb61b747f0cd00f79efe486c13d1d4bec0a7`.
 - Final CI-verified implementation: `4eb0632069c1071faa454a05e2814c1d20cbfa29`.
 - Phase 02 acceptance report: `a671287fa92379a78e9f1e97fa56375522def1bc`.
-- CI run: `42013960662` on branch head `f8c20c6ad61214451f6a67910727fa46ab860d80` (all jobs passed).
+- Main workflow CI run `42013960662` passed. GitHub Advanced Security CodeQL reported 24 upstream-only legacy web findings; exact-file path exclusions are being applied and must be re-scanned before acceptance.
 

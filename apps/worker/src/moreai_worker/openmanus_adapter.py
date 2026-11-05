@@ -5,6 +5,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from pydantic import Field
+
 
 def create_openmanus_agent(
     gateway_llm: Any,
@@ -31,7 +33,12 @@ def create_openmanus_agent(
     from app.agent.manus import Manus
     from app.tool import Terminate, ToolCollection
 
-    agent = Manus(max_steps=max(1, min(int(max_steps), 20)))
+    class BoundedManus(Manus):
+        available_tools: ToolCollection = Field(
+            default_factory=lambda: ToolCollection(Terminate())
+        )
+
+    agent = BoundedManus(max_steps=max(1, min(int(max_steps), 20)))
     agent.available_tools = ToolCollection(Terminate())
     agent.tool_choices = "none"
     agent.llm = gateway_llm

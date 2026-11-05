@@ -1,0 +1,10 @@
+name: MoreAI CodeQL configuration
+
+paths-ignore:
+  - vendor/openmanusweb/app/web/app.py
+  - vendor/openmanusweb/app/web/log_parser.py
+  - vendor/openmanusweb/app/web/templates/index.html
+  - vendor/openmanusweb/app/web/templates/archive/index.html
+  - vendor/openmanusweb/app/web/static/archive/final_interface.html
+  - vendor/openmanusweb/app/web/static/archive/chatManager.js
+  - vendor/openmanusweb/app/web/static/archive/apiManager.js
