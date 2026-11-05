@@ -236,6 +236,17 @@ async function inspectApp(browser, app) {
             .filter((target) => target.width < 44 || target.height < 44)
         );
         appReport.touchTargetsUnder44 = touchTargets;
+        appReport.touchTargetGate = {
+          minimumWidth: 44,
+          minimumHeight: 44,
+          violations: touchTargets.length,
+          pass: touchTargets.length === 0,
+        };
+        if (touchTargets.length) {
+          fail(
+            `${app.name}: ${touchTargets.length} visible interactive targets are below the 44x44px mobile target gate: ${JSON.stringify(touchTargets.slice(0, 20))}`
+          );
+        }
 
         await page.keyboard.press("Tab");
         const focus = await page.evaluate(() => {
