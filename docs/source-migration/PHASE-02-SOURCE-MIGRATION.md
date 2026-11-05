@@ -69,7 +69,7 @@ The detailed row-level map is `docs/source-migration/source-target-map-v2.csv`. 
 ## 6. Dependencies and configuration
 
 - Upstream `package.json`, `requirements.txt`, `setup.py`, configuration examples, workflow files, and `.env.example` are preserved in their respective vendor snapshots.
-- Workspace dependency integration is recorded in root and app manifests/lockfiles.
+- Monorepo dependency lockfiles remain aligned with the existing workspace. OpenManus runtime extras are not installed or activated in Phase 02; dependency activation is deferred to the official engine/runtime phase.
 - No private `.env`, API key, credential bundle, browser profile, runtime log, or personal data is intentionally migrated.
 - Secret scanning and dependency vulnerability scanning are included in CI. These checks do not replace a per-asset/per-font third-party rights review.
 
