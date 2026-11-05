@@ -7,7 +7,7 @@
     "pnpm": ">=10"
   },
   "scripts": {
-    "build": "turbo run build",
+    "build": "node apps/mobile/scripts/download-fonts.mjs && turbo run build",
     "dev": "turbo run dev --parallel",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
