@@ -28,7 +28,9 @@ def test_gateway_signature_is_canonical_and_bound_to_payload():
     ).hexdigest()
     assert verify_gateway_signature(payload, signature, secret)
     assert verify_gateway_signature(payload, "sha256=" + signature, secret)
-    assert not verify_gateway_signature({**payload, "network_id": "other"}, signature, secret)
+    assert not verify_gateway_signature(
+        {**payload, "network_id": "other"}, signature, secret
+    )
 
 
 def test_gateway_signature_rejects_short_secret_and_tampering():
@@ -55,7 +57,6 @@ def test_gateway_mac_address_validation():
     assert valid_ip_address("192.0.2.10")
     assert not valid_ip_address("0.0.0.0")
     assert not valid_ip_address("not-an-ip")
-
 
 
 def test_routeros_credentials_require_https_and_secret():
