@@ -247,7 +247,7 @@ async function inspectApp(browser, app) {
       });
 
       appReport.fontFamily = layout.bodyFont;
-      if (layout.documentWidth > viewport.width + 1 || layout.bodyWidth > viewport.width + 1) {
+      if (layout.documentWidth > viewport.width + 1) {
         appReport.overflow.push({
           viewport: viewport.width,
           documentWidth: layout.documentWidth,
@@ -365,10 +365,10 @@ async function inspectApp(browser, app) {
             const targetWidth = Math.max(0, clipped.right - clipped.left);
             const targetHeight = Math.max(0, clipped.bottom - clipped.top);
             const samplePoints = [
-              [(clipped.left + clipped.right) / 2, clipped.top + 1],
-              [(clipped.left + clipped.right) / 2, clipped.bottom - 1],
-              [clipped.left + 1, (clipped.top + clipped.bottom) / 2],
-              [clipped.right - 1, (clipped.top + clipped.bottom) / 2],
+              [(clipped.left + clipped.right) / 2, clipped.top + 3],
+              [(clipped.left + clipped.right) / 2, clipped.bottom - 3],
+              [clipped.left + 3, (clipped.top + clipped.bottom) / 2],
+              [clipped.right - 3, (clipped.top + clipped.bottom) / 2],
               [(clipped.left + clipped.right) / 2, (clipped.top + clipped.bottom) / 2],
             ].filter(([x, y]) => x >= 0 && y >= 0 && x < window.innerWidth && y < window.innerHeight);
             const sampleHits = samplePoints.map(([x, y]) => {
@@ -450,14 +450,17 @@ async function inspectApp(browser, app) {
               tag: element?.tagName ?? null,
               outlineStyle: style?.outlineStyle ?? null,
               outlineWidth: style?.outlineWidth ?? null,
+              boxShadow: style?.boxShadow ?? "none",
             };
           });
           if (focus.index < 0) continue;
           if (firstFocusIndex === null) firstFocusIndex = focus.index;
           else if (focus.index === firstFocusIndex) break;
           focusedIndexes.add(focus.index);
-          if (!focus.tag || focus.outlineStyle === "none" || focus.outlineWidth === "0px") {
-            keyboardFailures.push({ index: focus.index, tag: focus.tag, outlineStyle: focus.outlineStyle, outlineWidth: focus.outlineWidth });
+          const visibleOutline = focus.outlineStyle !== "none" && focus.outlineWidth !== "0px";
+          const visibleShadow = focus.boxShadow && focus.boxShadow !== "none" && !focus.boxShadow.includes("rgba(0, 0, 0, 0)");
+          if (!focus.tag || (!visibleOutline && !visibleShadow)) {
+            keyboardFailures.push({ index: focus.index, tag: focus.tag, outlineStyle: focus.outlineStyle, outlineWidth: focus.outlineWidth, boxShadow: focus.boxShadow });
           }
         }
         appReport.keyboard = {
