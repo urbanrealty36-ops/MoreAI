@@ -13,8 +13,9 @@ export const webTheme = {
 } as const;
 
 /**
- * Platform-neutral React Native theme values.
- * Native components apply platform-specific elevation and shadow rendering.
+ * Native tokens intentionally expose numeric layout values separately from
+ * source font metadata. The reference contains web font loading but no
+ * bundled native font files; native font loading is not falsely simulated.
  */
 export const nativeTheme = {
   colors: {
@@ -24,7 +25,7 @@ export const nativeTheme = {
     dark: designTokens.colors.dark,
   },
   typography: {
-    fontFamily: designTokens.typography.fontFamily,
+    sourceFontFamily: designTokens.typography.fontFamily,
     size: designTokens.typography.scale,
     weight: designTokens.typography.weight,
   },
