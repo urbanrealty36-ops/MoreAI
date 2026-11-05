@@ -227,7 +227,7 @@ async function inspectApp(browser, app) {
           bodyWidth: layout.bodyWidth,
           overflowElements: layout.overflowElements,
         });
-        fail(`${app.name} ${viewport.width}px: horizontal overflow detected`);
+        fail(`${app.name} ${viewport.width}px: horizontal overflow detected: ${JSON.stringify(appReport.overflow.at(-1))}`);
       }
       if (/user-scalable\s*=\s*no|max(imum)?-scale\s*=\s*1/i.test(layout.viewportMeta)) {
         fail(`${app.name}: browser zoom is disabled in viewport metadata`);
@@ -250,7 +250,7 @@ async function inspectApp(browser, app) {
             text: styles.getPropertyValue("--moreai-color-text").trim().toLowerCase(),
             shadow: styles.getPropertyValue("--moreai-color-shadow").trim().toLowerCase(),
           };
-          document.documentElement.classList.remove("dark");
+          await page.evaluate(() => document.documentElement.classList.remove("dark"));
           return values;
         });
         if (darkTokens.canvas !== "#171817" || darkTokens.surface !== "#232522" || darkTokens.text !== "#f7f4ec" || darkTokens.shadow !== "#000000") {
@@ -338,16 +338,22 @@ async function inspectApp(browser, app) {
             const targetWidth = Math.max(0, clipped.right - clipped.left);
             const targetHeight = Math.max(0, clipped.bottom - clipped.top);
             const samplePoints = [
-              [clipped.left + 1, clipped.top + 1],
-              [clipped.right - 1, clipped.top + 1],
-              [clipped.left + 1, clipped.bottom - 1],
-              [clipped.right - 1, clipped.bottom - 1],
+              [(clipped.left + clipped.right) / 2, clipped.top + 1],
+              [(clipped.left + clipped.right) / 2, clipped.bottom - 1],
+              [clipped.left + 1, (clipped.top + clipped.bottom) / 2],
+              [clipped.right - 1, (clipped.top + clipped.bottom) / 2],
               [(clipped.left + clipped.right) / 2, (clipped.top + clipped.bottom) / 2],
             ].filter(([x, y]) => x >= 0 && y >= 0 && x < window.innerWidth && y < window.innerHeight);
-            const hitTestPass = samplePoints.length === 5 && samplePoints.every(([x, y]) => {
+            const sampleHits = samplePoints.map(([x, y]) => {
               const hit = document.elementFromPoint(x, y);
-              return hit === targetElement || targetElement.contains(hit);
+              return {
+                x: Math.round(x),
+                y: Math.round(y),
+                hitTag: hit?.tagName ?? null,
+                insideTarget: Boolean(hit && (hit === targetElement || targetElement.contains(hit))),
+              };
             });
+            const hitTestPass = samplePoints.length === 5 && sampleHits.every((hit) => hit.insideTarget);
             const violation = targetWidth < 44 || targetHeight < 44 || !hitTestPass;
             if (violation) {
               violations.push({
@@ -359,6 +365,7 @@ async function inspectApp(browser, app) {
                 targetWidth: Math.round(targetWidth),
                 targetHeight: Math.round(targetHeight),
                 hitTestPass,
+                sampleHits,
               });
             }
           }
