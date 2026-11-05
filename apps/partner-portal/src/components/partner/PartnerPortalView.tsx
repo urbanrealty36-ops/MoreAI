@@ -139,7 +139,7 @@ export const PartnerPortalView: React.FC = () => {
       </div>
 
       {/* Navigation Sub-Tabs */}
-      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1.5 pb-1.5 -mt-1.5 -mb-0.5 md:my-0 md:pt-0 md:pb-1">
         {[
           { id: 'dashboard', label: 'Ringkasan' },
           { id: 'cabang', label: 'Lokasi & Cabang' },
