@@ -15,6 +15,14 @@
 - Rights holder authorization: repository owner confirmed in this project conversation that this is their personally owned UI source and authorized its use in MoreAI.
 - The upstream repository has no root LICENSE file. This notice records owner authorization; it does not purport to create an open-source license for unrelated third-party dependencies or assets. Preserve the upstream repository's own notices and inspect dependency/asset licenses separately.
 
+## MoreAI Native Fonts
+
+- Plus Jakarta Sans: Copyright 2020 The Plus Jakarta Sans Project Authors.
+- JetBrains Mono: Copyright 2020 The JetBrains Mono Project Authors.
+- Source: Google Fonts repository, pinned revision `fbe81817505e8aeadc53cc7a38a2b76fb57c333e`.
+- Both font families are distributed under the SIL Open Font License 1.1; the complete license text is included at `apps/mobile/assets/fonts/OFL.txt`.
+- Native font provenance and runtime loading behavior are documented at `apps/mobile/assets/fonts/README.md`.
+
 ## General
 
 Source mirrors are pinned to immutable commit IDs. Do not silently update either source reference. Update source pins only through a reviewed migration commit with refreshed manifests and provenance.
