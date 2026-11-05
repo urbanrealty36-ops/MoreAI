@@ -25,6 +25,7 @@
 - Snapshot verification: `docs/source-migration/source-mirror-verification.json`.
 - Source-to-target mapping: `docs/source-migration/source-target-map-v2.csv`.
 - Third-party notices: `THIRD_PARTY_NOTICES.md`.
+- Narrow Gitleaks exceptions: `docs/source-migration/SECRET-SCAN-EXCEPTIONS.md` and `.gitleaksignore`.
 - OpenManus security boundary: `docs/source-migration/OPENMANUS-SECURITY-MAPPING.md`.
 - Scope ADR: `docs/adr/ADR-0005-phase-02-source-migration-scope-boundary.md`.
 

@@ -70,7 +70,7 @@ The detailed row-level map is `docs/source-migration/source-target-map-v2.csv`. 
 
 - Upstream `package.json`, `requirements.txt`, `setup.py`, configuration examples, workflow files, and `.env.example` are preserved in their respective vendor snapshots.
 - Monorepo dependency lockfiles remain aligned with the existing workspace. OpenManus runtime extras are not installed or activated in Phase 02; dependency activation is deferred to the official engine/runtime phase.
-- No private `.env`, API key, credential bundle, browser profile, runtime log, or personal data is intentionally migrated.
+- No private `.env`, API key, credential bundle, browser profile, runtime log, or personal data is intentionally migrated. The two expired upstream demo-video JWT fingerprints and Git SHA false positives are documented in `docs/source-migration/SECRET-SCAN-EXCEPTIONS.md` and ignored only by exact fingerprint.
 - Secret scanning and dependency vulnerability scanning are included in CI. These checks do not replace a per-asset/per-font third-party rights review.
 
 ## 7. Acceptance evidence
