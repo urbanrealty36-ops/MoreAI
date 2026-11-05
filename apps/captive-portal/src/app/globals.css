@@ -175,3 +175,7 @@ html body :is(a, button, input, select, textarea, summary, [tabindex]):focus {
 }
 /* Small muted labels on the warm neutral surface meet WCAG AA. */
 .text-gray-400 { color: #66645E !important; }
+
+
+/* Muted labels switch ink with the active theme. */
+.dark .text-gray-400 { color: #D1D5DB !important; }
