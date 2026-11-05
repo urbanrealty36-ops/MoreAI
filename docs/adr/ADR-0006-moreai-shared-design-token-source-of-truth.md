@@ -16,7 +16,7 @@ The MoreAI Master PRD §16 defines the brand palette, semantic colors, typograph
 4. Web, Admin, Partner Portal and Captive Portal consume the generated CSS custom properties. Native consumes the shared TypeScript theme values.
 5. Preserve the pinned UI source's computed visual output. If a PRD recommended value differs from a source value, the source value takes precedence for visual fidelity and the difference is documented.
 6. Do not replace source components or introduce a second component visual system in this foundation phase.
-7. Native platform font loading is not fabricated. Source font metadata remains in the token contract; native font assets/loading require a separately verified asset and runtime plan.
+7. Web uses the pinned reference's `next/font/google` families. Native uses `expo-font` with Plus Jakarta Sans and JetBrains Mono variable TTF files from an immutable Google Fonts repository revision; the SIL OFL notices are included in `apps/mobile/assets/fonts/OFL.txt`. Native loading falls back to system fonts if network loading fails. Offline-bundled native font binaries remain a documented limitation.
 
 ## Fidelity note
 
@@ -27,4 +27,5 @@ Master PRD §16 recommends a 4px hard card shadow. The pinned UI source uses 3.5
 - Shared semantic values are available to all clients from one token source.
 - CSS token drift is caught by the package build's deterministic check.
 - Native and web layouts share numeric scales while retaining platform-specific rendering.
-- Screenshot comparison, accessibility verification and native font strategy remain acceptance gates; this ADR does not claim those checks have passed.
+- The native font source is pinned but fetched remotely on first use; offline-first font packaging remains a follow-up limitation.
+- Screenshot comparison and browser accessibility verification remain acceptance gates; this ADR does not claim those checks have passed.
