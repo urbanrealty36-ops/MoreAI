@@ -299,6 +299,10 @@ async function inspectApp(browser, app) {
           };
         });
         const motionDurations = [...reducedMotion.transitionSeconds, ...reducedMotion.animationSeconds];
+        appReport.reducedMotion = {
+          ...reducedMotion,
+          pass: reducedMotion.preference && motionDurations.every((duration) => duration <= 0.0001),
+        };
         if (!reducedMotion.preference || motionDurations.some((duration) => duration > 0.0001)) {
           fail(`${app.name}: reduced-motion preference is not respected: ${JSON.stringify(reducedMotion)}`);
         }
