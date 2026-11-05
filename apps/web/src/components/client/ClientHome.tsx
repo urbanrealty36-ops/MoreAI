@@ -282,7 +282,7 @@ export const ClientHome: React.FC<ClientHomeProps> = ({
       <div className="fixed bottom-16 left-0 right-0 z-30 pointer-events-none px-3 pb-2 pt-1 bg-gradient-to-t from-[#F7F4EC] via-[#F7F4EC]/95 to-transparent dark:from-[#1E201D] dark:via-[#1E201D]/95">
         <div className="max-w-md mx-auto pointer-events-auto">
           <form onSubmit={handleQuickSubmit}>
-            <div className="neo-card p-1.5 bg-white dark:bg-[#232522] flex items-center gap-1.5 border-2 border-[#171717] neo-shadow-sm">
+            <div className="neo-card px-1.5 py-0 bg-white dark:bg-[#232522] flex items-center gap-1.5 border-2 border-[#171717] neo-shadow-sm">
               <span className="hidden sm:inline-block text-[9px] font-black bg-[#C9F2D5] text-[#171717] px-2 py-0.5 rounded-md border border-[#171717] shrink-0">
                 MoreAI F.01
               </span>
@@ -291,18 +291,18 @@ export const ClientHome: React.FC<ClientHomeProps> = ({
                 value={quickInput}
                 onChange={(e) => setQuickInput(e.target.value)}
                 placeholder="Tanyakan apa saja ke MoreAI F.01..."
-                className="flex-1 text-xs px-2 py-1.5 bg-transparent border-none outline-none font-medium text-[#171717] dark:text-[#F7F4EC] placeholder-gray-400 min-w-0"
+                className="h-11 min-h-[44px] flex-1 text-xs px-2 py-1.5 bg-transparent border-none outline-none font-medium text-[#171717] dark:text-[#F7F4EC] placeholder-gray-400 min-w-0"
               />
               <button
                 type="button"
-                className="w-8 h-8 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 flex items-center justify-center text-gray-600 dark:text-gray-300 transition shrink-0"
+                className="ml-1.5 md:ml-0 w-8 h-8 rounded-xl bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 flex items-center justify-center text-gray-600 dark:text-gray-300 transition shrink-0"
                 title="Voice input"
               >
                 <Mic className="w-3.5 h-3.5" />
               </button>
               <button
                 type="submit"
-                className="w-8 h-8 rounded-xl bg-[#C9F2D5] hover:bg-[#b0efbe] border border-[#171717] neo-shadow-sm flex items-center justify-center text-[#171717] transition shrink-0 active:translate-x-[1px] active:translate-y-[1px]"
+                className="ml-1.5 md:ml-0 w-8 h-8 rounded-xl bg-[#C9F2D5] hover:bg-[#b0efbe] border border-[#171717] neo-shadow-sm flex items-center justify-center text-[#171717] transition shrink-0 active:translate-x-[1px] active:translate-y-[1px]"
                 title="Kirim ke Chat AI"
               >
                 <Send className="w-3.5 h-3.5" />
