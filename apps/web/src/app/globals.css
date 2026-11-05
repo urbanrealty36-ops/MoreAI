@@ -163,3 +163,34 @@
     min-height: var(--moreai-input-height-min, 44px);
   }
 }
+
+
+/* Phase 03 acceptance remediation: reliable keyboard focus and touch targets. */
+html body :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid #245E9A !important;
+  outline-offset: 3px !important;
+}
+@media (max-width: 767px) {
+  :is(button, a[href], [role="button"], summary) {
+    min-height: max(44px, var(--moreai-target-mobile-min, 44px));
+  }
+}
+
+/* Keep horizontally scrolling reference rails from widening the document. */
+@media (max-width: 767px) {
+  html, body {
+    max-width: 100%;
+    overflow-x: clip;
+  }
+}
+
+/* Phase 03 dark-surface contrast corrections for retained light reference panels. */
+.dark header {
+  background-color: var(--moreai-color-surface) !important;
+}
+.dark header p,
+.dark header .text-gray-500 {
+  color: var(--moreai-color-text) !important;
+}
+.dark h2 > span { color: #4B5563 !important; }
+.dark [class~="bg-[#F7F4EC]"] .text-gray-500 { color: #66645E !important; }
