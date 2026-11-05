@@ -192,3 +192,14 @@ html body :is(a, button, input, select, textarea, summary, [tabindex]):focus-vis
 .dark .text-emerald-800 { color: #A7F3D0 !important; }
 .dark .text-amber-900 { color: #FDE68A !important; }
 .dark .w-full > div > p:first-child { color: var(--moreai-color-text) !important; }
+
+
+/* Ensure inherited dark text never remains on dark KPI surfaces. */
+.dark .bg-gray-50 :is(p, span, strong, small, .text-lg, .text-base, .text-sm) {
+  color: var(--moreai-color-text) !important;
+}
+.dark [class~="bg-[#C9F2D5]/40"] :is(p, span, strong, small),
+.dark [class~="bg-[#FBE7B2]/40"] :is(p, span, strong, small) {
+  color: #FFFFFF !important;
+}
+.dark .text-gray-700 { color: #F7F4EC !important; }
