@@ -26,6 +26,10 @@ export const nativeTheme = {
   },
   typography: {
     sourceFontFamily: designTokens.typography.fontFamily,
+    fontFamily: {
+      sans: "MoreAIPlusJakartaSans",
+      mono: "MoreAIJetBrainsMono",
+    },
     size: designTokens.typography.scale,
     weight: designTokens.typography.weight,
   },
