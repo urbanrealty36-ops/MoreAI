@@ -97,9 +97,9 @@
 }
 
 /* Keyboard-visible focus. The ink outline is visible on light and dark surfaces. */
-:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
-  outline: 3px solid var(--moreai-color-info) !important;
-  outline-offset: 2px !important;
+html body :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid #245E9A !important;
+  outline-offset: 3px !important;
 }
 
 /* Preserve content and disable non-essential motion when requested by the OS. */
@@ -165,11 +165,7 @@
 }
 
 
-/* Phase 03 acceptance remediation: reliable keyboard focus and touch targets. */
-html body :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
-  outline: 3px solid #245E9A !important;
-  outline-offset: 3px !important;
-}
+/* Phase 03 acceptance remediation: preserve the 44px mobile target baseline. */
 @media (max-width: 767px) {
   :is(button, a[href], [role="button"], summary) {
     min-height: max(44px, var(--moreai-target-mobile-min, 44px));
