@@ -131,7 +131,8 @@ test("native Expo uses shared token aliases and pinned licensed font sources", (
   assert.ok(nativeNotFound.includes("nativeTheme.interaction.mobileTapTargetMin"));
   assert.ok(nativeNotFound.includes('href="/"'), "native not-found route must provide a working home link");
   assert.ok(fontLicense.includes("SIL OPEN FONT LICENSE Version 1.1"));
-  assert.ok(fontReadme.includes("bundled into the native app by Expo Metro"));
+  assert.ok(fontReadme.includes("Next.js loads the local font files with `next/font/local`"));
+  assert.ok(fontReadme.includes("Expo loads the same files with `expo-font`"));
   assert.ok(fontReadme.includes("ignored by Git"));
 });
 
