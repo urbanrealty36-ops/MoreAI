@@ -102,8 +102,9 @@ test("all web surfaces consume shared tokens and accessible focus/motion foundat
     assert.ok(css.includes("prefers-reduced-motion: reduce"), `${surface} reduced-motion support missing`);
     assert.equal((css.match(/:focus-visible/g) ?? []).length, 1, `${surface} has duplicate focus rules`);
     assert.equal((css.match(/prefers-reduced-motion: reduce/g) ?? []).length, 1, `${surface} has duplicate motion rules`);
-    assert.ok(layout.includes("Plus_Jakarta_Sans"), `${surface} Plus Jakarta Sans font missing`);
-    assert.ok(layout.includes("JetBrains_Mono"), `${surface} JetBrains Mono font missing`);
+    assert.ok(layout.includes('from "next/font/local"'), `${surface} must load pinned local fonts`);
+    assert.ok(layout.includes("PlusJakartaSans.ttf"), `${surface} Plus Jakarta Sans font missing`);
+    assert.ok(layout.includes("JetBrainsMono.ttf"), `${surface} JetBrains Mono font missing`);
     assert.ok(!/userScalable:\s*false|max(imum)?Scale:\s*1/.test(layout), `${surface} disables browser zoom`);
     assert.ok(!css.includes("@import url("), `${surface} uses an unbundled external CSS font import`);
   }
