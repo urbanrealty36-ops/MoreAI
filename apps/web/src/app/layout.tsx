@@ -1,17 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const plusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
+const plusJakartaSans = localFont({
+  src: "../../../mobile/assets/fonts/PlusJakartaSans.ttf",
+  weight: "100 900",
   variable: "--font-sans",
   display: "swap",
 });
 
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
+const jetbrainsMono = localFont({
+  src: "../../../mobile/assets/fonts/JetBrainsMono.ttf",
+  weight: "100 800",
   variable: "--font-mono",
   display: "swap",
 });
