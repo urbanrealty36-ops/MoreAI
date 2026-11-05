@@ -1,6 +1,6 @@
 # Phase 02 — Source Migration
 
-**Status:** SOURCE MIGRATION COMPLETE — CI acceptance pending on the scoped final branch.  
+**Status:** PASSED — complete source migration and scoped integration verified by final CI run `42013366622` on commit `4eb0632069c1071faa454a05e2814c1d20cbfa29`.  
 **Scope authority:** Official Phase Implementation Plan + owner scope clarification recorded in ADR-0005.  
 **Implementation branch:** `phase-02-source-migration-final`  
 **No production deployment, staging environment, live network/device test, or production database mutation was performed.**
@@ -78,14 +78,14 @@ The detailed row-level map is `docs/source-migration/source-target-map-v2.csv`. 
 | Gate | Evidence | Status |
 |---|---|---|
 | Complete source inventory | 111 OpenManusWeb + 53 UI files | PASS |
-| Vendor snapshot integrity | Direct Git blob SHA and byte-size comparison, 164/164 | PASS on inspected migration branch; final branch CI re-check required |
+| Vendor snapshot integrity | Direct Git blob SHA and byte-size comparison, 164/164; final source-provenance CI job | PASS |
 | License and attribution | MIT license retained; owner authorization recorded; notices present | PASS with third-party rights caveat above |
 | Source-to-target mapping | 164-row `source-target-map-v2.csv` | PASS |
-| Additive app/engine boundary integration | Worker/API compatibility and active app source copies; vendor snapshots unchanged | Implemented; CI build/import verification pending |
-| Dependency and secret checks | CI lockfile, audit, CodeQL and Gitleaks jobs | Pending final scoped-branch CI |
+| Additive app/engine boundary integration | Bounded OpenManus adapter, fail-closed UI API client, four app source previews; vendor snapshots unchanged | PASS — Python tests, Web build/typecheck, and runtime smoke green |
+| Dependency and secret checks | Lockfile, pnpm audit, pip audit, CodeQL, Gitleaks and documented exact-fingerprint exceptions | PASS |
 | No later-phase domain expansion | ADR-0005 scope boundary; later-domain changes excluded from this scoped branch | PASS |
 
-**CI status at report authoring:** pending. Do not treat this report as final acceptance until the final scoped branch's CI run is green. If any CI job fails, record the failure, repair only Phase 02 scope, and rerun.
+**Final CI status:** PASS. Run `42013366622` completed successfully on commit `4eb0632069c1071faa454a05e2814c1d20cbfa29`. All jobs passed: lockfile validation, source provenance, Python quality/tests, Web lint/typecheck/tests/build, CodeQL, pnpm audit, pip audit, Gitleaks with documented fingerprint-only exceptions, and runtime smoke. No staging or production deployment was performed.
 
 ## 8. Explicit exclusions and deferred work
 
@@ -106,7 +106,7 @@ These are not Phase 02 blockers under the current owner-approved scope boundary.
 ## 9. Gate decision
 
 **SOURCE MIGRATION IMPLEMENTATION: COMPLETE.**  
-**PHASE 02 ACCEPTANCE: PENDING final scoped-branch CI verification and review.**
+**PHASE 02 ACCEPTANCE: PASSED on CI run `42013366622`.**
 
 The next official phase after acceptance is **Phase 03 — Design System & UI Foundations**. Do not begin it before the final Phase 02 CI and review gates pass.
 
