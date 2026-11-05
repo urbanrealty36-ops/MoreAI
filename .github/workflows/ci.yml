@@ -143,3 +143,59 @@ jobs:
           done
       - name: Validate Expo app configuration
         run: pnpm --filter @moreai/mobile exec expo config --json >/tmp/moreai-mobile-config.json
+      - name: Bundle native app through Expo Metro
+        run: pnpm --filter @moreai/mobile exec expo export --platform all --output-dir /tmp/moreai-mobile-export
+
+  design-system-browser-qa:
+    needs: [web-quality, python-quality]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.20.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm install --frozen-lockfile
+      - name: Prepare immutable source reference runtime
+        run: |
+          ln -s ../../apps/web/node_modules vendor/reference-ui/node_modules
+          cp apps/web/postcss.config.mjs vendor/reference-ui/postcss.config.mjs
+      - name: Start source reference and MoreAI client surfaces
+        run: |
+          (cd vendor/reference-ui && node ../../apps/web/node_modules/next/dist/bin/next dev -p 3100 --hostname 127.0.0.1) >/tmp/moreai-reference.log 2>&1 &
+          MOREAI_VISUAL_QA=1 pnpm --filter @moreai/web dev >/tmp/moreai-web-visual.log 2>&1 &
+          pnpm --filter @moreai/admin dev >/tmp/moreai-admin-visual.log 2>&1 &
+          pnpm --filter @moreai/partner-portal dev >/tmp/moreai-partner-visual.log 2>&1 &
+          pnpm --filter @moreai/captive-portal dev >/tmp/moreai-captive-visual.log 2>&1 &
+          for port in 3000 3001 3002 3003 3100; do
+            ready=0
+            for attempt in $(seq 1 90); do
+              if curl --silent --fail "http://127.0.0.1:${port}/" >/dev/null 2>&1; then
+                ready=1
+                break
+              fi
+              sleep 2
+            done
+            if [ "${ready}" != "1" ]; then
+              cat /tmp/moreai-reference.log /tmp/moreai-web-visual.log /tmp/moreai-admin-visual.log /tmp/moreai-partner-visual.log /tmp/moreai-captive-visual.log
+              exit 1
+            fi
+          done
+          curl --silent --fail http://127.0.0.1:3000/__visual >/dev/null
+      - name: Install isolated browser QA dependencies
+        run: npm install --prefix /tmp/moreai-browser-qa --no-save --no-package-lock playwright@1.56.1 @axe-core/playwright@4.10.2 pixelmatch@5.3.0 pngjs@7.0.0
+      - name: Install Chromium
+        run: /tmp/moreai-browser-qa/node_modules/.bin/playwright install --with-deps chromium
+      - name: Run responsive visual regression and WCAG audit
+        run: node scripts/phase-03-browser-qa.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: moreai-phase-03-browser-qa-${{ github.sha }}
+          path: artifacts/phase-03/
+          if-no-files-found: warn
+          retention-days: 14
