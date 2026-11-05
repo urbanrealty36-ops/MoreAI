@@ -5,10 +5,10 @@ import { nativeTheme } from "../../../packages/design-tokens/src";
 
 const fontSources = {
   [nativeTheme.typography.fontFamily.sans]: {
-    uri: "https://raw.githubusercontent.com/google/fonts/main/ofl/plusjakartasans/PlusJakartaSans%5Bwght%5D.ttf",
+    uri: "https://raw.githubusercontent.com/google/fonts/fbe81817505e8aeadc53cc7a38a2b76fb57c333e/ofl/plusjakartasans/PlusJakartaSans%5Bwght%5D.ttf",
   },
   [nativeTheme.typography.fontFamily.mono]: {
-    uri: "https://raw.githubusercontent.com/google/fonts/main/ofl/jetbrainsmono/JetBrainsMono%5Bwght%5D.ttf",
+    uri: "https://raw.githubusercontent.com/google/fonts/fbe81817505e8aeadc53cc7a38a2b76fb57c333e/ofl/jetbrainsmono/JetBrainsMono%5Bwght%5D.ttf",
   },
 };
 
