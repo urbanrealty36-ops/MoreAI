@@ -21,8 +21,7 @@ def create_openmanus_agent(
     or execute shell, Python, or browser tools.
     """
     source = Path(
-        source_path
-        or os.getenv("OPENMANUS_SOURCE_PATH", "vendor/openmanusweb")
+        source_path or os.getenv("OPENMANUS_SOURCE_PATH", "vendor/openmanusweb")
     ).resolve()
     if not source.is_dir():
         raise RuntimeError(f"OpenManus source snapshot is unavailable: {source}")
@@ -35,9 +34,7 @@ def create_openmanus_agent(
     from app.tool import Terminate, ToolCollection
 
     class BoundedManus(Manus):
-        available_tools: ToolCollection = Field(
-            default_factory=lambda: ToolCollection(Terminate())
-        )
+        available_tools: ToolCollection = Field(default_factory=lambda: ToolCollection(Terminate()))
 
     agent = BoundedManus(max_steps=max(1, min(int(max_steps), 20)))
     agent.available_tools = ToolCollection(Terminate())
