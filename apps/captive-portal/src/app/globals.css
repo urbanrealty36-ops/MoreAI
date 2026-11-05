@@ -101,3 +101,17 @@
 .pt-safe {
   padding-top: env(safe-area-inset-top, 0.5rem);
 }
+
+/* Keyboard-visible focus and user-requested reduced-motion support. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--moreai-color-info);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
