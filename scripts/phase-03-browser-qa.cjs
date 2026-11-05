@@ -265,7 +265,7 @@ async function inspectApp(browser, app) {
             text: styles.getPropertyValue("--moreai-color-text").trim().toLowerCase(),
             shadow: styles.getPropertyValue("--moreai-color-shadow").trim().toLowerCase(),
           };
-          await page.evaluate(() => document.documentElement.classList.remove("dark"));
+          document.documentElement.classList.remove("dark");
           return values;
         });
         if (darkTokens.canvas !== "#171817" || darkTokens.surface !== "#232522" || darkTokens.text !== "#f7f4ec" || darkTokens.shadow !== "#000000") {
@@ -491,7 +491,7 @@ async function inspectApp(browser, app) {
             fail(`${app.name} ${viewport.width}px ${theme}: axe ${violation.impact} violation ${violation.id} — ${violation.help} (${violation.nodes.length} nodes)`);
           }
         }
-        document.documentElement.classList.remove("dark");
+        await page.evaluate(() => document.documentElement.classList.remove("dark"));
       }
       if (pageErrors.length) {
         for (const message of pageErrors) fail(`${app.name} ${viewport.width}px: browser runtime error: ${message}`);
