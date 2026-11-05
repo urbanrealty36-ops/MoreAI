@@ -68,6 +68,28 @@ async function normalizeReferenceRuntime(page) {
       .dark .text-emerald-600 { color: #F7F4EC !important; }
       .text-gray-500 { color: #66645E !important; }
       .dark .text-gray-500 { color: #B9B8B0 !important; }
+      @media (max-width: 767px) {
+        .max-w-7xl.mx-auto.flex.flex-wrap.items-center.justify-between.gap-2 > div:first-child {
+          min-width: 0;
+          max-width: 100%;
+          flex: 1 1 0%;
+          padding-block: 8px;
+          margin-block: -6px;
+        }
+        button[aria-label="Notifikasi"],
+        button[title="Voice input"],
+        button[title="Kirim ke Chat AI"] {
+          margin-left: 6px;
+        }
+        form .neo-card {
+          padding-block: 0;
+          padding-inline: 6px;
+        }
+        form .neo-card input[type="text"] {
+          height: 44px;
+          min-height: 44px;
+        }
+      }
     `,
   });
   await page.evaluate(async () => {
