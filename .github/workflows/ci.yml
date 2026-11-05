@@ -22,7 +22,7 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: 10.20.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - uses: astral-sh/setup-uv@v5
@@ -51,7 +51,7 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: 10.20.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
@@ -88,7 +88,7 @@ jobs:
           languages: javascript, python
           config-file: ./.github/codeql/codeql-config.yml
       - uses: github/codeql-action/analyze@v3
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - uses: pnpm/action-setup@v4
@@ -112,7 +112,7 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: 10.20.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - uses: astral-sh/setup-uv@v5
@@ -150,7 +150,7 @@ jobs:
       - name: Validate Expo app configuration
         run: pnpm --filter @moreai/mobile exec expo config --json >/tmp/moreai-mobile-config.json
       - name: Use repository Node runtime for Expo Metro
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
       - name: Download and verify pinned native font assets
@@ -170,7 +170,7 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           version: 10.20.0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - run: pnpm install --frozen-lockfile
