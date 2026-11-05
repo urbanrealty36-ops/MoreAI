@@ -1,100 +1,99 @@
 @import "tailwindcss";
+@import "../../../../packages/design-tokens/src/tokens.css";
 @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap");
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
   :root {
-    --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
+    --font-sans: var(--moreai-font-sans);
+    --font-mono: var(--moreai-font-mono);
   }
 
   body {
     font-family: var(--font-sans);
-    color: #171717;
-    background-color: #F7F4EC;
+    color: var(--moreai-color-ink);
+    background-color: var(--moreai-color-canvas);
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* Dark mode overrides */
   .dark body {
-    color: #F7F4EC;
-    background-color: #171817;
+    color: var(--moreai-color-text);
+    background-color: var(--moreai-color-canvas);
   }
 }
 
-/* Neo-Brutalist Custom Utilities */
+/* Source-compatible Neo-Brutalist utilities backed by shared tokens. */
 .neo-border {
-  border: 2px solid #171717;
+  border: var(--moreai-border-standard) solid var(--moreai-color-ink);
 }
 
 .neo-border-thick {
-  border: 3px solid #171717;
+  border: var(--moreai-border-featured) solid var(--moreai-color-ink);
 }
 
 .neo-shadow-sm {
-  box-shadow: 2px 2px 0px #171717;
+  box-shadow: var(--moreai-shadow-sm);
 }
 
 .neo-shadow {
-  box-shadow: 3.5px 3.5px 0px #171717;
+  box-shadow: var(--moreai-shadow-md);
 }
 
 .neo-shadow-lg {
-  box-shadow: 5px 5px 0px #171717;
+  box-shadow: var(--moreai-shadow-lg);
 }
 
 .neo-shadow-xl {
-  box-shadow: 7px 7px 0px #171717;
+  box-shadow: var(--moreai-shadow-xl);
 }
 
 .neo-card {
-  border: 2px solid #171717;
-  box-shadow: 3.5px 3.5px 0px #171717;
-  border-radius: 1rem;
-  background-color: #ffffff;
+  border: var(--moreai-border-standard) solid var(--moreai-color-ink);
+  box-shadow: var(--moreai-shadow-card);
+  border-radius: var(--moreai-radius-lg);
+  background-color: var(--moreai-color-white);
   transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dark .neo-card {
-  border-color: #4A4A46;
-  box-shadow: 3.5px 3.5px 0px #000000;
-  background-color: #232522;
+  border-color: var(--moreai-color-card-border);
+  box-shadow: 3.5px 3.5px 0 var(--moreai-color-shadow);
+  background-color: var(--moreai-color-surface);
 }
 
 .neo-btn {
-  border: 2px solid #171717;
-  box-shadow: 3px 3px 0px #171717;
-  border-radius: 0.75rem;
+  border: var(--moreai-border-standard) solid var(--moreai-color-ink);
+  box-shadow: var(--moreai-shadow-button);
+  border-radius: var(--moreai-radius-md);
   font-weight: 700;
-  transition: all 0.12s ease;
+  transition: all var(--moreai-motion-fast) ease;
   user-select: none;
 }
 
 .neo-btn:active {
   transform: translate(2px, 2px);
-  box-shadow: 0px 0px 0px #171717;
+  box-shadow: 0 0 0 var(--moreai-color-shadow);
 }
 
 .dark .neo-btn {
-  border-color: #66645E;
-  box-shadow: 3px 3px 0px #000000;
+  border-color: var(--moreai-color-border);
+  box-shadow: 3px 3px 0 var(--moreai-color-shadow);
 }
 
 .dark .neo-btn:active {
-  box-shadow: 0px 0px 0px #000000;
+  box-shadow: 0 0 0 var(--moreai-color-shadow);
 }
 
-/* Hide scrollbar for tabs and horizontal carousels */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
 
-/* Safe area support for mobile PWA */
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 1rem);
 }
