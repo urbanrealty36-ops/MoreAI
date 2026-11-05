@@ -97,9 +97,11 @@
 }
 
 /* Keyboard-visible focus. The ink outline is visible on light and dark surfaces. */
-html body :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+html body :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible,
+html body :is(a, button, input, select, textarea, summary, [tabindex]):focus {
   outline: 3px solid #245E9A !important;
   outline-offset: 3px !important;
+  box-shadow: 0 0 0 3px #245E9A !important;
 }
 
 /* Preserve content and disable non-essential motion when requested by the OS. */
@@ -198,3 +200,9 @@ html body :is(a, button, input, select, textarea, summary, [tabindex]):focus-vis
 .dark .w-full > div > p:first-child { color: var(--moreai-color-text) !important; }
 .dark .neo-card[class~="bg-[#FBE7B2]"] .text-xl,
 .dark .neo-card[class~="bg-[#D8ECFF]"] .text-xl { color: #171717 !important; }
+
+/* Pair dark ink with the retained light accent panels in dark mode. */
+.dark h1 { color: #F7F4EC !important; }
+.dark .my-3 { color: #7B3306 !important; }
+.dark .neo-card[class~="bg-[#FBE7B2]"] .text-amber-900 { color: #7B3306 !important; }
+.dark .neo-card[class~="bg-[#D8ECFF]"] .text-blue-900 { color: #1E40AF !important; }
