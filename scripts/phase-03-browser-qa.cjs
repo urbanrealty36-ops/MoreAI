@@ -45,7 +45,7 @@ async function waitForStableRender(page) {
   await page.waitForTimeout(250);
 }
 
-async function screenshotReferenceComparison(browser, viewport) {
+async function screenshotReferenceComparison(browser, viewport, theme = "light") {
   const source = await browser.newPage({ viewport, deviceScaleFactor: 1 });
   const target = await browser.newPage({ viewport, deviceScaleFactor: 1 });
   try {
@@ -54,13 +54,20 @@ async function screenshotReferenceComparison(browser, viewport) {
     await waitForStableRender(source);
     await waitForStableRender(target);
 
+    if (theme === "dark") {
+      await source.getByRole("button", { name: "Toggle Tema" }).click();
+      await target.getByRole("button", { name: "Toggle Tema" }).click();
+      await waitForStableRender(source);
+      await waitForStableRender(target);
+    }
+
     const selector = "div.min-h-screen.flex.flex-col";
     const sourceRoot = source.locator(selector).first();
     const targetRoot = target.locator(selector).first();
     await sourceRoot.waitFor({ state: "visible", timeout: 15000 });
     await targetRoot.waitFor({ state: "visible", timeout: 15000 });
 
-    const stem = `web-reference-${viewport.width}x${viewport.height}`;
+    const stem = `web-reference-${theme}-${viewport.width}x${viewport.height}`;
     const sourcePath = path.join(outputDir, `${stem}-source.png`);
     const targetPath = path.join(outputDir, `${stem}-target.png`);
     const diffPath = path.join(outputDir, `${stem}-diff.png`);
@@ -89,6 +96,7 @@ async function screenshotReferenceComparison(browser, viewport) {
     const diffRatio = differentPixels / totalPixels;
     report.visualComparison.push({
       viewport,
+      theme,
       sourcePath,
       targetPath,
       diffPath,
@@ -153,6 +161,62 @@ async function inspectApp(browser, app) {
       appReport.screenshots.push(screenshotPath);
 
       if (viewport.width === 390) {
+        const darkTokens = await page.evaluate(() => {
+          document.documentElement.classList.add("dark");
+          const styles = getComputedStyle(document.documentElement);
+          const values = {
+            canvas: styles.getPropertyValue("--moreai-color-canvas").trim().toLowerCase(),
+            surface: styles.getPropertyValue("--moreai-color-surface").trim().toLowerCase(),
+            text: styles.getPropertyValue("--moreai-color-text").trim().toLowerCase(),
+            shadow: styles.getPropertyValue("--moreai-color-shadow").trim().toLowerCase(),
+          };
+          document.documentElement.classList.remove("dark");
+          return values;
+        });
+        if (darkTokens.canvas !== "#171817" || darkTokens.surface !== "#232522" || darkTokens.text !== "#f7f4ec" || darkTokens.shadow !== "#000000") {
+          fail(`${app.name}: dark theme tokens are not applied correctly: ${JSON.stringify(darkTokens)}`);
+        }
+
+        await page.emulateMedia({ reducedMotion: "reduce" });
+        const reducedMotion = await page.evaluate(() => {
+          const element = document.querySelector("button, a, .neo-card");
+          const style = element ? getComputedStyle(element) : null;
+          const toSeconds = (value) => value.split(",").map((item) => {
+            const duration = item.trim();
+            return parseFloat(duration) * (duration.endsWith("ms") ? 0.001 : 1);
+          });
+          return {
+            preference: matchMedia("(prefers-reduced-motion: reduce)").matches,
+            transitionSeconds: style ? toSeconds(style.transitionDuration) : [],
+            animationSeconds: style ? toSeconds(style.animationDuration) : [],
+          };
+        });
+        const motionDurations = [...reducedMotion.transitionSeconds, ...reducedMotion.animationSeconds];
+        if (!reducedMotion.preference || motionDurations.some((duration) => duration > 0.0001)) {
+          fail(`${app.name}: reduced-motion preference is not respected: ${JSON.stringify(reducedMotion)}`);
+        }
+        await page.emulateMedia({ reducedMotion: "no-preference" });
+
+        const touchTargets = await page.evaluate(() =>
+          Array.from(document.querySelectorAll('a[href], button, input, select, textarea, [role="button"]'))
+            .filter((element) => {
+              const rect = element.getBoundingClientRect();
+              const style = getComputedStyle(element);
+              return rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility !== "hidden";
+            })
+            .map((element) => {
+              const rect = element.getBoundingClientRect();
+              return {
+                tag: element.tagName,
+                label: element.getAttribute("aria-label") || element.textContent?.trim().slice(0, 60) || "",
+                width: Math.round(rect.width),
+                height: Math.round(rect.height),
+              };
+            })
+            .filter((target) => target.width < 44 || target.height < 44)
+        );
+        appReport.touchTargetsUnder44 = touchTargets;
+
         await page.keyboard.press("Tab");
         const focus = await page.evaluate(() => {
           const element = document.activeElement;
@@ -203,7 +267,8 @@ async function main() {
   const browser = await chromium.launch({ headless: true });
   try {
     for (const viewport of viewports) {
-      await screenshotReferenceComparison(browser, viewport);
+      await screenshotReferenceComparison(browser, viewport, "light");
+      await screenshotReferenceComparison(browser, viewport, "dark");
     }
     for (const app of apps) {
       await inspectApp(browser, app);

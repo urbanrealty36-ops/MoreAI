@@ -15,3 +15,6 @@ __pycache__/
 .env.*
 !.env.example
 !.env.*.example
+
+# Native font binaries are reproducibly fetched from the pinned Google Fonts revision.
+/apps/mobile/assets/fonts/*.ttf

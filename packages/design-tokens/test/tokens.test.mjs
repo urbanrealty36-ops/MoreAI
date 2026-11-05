@@ -112,12 +112,18 @@ test("native Expo uses shared token aliases and pinned licensed font sources", (
   const fontReadme = readFileSync(new URL("../../../apps/mobile/assets/fonts/README.md", import.meta.url), "utf8");
 
   assert.ok(nativePackage.dependencies["expo-font"], "expo-font must be a direct mobile dependency");
+  const fontDownloader = readFileSync(new URL("../../../apps/mobile/scripts/download-fonts.mjs", import.meta.url), "utf8");
   assert.ok(nativeLayout.includes("useFonts"), "native root must load the brand fonts");
-  assert.ok(nativeLayout.includes("fbe81817505e8aeadc53cc7a38a2b76fb57c333e"), "native font source must be pinned");
+  assert.ok(nativeLayout.includes('require("../assets/fonts/PlusJakartaSans.ttf")'));
+  assert.ok(nativeLayout.includes('require("../assets/fonts/JetBrainsMono.ttf")'));
+  assert.ok(fontDownloader.includes("fbe81817505e8aeadc53cc7a38a2b76fb57c333e"), "native font source must be pinned");
+  assert.ok(fontDownloader.includes("0cb13a998ed525ba226d911b10d6c4c4f923a961"));
+  assert.ok(fontDownloader.includes("aa310be8b717fe3774f9444dd89d5f4101cc6d10"));
   assert.ok(nativeScreen.includes("nativeTheme.typography.fontFamily.sans"));
   assert.ok(nativeScreen.includes("nativeTheme.typography.fontFamily.mono"));
   assert.ok(fontLicense.includes("SIL OPEN FONT LICENSE Version 1.1"));
-  assert.ok(fontReadme.includes("first launch requires network access"));
+  assert.ok(fontReadme.includes("bundled into the native app by Expo Metro"));
+  assert.ok(fontReadme.includes("ignored by Git"));
 });
 
 test("web/native theme exports expose matching semantic foundations", () => {

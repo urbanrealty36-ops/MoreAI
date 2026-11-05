@@ -143,6 +143,8 @@ jobs:
           done
       - name: Validate Expo app configuration
         run: pnpm --filter @moreai/mobile exec expo config --json >/tmp/moreai-mobile-config.json
+      - name: Download and verify pinned native font assets
+        run: pnpm --filter @moreai/mobile fonts:download
       - name: Bundle native app through Expo Metro
         run: pnpm --filter @moreai/mobile exec expo export --platform all --output-dir /tmp/moreai-mobile-export
 

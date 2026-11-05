@@ -20,8 +20,9 @@
 - `packages/design-tokens/scripts/generate-css.mjs` generates the CSS from the canonical JSON and supports deterministic `--check`.
 - `packages/design-tokens/test/tokens.test.mjs` validates the palette, layout scales, source-specific shadow measurements and CSS variable contract.
 - Web, Admin, Partner Portal and Captive Portal global styles import the shared CSS tokens and consume the shared values for foundational typography, color, border, radius and shadow utilities.
-- Native foundation imports the same TypeScript token source for layout, color and type-scale values. Native custom font assets were not found in the pinned UI source; no web CSS font stack is incorrectly passed to React Native.
-- All four web surfaces include visible keyboard focus styling and a `prefers-reduced-motion` baseline.
+- Native foundation imports the same TypeScript token source for layout, color and type-scale values. Expo uses `expo-font` with local TTF assets downloaded from a pinned Google Fonts revision by `apps/mobile/scripts/download-fonts.mjs`; the script verifies upstream Git blob SHA and byte size before bundling. Native fonts are available offline after the app is built.
+- All four web surfaces include visible keyboard focus styling and a `prefers-reduced-motion` baseline. Browser zoom is enabled; source font families are restored through `next/font/google`.
+- CI now includes a Playwright visual regression comparison against the immutable vendor reference in light/dark themes at all five required viewports, plus Axe WCAG 2.2 AA scans, overflow checks, keyboard focus, dark-token and reduced-motion checks. The test-only `/__visual` route is gated by `MOREAI_VISUAL_QA=1` and returns 404 otherwise.
 - Token tests calculate WCAG AA contrast for semantic foreground/background pairs and core light/dark text surfaces.
 
 ## 3. Source fidelity decisions
@@ -51,17 +52,19 @@ Existing source UI components and layouts are not replaced. This phase establish
 | Web/Admin/Partner/Captive styles wired | PASS — source added | Four app `globals.css` files |
 | Native token baseline wired | PASS — source added | `apps/mobile/app/index.tsx` |
 | Lint/typecheck/build | PENDING CI | Must be verified on resulting main head |
-| Screenshot comparison at 360/390/768/1024/1440 | NOT RUN | Requires browser screenshot runner; no evidence claimed |
+| Light/dark screenshot comparison at 360/390/768/1024/1440 | PENDING CI | Playwright compares `ReferenceWorkspace` against immutable `vendor/reference-ui` and uploads source/target/diff artifacts |
 | Static semantic contrast and reduced-motion CSS baseline | PASS — source added | Token tests and four global styles; CI pending |
-| Full WCAG 2.2 AA audit (keyboard, screen reader, text scaling, focus order) | NOT RUN | Must be completed before Phase 03 acceptance |
-| Native font asset parity | OPEN | No native font files were present in the pinned UI snapshot |
+| Automated Axe WCAG 2.2 AA browser audit | PENDING CI | 390px and 1440px scans for Web, Admin, Partner Portal and Captive Portal |
+| Browser zoom, keyboard focus and reduced-motion checks | PENDING CI | Playwright browser checks across all four web surfaces |
+| Touch target audit (44px PRD target) | PENDING CI | Browser report records all visible interactive targets under 44px for review |
+| Native font asset parity | PENDING CI | Pinned TTF download verifies Git blob SHA/size; Expo Metro export bundles local fonts |
 
 ## 6. Remaining Phase 03 acceptance work
 
 1. Confirm CI passes on the final main commit, including token CSS deterministic check and token contract tests.
 2. Run screenshot/visual regression for all four web surfaces at 360, 390, 768, 1024 and 1440 px against the pinned reference; investigate every unintended difference.
-3. Validate focus, contrast, labels, touch targets and reduced-motion behavior against WCAG 2.2 AA.
-4. Confirm Expo/Metro resolves the shared token module in a clean install/build; determine and document the native font loading strategy without changing the approved font choice.
+3. Validate focus, contrast, labels, touch targets and reduced-motion behavior against WCAG 2.2 AA; resolve every Axe violation and every 44px touch-target exception or document an approved source-preserving exception.
+4. Confirm Expo/Metro resolves the shared token module and local licensed font assets in a clean install/export.
 5. Update this report and Master Continuation Context with final evidence before marking Phase 03 Passed.
 
 ## 7. Next phase

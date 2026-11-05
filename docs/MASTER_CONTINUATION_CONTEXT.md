@@ -55,7 +55,10 @@
 - Generated CSS: `packages/design-tokens/src/tokens.css`; deterministic generator/check: `packages/design-tokens/scripts/generate-css.mjs`.
 - Token tests: `packages/design-tokens/test/tokens.test.mjs`.
 - Web/Admin/Partner/Captive global styles import shared token CSS; Native foundation consumes the shared token object.
-- Four web surfaces include keyboard focus-visible and reduced-motion CSS foundations; token tests include semantic contrast-ratio assertions.
+- Four web surfaces include keyboard focus-visible and reduced-motion CSS foundations; browser zoom remains enabled for text scaling.
+- Web fonts use the source reference's `next/font/google` families. Native fonts are downloaded at build/development startup by `apps/mobile/scripts/download-fonts.mjs`, verified by Git blob SHA/size, and bundled through Expo Metro; font binaries remain ignored generated assets.
+- CI includes Playwright light/dark pixel comparison against the immutable reference at 360/390/768/1024/1440, Axe WCAG 2.2 AA scans, responsive overflow, keyboard focus, reduced-motion and dark-token checks. Test-only route `/__visual` is gated by `MOREAI_VISUAL_QA=1`.
+- Latest acceptance status remains pending until the browser QA and Expo Metro jobs complete successfully and screenshot artifacts are inspected.
 - No Supabase migrations, FastAPI business endpoints, or production deployments were introduced.
 - Phase 03 remains In Progress until final CI, screenshot comparison at 360/390/768/1024/1440, WCAG 2.2 AA/reduced-motion checks, and native font/runtime review are evidenced.
 
@@ -72,6 +75,6 @@
 - Phase 00 — Source & Architecture Audit: Passed.
 - Phase 01 — Monorepo Foundation: Passed.
 - Phase 02 — Source Migration: **Passed; PR #9 merged to `main`** (`407a3cbe1a9b5dbafbb14536ab0930f2271e0626`).
-- Phase 03 — Design System & UI Foundations: **In Progress**; shared token foundation committed directly to `main`; full screenshot regression, WCAG interaction review, native font/runtime verification and CI evidence remain open.
+- Phase 03 — Design System & UI Foundations: **In Progress**; shared token foundation committed directly to `main`; light/dark screenshot regression, Axe/accessibility and touch-target review, Expo Metro font bundling, and final CI evidence remain open.
 - Next official phase after Phase 03 acceptance: **Phase 04 — Identity & Access.**
 

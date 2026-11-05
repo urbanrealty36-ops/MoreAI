@@ -9,7 +9,12 @@
     "ios": "expo run:ios",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "test": "node --test"
+    "test": "node --test",
+    "fonts:download": "node scripts/download-fonts.mjs",
+    "prestart": "pnpm run fonts:download",
+    "preandroid": "pnpm run fonts:download",
+    "preios": "pnpm run fonts:download",
+    "prebuild": "pnpm run fonts:download"
   },
   "dependencies": {
     "expo": "~54.0.20",
