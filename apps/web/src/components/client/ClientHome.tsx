@@ -291,7 +291,7 @@ export const ClientHome: React.FC<ClientHomeProps> = ({
                 value={quickInput}
                 onChange={(e) => setQuickInput(e.target.value)}
                 placeholder="Tanyakan apa saja ke MoreAI F.01..."
-                className="h-11 md:h-7 min-h-[44px] flex-1 text-xs px-2 py-1.5 bg-transparent border-none outline-none font-medium text-[#171717] dark:text-[#F7F4EC] placeholder-gray-400 min-w-0"
+                className="h-11 md:h-7 min-h-[44px] md:min-h-0 flex-1 text-xs px-2 py-1.5 bg-transparent border-none outline-none font-medium text-[#171717] dark:text-[#F7F4EC] placeholder-gray-400 min-w-0"
               />
               <button
                 type="button"
