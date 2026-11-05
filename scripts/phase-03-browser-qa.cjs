@@ -46,6 +46,9 @@ async function waitForStableRender(page) {
 }
 
 async function normalizeReferenceRuntime(page) {
+  await page.addStyleTag({
+    content: "nextjs-portal { display: none !important; pointer-events: none !important; }",
+  });
   const plusJakartaSans = fs.readFileSync("apps/mobile/assets/fonts/PlusJakartaSans.ttf").toString("base64");
   const jetBrainsMono = fs.readFileSync("apps/mobile/assets/fonts/JetBrainsMono.ttf").toString("base64");
   await page.addStyleTag({
@@ -202,6 +205,12 @@ async function inspectApp(browser, app) {
         fail(`${app.name} ${viewport.width}px: route did not return HTTP success`);
       }
       await waitForStableRender(page);
+      if (app.name === "captive-portal") {
+        await page.locator("details").evaluateAll((nodes) => {
+          for (const node of nodes) node.open = true;
+        });
+        await waitForStableRender(page);
+      }
 
       const layout = await page.evaluate(() => {
         const bodyStyle = getComputedStyle(document.body);
