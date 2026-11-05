@@ -11,7 +11,9 @@
   "scripts": {
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
-    "build": "tsc --noEmit",
-    "test": "node --test test/*.test.mjs"
+    "build": "node scripts/generate-css.mjs --check && tsc --noEmit",
+    "test": "node --test test/*.test.mjs",
+    "tokens:generate": "node scripts/generate-css.mjs",
+    "tokens:check": "node scripts/generate-css.mjs --check"
   }
 }
