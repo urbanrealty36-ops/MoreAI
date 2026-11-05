@@ -92,7 +92,7 @@ export const SuperAdminView: React.FC = () => {
         </div>
 
         {/* Scrollable Nav Item List */}
-        <nav className="flex md:flex-col gap-1 overflow-x-auto no-scrollbar md:overflow-y-auto max-h-[60vh] py-1">
+        <nav className="flex md:flex-col gap-1 overflow-x-auto no-scrollbar md:overflow-y-auto max-h-[60vh] pt-1.5 pb-1.5 -my-0.5 md:my-0 md:py-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
