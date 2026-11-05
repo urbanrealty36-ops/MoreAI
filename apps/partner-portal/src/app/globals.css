@@ -163,3 +163,32 @@
     min-height: var(--moreai-input-height-min, 44px);
   }
 }
+
+
+/* Phase 03 acceptance remediation: reliable keyboard focus and touch targets. */
+html body :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 3px solid #245E9A !important;
+  outline-offset: 3px !important;
+}
+@media (max-width: 767px) {
+  :is(button, a[href], [role="button"], summary) {
+    min-height: max(44px, var(--moreai-target-mobile-min, 44px));
+  }
+}
+
+/* Phase 03 dark-surface contrast corrections for partner KPI cards. */
+.dark header {
+  background-color: var(--moreai-color-surface) !important;
+}
+.dark header .text-gray-500 { color: var(--moreai-color-text) !important; }
+.dark .bg-gray-50 { color: var(--moreai-color-text); }
+.dark .bg-gray-50 .text-lg,
+.dark .bg-gray-50 .text-base,
+.dark .bg-gray-50 .text-sm { color: var(--moreai-color-text) !important; }
+.dark [class~="bg-[#C9F2D5]/40"],
+.dark [class~="bg-[#FBE7B2]/40"] { color: #FFFFFF !important; }
+.dark [class~="bg-[#C9F2D5]/40"] *,
+.dark [class~="bg-[#FBE7B2]/40"] * { color: #FFFFFF !important; }
+.dark .text-emerald-800 { color: #A7F3D0 !important; }
+.dark .text-amber-900 { color: #FDE68A !important; }
+.dark .w-full > div > p:first-child { color: var(--moreai-color-text) !important; }
