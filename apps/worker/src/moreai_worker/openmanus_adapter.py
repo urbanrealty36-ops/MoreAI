@@ -21,7 +21,8 @@ def create_openmanus_agent(
     or execute shell, Python, or browser tools.
     """
     source = Path(
-        source_path or os.getenv("OPENMANUS_SOURCE_PATH", "vendor/openmanusweb")
+        source_path
+        or os.getenv("OPENMANUS_SOURCE_PATH", "vendor/openmanusweb")
     ).resolve()
     if not source.is_dir():
         raise RuntimeError(f"OpenManus source snapshot is unavailable: {source}")
