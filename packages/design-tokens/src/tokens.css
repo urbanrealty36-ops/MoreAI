@@ -1,6 +1,7 @@
 /* Generated from packages/design-tokens/tokens.json. Do not edit by hand. */
 :root {
   --moreai-color-ink: #171717;
+  --moreai-color-shadow: #171717;
   --moreai-color-canvas: #F7F4EC;
   --moreai-color-white: #FFFFFF;
   --moreai-color-charcoal: #35342F;
@@ -57,6 +58,7 @@
 }
 .dark {
   --moreai-color-canvas: #171817;
+  --moreai-color-shadow: #000000;
   --moreai-color-surface: #232522;
   --moreai-color-surface-raised: #1E201D;
   --moreai-color-text: #F7F4EC;
