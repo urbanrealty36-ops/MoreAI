@@ -145,10 +145,10 @@ jobs:
           done
       - name: Validate Expo app configuration
         run: pnpm --filter @moreai/mobile exec expo config --json >/tmp/moreai-mobile-config.json
-      - name: Select Expo-compatible Node runtime
+      - name: Use repository Node runtime for Expo Metro
         uses: actions/setup-node@v4
         with:
-          node-version: 20.19.5
+          node-version: 22
       - name: Download and verify pinned native font assets
         run: pnpm --filter @moreai/mobile fonts:download
       - name: Bundle Android app through Expo Metro
