@@ -118,3 +118,4 @@ The next official phase after acceptance is **Phase 03 — Design System & UI Fo
 - Scope correction and removal of out-of-phase runtime implementation: `cd95fb61b747f0cd00f79efe486c13d1d4bec0a7`.
 - Workspace dependency lockfile restored to the Phase 01 baseline with OpenManus runtime dependency activation deferred: `77262c33699ffeb55df01843778f611baf7079d7`.
 - Final source mapping and dependency deferral note: `9e13bfee8e0db78ad1e6dcd1e223eaf185bc8467`.
+- Formatting and restored Phase 01 workspace dependency lock: `5f80fc241ccd88b74fac86783ffa9ac1b2a22249`.
