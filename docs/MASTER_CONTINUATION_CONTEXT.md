@@ -2,15 +2,17 @@
 
 **Updated:** 5 November 2026  
 **Repository:** `urbanrealty36-ops/MoreAI`  
-**Active phase:** Phase 02 — Source Migration (implementation complete; PR review pending)  
-**Implementation branch:** `phase-02-source-migration-final`  
-**PR:** [#9 — Phase 02 Source Migration](https://github.com/urbanrealty36-ops/MoreAI/pull/9)
+**Active phase:** Phase 03 — Design System & UI Foundations (shared token foundation implemented; acceptance in progress)  
+**Active branch:** `main`  
+**Phase 02 merge:** `407a3cbe1a9b5dbafbb14536ab0930f2271e0626` (PR #9 merged)
 
 ## Canonical project references
 - Master PRD: `docs/MoreAI_Master_PRD_v1.0_ID.md`
 - Official Phase Plan: `docs/MoreAI_Phase_Implementation_Plan_v1.0_ID.md`
 - Engineering rules: `AGENTS.md`
-- Phase 02 report: `docs/source-migration/PHASE-02-SOURCE-MIGRATION.md`
+- Phase 02 report: `docs/source-migration/PHASE-02-SOURCE-MIGRATION.md`  
+- Phase 03 report: `docs/design-system/PHASE-03-DESIGN-SYSTEM-FOUNDATIONS.md`  
+- Design token ADR: `docs/adr/ADR-0006-moreai-shared-design-token-source-of-truth.md`
 - Phase boundary: `docs/adr/ADR-0005-phase-02-source-migration-scope-boundary.md`
 
 ## Pinned source references
@@ -46,6 +48,16 @@
 - CodeQL exclusions are limited to seven exact non-mounted upstream legacy web files. The 24 upstream alerts remain documented and quarantined, not remediated. Any future activation requires remediation and re-review.
 - Phase 02 report: `docs/source-migration/PHASE-02-SOURCE-MIGRATION.md`.
 
+## Phase 03 implementation status
+- Phase 02 PR #9 was merged to `main`; merge commit `407a3cbe1a9b5dbafbb14536ab0930f2271e0626`.
+- Canonical tokens: `packages/design-tokens/tokens.json`.
+- Typed exports: `packages/design-tokens/src/index.ts` (web and native theme).
+- Generated CSS: `packages/design-tokens/src/tokens.css`; deterministic generator/check: `packages/design-tokens/scripts/generate-css.mjs`.
+- Token tests: `packages/design-tokens/test/tokens.test.mjs`.
+- Web/Admin/Partner/Captive global styles import shared token CSS; Native foundation consumes the shared token object.
+- No Supabase migrations, FastAPI business endpoints, or production deployments were introduced.
+- Phase 03 remains In Progress until final CI, screenshot comparison at 360/390/768/1024/1440, WCAG 2.2 AA/reduced-motion checks, and native font/runtime review are evidenced.
+
 ## Engineering constraints for all future work
 - Read `AGENTS.md`, Master PRD, official Phase Plan and relevant ADRs before implementation.
 - Preserve immutable vendor snapshots; add integrations outside vendor paths.
@@ -58,6 +70,7 @@
 ## Phase status and next phase
 - Phase 00 — Source & Architecture Audit: Passed.
 - Phase 01 — Monorepo Foundation: Passed.
-- Phase 02 — Source Migration: **Implementation and CI acceptance passed; PR #9 awaits owner review/merge.**
-- Next official phase: **Phase 03 — Design System & UI Foundations.** Begin only after Phase 02 PR is reviewed and merged.
+- Phase 02 — Source Migration: **Passed; PR #9 merged to `main`** (`407a3cbe1a9b5dbafbb14536ab0930f2271e0626`).
+- Phase 03 — Design System & UI Foundations: **In Progress**; shared token foundation committed directly to `main`; visual/accessibility/native acceptance remains open.
+- Next official phase after Phase 03 acceptance: **Phase 04 — Identity & Access.**
 
