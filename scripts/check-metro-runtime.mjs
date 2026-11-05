@@ -57,11 +57,18 @@ if (/^  image-size@/m.test(lock)) {
   errors.push("image-size re-entered the dependency graph");
 }
 
-const expoMetroStart = lock.indexOf("\n  '@expo/metro@54.2.0':");
-const snapshotsStart = lock.indexOf("\nsnapshots:\n");
+const lockLines = lock.split("\n");
+const snapshotsLine = lockLines.findIndex((line) => line === "snapshots:");
+const expoMetroLine = lockLines.findIndex(
+  (line, index) => index > snapshotsLine && line === "  '@expo/metro@54.2.0':",
+);
+let expoMetroEnd = expoMetroLine + 1;
+while (expoMetroEnd < lockLines.length && !/^  \S/.test(lockLines[expoMetroEnd])) {
+  expoMetroEnd += 1;
+}
 const expoMetroBlock =
-  expoMetroStart >= 0 && snapshotsStart >= 0
-    ? lock.slice(expoMetroStart, lock.indexOf("\n  ", expoMetroStart + 4))
+  snapshotsLine >= 0 && expoMetroLine > snapshotsLine
+    ? lockLines.slice(expoMetroLine, expoMetroEnd).join("\n")
     : "";
 
 if (!expoMetroBlock) {
@@ -77,9 +84,14 @@ if (!expoMetroBlock) {
 if (!/^  '@react-native-masked-view\/masked-view@0\.3\.2':/m.test(lock)) {
   errors.push("Missing Expo SDK 54 compatible masked-view 0.3.2 package");
 }
+const mobileStart = lockLines.findIndex((line) => line === "  apps/mobile:");
+const mobileEnd = lockLines.findIndex(
+  (line, index) => index > mobileStart && line.startsWith("  apps/"),
+);
+const mobileImporter = lockLines.slice(mobileStart, mobileEnd).join("\n");
 if (
-  !/^  apps\/mobile:[\\s\\S]*?^      '@react-native-masked-view\/masked-view':\\n        specifier: 0\.3\.2/m.test(
-    lock,
+  !mobileImporter.includes(
+    "'@react-native-masked-view/masked-view':\n        specifier: 0.3.2",
   )
 ) {
   errors.push("masked-view 0.3.2 must be a direct mobile workspace dependency");
