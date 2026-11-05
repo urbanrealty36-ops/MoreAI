@@ -2,3 +2,12 @@
 1cc296daaba1990a7f1a4718dd915e01460e7069:vendor/openmanusweb/README.md:jwt:32
 1cc296daaba1990a7f1a4718dd915e01460e7069:vendor/openmanusweb/README_zh.md:jwt:32
 d0eb7a1559d7923d47fa8b3c82c79bb7c112f8c8:vendor/openmanusweb/README.md:jwt:32
+2ce19578ebb439c39ae622721039f988ca7678a3:docs/source-migration/PHASE-02-SOURCE-MIGRATION.md:generic-api-key:123
+949841d72b8179fc66e46e3334603038b92b6c58:docs/source-migration/source-target-map-v2.csv:generic-api-key:57
+949841d72b8179fc66e46e3334603038b92b6c58:docs/source-migration/source-target-map-v2.csv:generic-api-key:62
+949841d72b8179fc66e46e3334603038b92b6c58:docs/source-migration/source-target-map-v2.csv:generic-api-key:124
+949841d72b8179fc66e46e3334603038b92b6c58:docs/source-migration/source-target-map-v2.csv:generic-api-key:134
+949841d72b8179fc66e46e3334603038b92b6c58:docs/source-migration/source-target-map-v2.csv:generic-api-key:140
+949841d72b8179fc66e46e3334603038b92b6c58:docs/source-migration/source-target-map-v2.csv:generic-api-key:145
+949841d72b8179fc66e46e3334603038b92b6c58:vendor/openmanusweb/README.md:jwt:32
+949841d72b8179fc66e46e3334603038b92b6c58:vendor/openmanusweb/README_zh.md:jwt:32

@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "phase": "02",
+  "sources": [
+    {
+      "name": "OpenManusWeb",
+      "repository": "https://github.com/YunQiAI/OpenManusWeb.git",
+      "ref": "dev_web_app",
+      "commit": "3ceaa9182b39bbb9898ddda0a4b1c50c2758ab5f",
+      "tree": "41258ca11d4299beab17e4172fbcf8303eac1a6b",
+      "tracked_files": 111,
+      "bytes": 1201688,
+      "vendor_path": "vendor/openmanusweb",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2025 manna_and_poem"
+    },
+    {
+      "name": "Front-End-UI-MoreAI",
+      "repository": "https://github.com/urbanrealty36-ops/Front-End-UI-MoreAI.git",
+      "ref": "main",
+      "commit": "89bccc184dc8f2e6dac20627d5c7d50ef3e4a8f4",
+      "tree": "30922c1ab21de3b60947cae5448e0a58222466be",
+      "tracked_files": 53,
+      "bytes": 8708522,
+      "vendor_path": "vendor/reference-ui",
+      "license": null,
+      "authorization": "Owner-confirmed personal ownership and authorization in project conversation"
+    }
+  ],
+  "limitations": [
+    "The UI upstream has no root LICENSE; owner authorization is specific to this repository and does not replace third-party dependency or asset license review.",
+    "No GLB or GLTF files were present in the audited UI tree.",
+    "OpenManusWeb and Front-End-UI-MoreAI snapshots are checked into the MoreAI monorepo as ordinary immutable vendor trees, with upstream tree SHAs and per-file blob hashes recorded in source-target-map-v2.csv."
+  ]
+}

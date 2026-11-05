@@ -1,0 +1,63 @@
+# MoreAI — Master Continuation Context
+
+**Updated:** 5 November 2026  
+**Repository:** `urbanrealty36-ops/MoreAI`  
+**Active phase:** Phase 02 — Source Migration (implementation complete; PR review pending)  
+**Implementation branch:** `phase-02-source-migration-final`  
+**PR:** [#9 — Phase 02 Source Migration](https://github.com/urbanrealty36-ops/MoreAI/pull/9)
+
+## Canonical project references
+- Master PRD: `docs/MoreAI_Master_PRD_v1.0_ID.md`
+- Official Phase Plan: `docs/MoreAI_Phase_Implementation_Plan_v1.0_ID.md`
+- Engineering rules: `AGENTS.md`
+- Phase 02 report: `docs/source-migration/PHASE-02-SOURCE-MIGRATION.md`
+- Phase boundary: `docs/adr/ADR-0005-phase-02-source-migration-scope-boundary.md`
+
+## Pinned source references
+- OpenManusWeb `dev_web_app`: commit `3ceaa9182b39bbb9898ddda0a4b1c50c2758ab5f`, upstream tree `41258ca11d4299beab17e4172fbcf8303eac1a6b`, 111 tracked files, 1,201,688 bytes.
+- Front-End-UI-MoreAI `main`: commit `89bccc184dc8f2e6dac20627d5c7d50ef3e4a8f4`, upstream tree `30922c1ab21de3b60947cae5448e0a58222466be`, 53 tracked files, 8,708,522 bytes.
+- The user confirmed personal ownership and authorization for MoreAI use of Front-End-UI-MoreAI on 5 November 2026. Its upstream root has no LICENSE. This does not grant rights over third-party dependencies/assets; those remain subject to their own terms.
+
+## Phase 02 deliverables
+- Immutable, complete snapshots: `vendor/openmanusweb/` and `vendor/reference-ui/`.
+- Total mirrored source: 164 tracked files, 9,910,210 bytes.
+- File inventory: `docs/source-migration/source-inventory-v1.csv`.
+- Source pins and legal/provenance notes: `docs/source-migration/source-pins-v1.json`.
+- Snapshot verification: `docs/source-migration/source-mirror-verification.json`.
+- Per-file source-to-target mapping: `docs/source-migration/source-target-map-v2.csv` (164 rows with upstream path, blob SHA, size, vendor target, integration target and migration status).
+- Third-party attribution: `THIRD_PARTY_NOTICES.md`.
+- Secret scan exceptions: `docs/source-migration/SECRET-SCAN-EXCEPTIONS.md` and `.gitleaksignore` (exact fingerprints only).
+- CodeQL legacy source review and narrow path config: `docs/source-migration/CODEQL-LEGACY-SNAPSHOT-REVIEW.md`, `.github/codeql/codeql-config.yml`.
+- OpenManus execution security boundary: `docs/source-migration/OPENMANUS-SECURITY-MAPPING.md`.
+- Scope boundary ADR: `docs/adr/ADR-0005-phase-02-source-migration-scope-boundary.md`.
+
+## Integration boundaries
+- Upstream snapshots are immutable; integration and compatibility code is additive outside `vendor/`.
+- One FastAPI business API boundary; Supabase remains the canonical data plane.
+- The bounded OpenManus adapter overrides the upstream default tool collection; only `Terminate` is available and `tool_choices` is disabled. Shell, Python, browser and legacy web/WebSocket routes are not activated.
+- Legacy UI screens/components are integrated as non-operational source previews. LLM/Agent API surfaces fail closed and make no direct client-side provider calls.
+- No new product domains from Phase 03+ were implemented in Phase 02.
+- No staging environment, production deployment, live device/network validation, or production DB mutation was performed.
+
+## Final acceptance evidence
+- Source integrity/provenance: 164/164 upstream files verified by Git blob SHA and byte size; source-provenance CI passed.
+- License/attribution: OpenManus MIT license and copyright preserved; UI owner authorization recorded; third-party rights caveat retained.
+- CI: final implementation CI run `42016827710` passed on commit `3b819439ff0a6dd20e252e29cf0219ad827a5741`; lockfile, source provenance, Python quality/tests, Web lint/typecheck/tests/build, CodeQL, pnpm audit, pip audit, Gitleaks and runtime smoke/Expo configuration all passed.
+- CodeQL exclusions are limited to seven exact non-mounted upstream legacy web files. The 24 upstream alerts remain documented and quarantined, not remediated. Any future activation requires remediation and re-review.
+- Phase 02 report: `docs/source-migration/PHASE-02-SOURCE-MIGRATION.md`.
+
+## Engineering constraints for all future work
+- Read `AGENTS.md`, Master PRD, official Phase Plan and relevant ADRs before implementation.
+- Preserve immutable vendor snapshots; add integrations outside vendor paths.
+- FastAPI is the only business API boundary; no duplicate backend or DB engine.
+- No frontend service-role keys, direct business-table writes, or provider secrets in client bundles.
+- Keep unimplemented features fail-closed; no dummy production data.
+- Do not begin later-phase domains before the official phase boundary.
+- Do not claim live/staging/production verification from CI smoke tests.
+
+## Phase status and next phase
+- Phase 00 — Source & Architecture Audit: Passed.
+- Phase 01 — Monorepo Foundation: Passed.
+- Phase 02 — Source Migration: **Implementation and CI acceptance passed; PR #9 awaits owner review/merge.**
+- Next official phase: **Phase 03 — Design System & UI Foundations.** Begin only after Phase 02 PR is reviewed and merged.
+
