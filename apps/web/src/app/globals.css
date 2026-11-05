@@ -194,3 +194,8 @@ html body :is(a, button, input, select, textarea, summary, [tabindex]):focus-vis
 }
 .dark h2 > span { color: #4B5563 !important; }
 .dark [class~="bg-[#F7F4EC]"] .text-gray-500 { color: #66645E !important; }
+
+/* Dark-mode labels on intentionally light source panels retain dark ink. */
+.dark [class~="bg-[#F7F4EC]"] :is(.text-gray-500, .text-gray-600, h2 > span) {
+  color: #4B5563 !important;
+}
