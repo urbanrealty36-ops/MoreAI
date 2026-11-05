@@ -20,11 +20,15 @@ class VerificationMethodSelection(BaseModel):
     config_public: dict[str, Any] = Field(default_factory=dict)
 
 
-async def _membership(claims: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+async def _membership(
+    claims: dict[str, Any],
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     try:
         user_id = str(UUID(str(claims.get("sub", ""))))
     except (ValueError, TypeError, AttributeError) as exc:
-        raise HTTPException(status_code=401, detail="Invalid authenticated subject") from exc
+        raise HTTPException(
+            status_code=401, detail="Invalid authenticated subject"
+        ) from exc
     memberships = await select_rows(
         "partner_members",
         f"select=id,partner_id,location_id,role_key,status&user_id=eq.{user_id}&status=eq.active",
@@ -48,7 +52,9 @@ async def _membership(claims: dict[str, Any]) -> tuple[dict[str, Any], list[dict
     return memberships[0], memberships
 
 
-async def _partner_rows(table: str, fields: str, partner_id: str) -> list[dict[str, Any]]:
+async def _partner_rows(
+    table: str, fields: str, partner_id: str
+) -> list[dict[str, Any]]:
     return await select_rows(
         table, f"select={fields}&partner_id=eq.{partner_id}&order=created_at.desc"
     )
@@ -64,7 +70,10 @@ async def partner_profile(claims: UserClaims):
     if not rows:
         raise HTTPException(
             status_code=404,
-            detail={"code": "PARTNER_NOT_FOUND", "message": "Partner organization not found."},
+            detail={
+                "code": "PARTNER_NOT_FOUND",
+                "message": "Partner organization not found.",
+            },
         )
     return {"partner": rows[0], "membership": membership}
 
@@ -240,8 +249,12 @@ async def list_rewards(claims: UserClaims):
 async def partner_analytics(claims: UserClaims):
     membership, _ = await _membership(claims)
     branches = await _partner_rows("partner_locations", "id", membership["partner_id"])
-    networks = await _partner_rows("partner_networks", "id,status", membership["partner_id"])
-    campaigns = await _partner_rows("partner_campaigns", "id,status", membership["partner_id"])
+    networks = await _partner_rows(
+        "partner_networks", "id,status", membership["partner_id"]
+    )
+    campaigns = await _partner_rows(
+        "partner_campaigns", "id,status", membership["partner_id"]
+    )
     return {
         "branches": len(branches),
         "networks": len(networks),
