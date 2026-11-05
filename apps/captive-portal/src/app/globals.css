@@ -97,9 +97,11 @@
 }
 
 /* Keyboard-visible focus. The ink outline is visible on light and dark surfaces. */
-html body :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+html body :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible,
+html body :is(a, button, input, select, textarea, summary, [tabindex]):focus {
   outline: 3px solid #245E9A !important;
   outline-offset: 3px !important;
+  box-shadow: 0 0 0 3px #245E9A !important;
 }
 
 /* Preserve content and disable non-essential motion when requested by the OS. */
@@ -171,3 +173,5 @@ html body :is(a, button, input, select, textarea, summary, [tabindex]):focus-vis
     min-height: max(44px, var(--moreai-target-mobile-min, 44px));
   }
 }
+/* Small muted labels on the warm neutral surface meet WCAG AA. */
+.text-gray-400 { color: #66645E !important; }
