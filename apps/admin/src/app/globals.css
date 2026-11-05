@@ -196,3 +196,10 @@ html body :is(a, button, input, select, textarea, summary, [tabindex]):focus-vis
 .dark .text-blue-900 { color: #BFDBFE !important; }
 .dark .text-gray-600 { color: #D1D5DB !important; }
 .dark .rounded-md { color: #14532D !important; }
+
+
+/* Additional semantic text pairs on dark dashboard surfaces. */
+.dark .leading-none { color: #171717 !important; }
+.dark .w-full > div > p:first-child { color: var(--moreai-color-text) !important; }
+.dark .neo-card[class~="bg-[#FBE7B2]"] .text-xl,
+.dark .neo-card[class~="bg-[#D8ECFF]"] .text-xl { color: #171717 !important; }
