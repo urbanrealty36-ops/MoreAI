@@ -165,12 +165,7 @@ html body :is(a, button, input, select, textarea, summary, [tabindex]):focus-vis
 }
 
 
-/* Phase 03 acceptance remediation: preserve the 44px mobile target baseline. */
-@media (max-width: 767px) {
-  :is(button, a[href], [role="button"], summary) {
-    min-height: max(44px, var(--moreai-target-mobile-min, 44px));
-  }
-}
+
 /* Phase 03 dark-surface contrast corrections for partner KPI cards. */
 .dark header {
   background-color: var(--moreai-color-surface) !important;
