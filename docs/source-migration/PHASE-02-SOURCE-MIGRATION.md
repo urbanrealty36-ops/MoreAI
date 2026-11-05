@@ -62,7 +62,7 @@ The detailed row-level map is `docs/source-migration/source-target-map-v2.csv`. 
 - Source screens, components, CSS, hooks, PWA assets, and portal surfaces are integrated additively into the existing Web, Admin, Partner Portal, and Captive Portal app source trees.
 - The active app copies are kept separate from the immutable `vendor/reference-ui` snapshot.
 - Customer, Admin, Partner, and Captive Portal screens are mounted as clearly labelled source previews only; Phase 02 does not activate identity, partner, admin, or network business workflows.
-- The source Gemini route remains preserved only in the vendor snapshot; active app requests use the FastAPI boundary instead of a direct browser-to-provider call.
+- The source Gemini route remains preserved only in the vendor snapshot. Active app surfaces are non-operational previews and do not make provider calls or direct browser-to-provider requests.
 - Reference-only Admin/Partner/Captive surfaces remain explicitly non-operational or fail-closed where the corresponding later product domain is not in scope.
 - No redesign, re-theme, or intentional visual-system replacement is part of this phase.
 

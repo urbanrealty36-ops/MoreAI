@@ -33,7 +33,7 @@
 - Preserve vendor snapshots; integrate only outside vendor paths.
 - FastAPI is the only business API boundary. Supabase remains canonical data plane.
 - No direct provider calls from browser/mobile; no provider secrets in client bundles.
-- Shell, browser and Python tools remain disabled until approved isolated runtimes exist.
+- Shell, browser and Python tools remain disabled. Only the upstream Terminate tool is available through the Phase 02 adapter.
 - No demo business data as production data; fail closed for unavailable integrations.
 - No staging environment or production deployment in this phase.
 - Do not implement domains assigned to Phase 03 or later under Phase 02.
@@ -46,4 +46,6 @@ Phase 02 — Source Migration: implementation complete; awaiting final scoped-br
 Next after Phase 02 acceptance: **Phase 03 — Design System & UI Foundations**.
 
 ## Current implementation commit
-To be filled with the final Phase 02 commit SHA after the scoped branch commit is created.
+- Bounded source integration commit: `cd95fb61b747f0cd00f79efe486c13d1d4bec0a7`.
+- Documentation and final acceptance updates are tracked on `phase-02-source-migration-final`.
+
