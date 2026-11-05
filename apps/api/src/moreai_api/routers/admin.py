@@ -19,7 +19,9 @@ async def _require_permission(claims: dict[str, Any], permission_key: str) -> No
     try:
         user_id = str(UUID(str(claims.get("sub", ""))))
     except (ValueError, TypeError, AttributeError) as exc:
-        raise HTTPException(status_code=401, detail="Invalid authenticated subject") from exc
+        raise HTTPException(
+            status_code=401, detail="Invalid authenticated subject"
+        ) from exc
     assignments = await select_rows(
         "user_role_assignments",
         f"select=id,role_id,scope_type,scope_id,expires_at,roles!inner(key)&user_id=eq.{user_id}&scope_type=eq.platform",
@@ -27,9 +29,9 @@ async def _require_permission(claims: dict[str, Any], permission_key: str) -> No
     role_ids = []
     for item in assignments:
         expires = item.get("expires_at")
-        if expires and datetime.fromisoformat(expires.replace("Z", "+00:00")) <= datetime.now(
-            timezone.utc
-        ):
+        if expires and datetime.fromisoformat(
+            expires.replace("Z", "+00:00")
+        ) <= datetime.now(timezone.utc):
             continue
         role = item.get("roles") or {}
         if role.get("key") in {
@@ -54,7 +56,9 @@ async def _require_permission(claims: dict[str, Any], permission_key: str) -> No
         "role_permissions",
         "select=role_id,permissions!inner(key)&role_id=in.(" + ",".join(role_ids) + ")",
     )
-    if not any((x.get("permissions") or {}).get("key") == permission_key for x in grants):
+    if not any(
+        (x.get("permissions") or {}).get("key") == permission_key for x in grants
+    ):
         raise HTTPException(
             status_code=403,
             detail={
@@ -128,7 +132,6 @@ async def admin_network_policies(claims: UserClaims):
     }
 
 
-
 class VerificationMethodAvailability(BaseModel):
     model_config = ConfigDict(extra="forbid")
     enabled: bool
@@ -161,7 +164,10 @@ async def set_network_verification_method_availability(
     changed = await update_rows(
         "network_verification_method_catalog",
         "method_key=eq." + method_key,
-        {"enabled": payload.enabled, "updated_at": datetime.now(timezone.utc).isoformat()},
+        {
+            "enabled": payload.enabled,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        },
     )
     actor = str(UUID(str(claims.get("sub", ""))))
     await insert_rows(
@@ -184,7 +190,6 @@ async def set_network_verification_method_availability(
         "activated": False,
         "message": "Catalog availability changed. This does not mark an adapter ready or activate any partner network.",
     }
-
 
 
 class MikroTikSecretReference(BaseModel):
@@ -237,7 +242,11 @@ async def set_mikrotik_secret_reference(
             "metadata": {"secret_reference_configured": True},
         },
     )
-    return {"configured": bool(changed), "credentials_exposed": False, "activated": False}
+    return {
+        "configured": bool(changed),
+        "credentials_exposed": False,
+        "activated": False,
+    }
 
 
 @router.post("/networks/{network_id}/mikrotik-credentials/validate")
@@ -250,7 +259,10 @@ async def validate_network_mikrotik_credentials(
         "partner_networks",
         "select=id,active_verification_method&id=eq." + str(network_id),
     )
-    if not networks or networks[0].get("active_verification_method") != "mikrotik_hotspot":
+    if (
+        not networks
+        or networks[0].get("active_verification_method") != "mikrotik_hotspot"
+    ):
         raise HTTPException(
             status_code=409,
             detail="MikroTik must be the selected method for this network",
