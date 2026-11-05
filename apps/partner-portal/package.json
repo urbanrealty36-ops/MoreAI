@@ -13,12 +13,19 @@
   "dependencies": {
     "next": "15.5.28",
     "react": "19.2.1",
-    "react-dom": "19.2.1"
+    "react-dom": "19.2.1",
+    "lucide-react": "0.553.0",
+    "tailwindcss": "4.1.11",
+    "@moreai/api-client": "workspace:*",
+    "@moreai/types": "workspace:*",
+    "@supabase/ssr": "0.7.0",
+    "@supabase/supabase-js": "2.80.0"
   },
   "devDependencies": {
     "@types/node": "22.18.12",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.2",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "@tailwindcss/postcss": "4.1.11"
   }
 }

@@ -1,0 +1,6 @@
+{
+  "name": "More AI - Playful Neo-Brutalist PWA",
+  "description": "MoreAI: Platform AI Workspace, Agent & Ekosistem Network Partnership berbasis PWA Mobile-First dengan gaya Playful Neo-Brutalism & Soft Pastel.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
