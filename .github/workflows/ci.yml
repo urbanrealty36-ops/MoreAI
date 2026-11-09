@@ -208,7 +208,7 @@ jobs:
         run: /tmp/moreai-browser-qa/node_modules/.bin/playwright install --with-deps chromium
       - name: Run responsive visual regression and WCAG audit
         run: node scripts/phase-03-browser-qa.cjs
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: moreai-phase-03-browser-qa-${{ github.sha }}
